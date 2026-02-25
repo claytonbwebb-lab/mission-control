@@ -4,7 +4,7 @@ import { format, startOfWeek, addDays, parseISO } from "date-fns";
 import {
   ChevronLeft, ChevronRight, Plus, Edit2, Check, X, Clock,
   Send, Trash2, AlertCircle, Loader2, Sparkles, Calendar,
-  List, Users, Zap
+  List, Users, Zap, ImageIcon, Upload
 } from "lucide-react";
 import { SiFacebook, SiInstagram, SiX } from "react-icons/si";
 import { Button } from "@/components/ui/button";
@@ -65,6 +65,7 @@ function normalizePost(raw: Record<string, unknown>): SocialPost {
     pageId: (raw.pageId ?? raw.page_id ?? "") as string,
     pageName: (raw.pageName ?? raw.page_name ?? "") as string,
     content: (raw.content_text ?? raw.content ?? "") as string,
+    imageUrl: (raw.image_url ?? raw.imageUrl ?? undefined) as string | undefined,
     scheduledAt: raw.scheduledAt ?? raw.scheduled_at ?? undefined,
     status: (raw.status ?? "draft") as SocialPost["status"],
     createdAt: raw.createdAt ?? raw.created_at ?? Date.now(),
@@ -118,6 +119,89 @@ function PlatformIcon({ platform, className = "w-4 h-4" }: { platform: string; c
   return <Icon className={className} />;
 }
 
+const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+const MAX_FILE_SIZE = 5 * 1024 * 1024;
+
+function ImageUploadSection({ imageUrl, onChange, testIdPrefix }: { imageUrl: string; onChange: (url: string) => void; testIdPrefix: string }) {
+  const { toast } = useToast();
+  const [uploading, setUploading] = useState(false);
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
+      toast({ title: "Invalid file type", description: "Allowed: JPEG, PNG, WebP, GIF", variant: "destructive" });
+      return;
+    }
+    if (file.size > MAX_FILE_SIZE) {
+      toast({ title: "File too large", description: "Maximum size is 5 MB", variant: "destructive" });
+      return;
+    }
+    setUploading(true);
+    try {
+      const dataUrl = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+      const res = await apiRequest<{ url: string }>("POST", "/media/upload", { data: dataUrl });
+      onChange(res.url);
+      toast({ title: "Image uploaded" });
+    } catch (err) {
+      toast({ title: "Upload failed", description: (err as Error).message, variant: "destructive" });
+    } finally {
+      setUploading(false);
+      e.target.value = "";
+    }
+  };
+
+  return (
+    <div className="space-y-1.5">
+      <Label className="text-xs text-muted-foreground uppercase tracking-wide">Image</Label>
+      <div className="flex gap-2">
+        <Input
+          value={imageUrl}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder="Image URL"
+          className="flex-1"
+          data-testid={`${testIdPrefix}-image-url`}
+        />
+        <Button
+          type="button"
+          size="sm"
+          variant="secondary"
+          className="flex-shrink-0 relative"
+          disabled={uploading}
+          data-testid={`${testIdPrefix}-upload-file`}
+          onClick={() => document.getElementById(`${testIdPrefix}-file-input`)?.click()}
+        >
+          {uploading ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> : <Upload className="w-3.5 h-3.5 mr-1" />}
+          Upload
+        </Button>
+        <input
+          id={`${testIdPrefix}-file-input`}
+          type="file"
+          accept=".jpg,.jpeg,.png,.webp,.gif"
+          className="hidden"
+          onChange={handleFileUpload}
+        />
+      </div>
+      {imageUrl && (
+        <div className="mt-2 relative inline-block">
+          <img
+            src={imageUrl}
+            alt="Preview"
+            className="h-20 w-auto rounded border border-border object-cover"
+            data-testid={`${testIdPrefix}-image-preview`}
+            onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
 interface PostDetailModalProps {
   post: SocialPost | null;
   open: boolean;
@@ -132,6 +216,7 @@ function PostDetailModal({ post, open, onClose, pages }: PostDetailModalProps) {
   const [platform, setPlatform] = useState<string>("facebook");
   const [pageId, setPageId] = useState("");
   const [scheduledAt, setScheduledAt] = useState("");
+  const [imageUrl, setImageUrl] = useState("");
 
   useEffect(() => {
     if (post) {
@@ -139,6 +224,7 @@ function PostDetailModal({ post, open, onClose, pages }: PostDetailModalProps) {
       setPlatform(post.platform ?? "facebook");
       setPageId(post.pageId ?? "");
       setScheduledAt(scheduledToDatetimeLocal(post.scheduledAt));
+      setImageUrl(post.imageUrl ?? "");
     }
   }, [post]);
 
@@ -147,21 +233,23 @@ function PostDetailModal({ post, open, onClose, pages }: PostDetailModalProps) {
     qc.invalidateQueries({ queryKey: ["/posts/calendar"] });
   };
 
+  const buildPayload = (extra?: Record<string, unknown>) => ({
+    content_text: content,
+    platform,
+    page_id: pageId,
+    image_url: imageUrl || undefined,
+    scheduled_at: scheduledAt ? new Date(scheduledAt).toISOString() : undefined,
+    ...extra,
+  });
+
   const saveMutation = useMutation({
-    mutationFn: () => apiRequest("PATCH", `/posts/${post?.id}`, {
-      content_text: content, platform, page_id: pageId,
-      scheduled_at: scheduledAt ? new Date(scheduledAt).toISOString() : undefined,
-    }),
+    mutationFn: () => apiRequest("PATCH", `/posts/${post?.id}`, buildPayload()),
     onSuccess: () => { invalidate(); toast({ title: "Post saved" }); onClose(); },
     onError: (err: Error) => { toast({ title: "Save failed", description: err.message, variant: "destructive" }); },
   });
 
   const statusMutation = useMutation({
-    mutationFn: (newStatus: string) => apiRequest("PATCH", `/posts/${post?.id}`, {
-      status: newStatus,
-      content_text: content,
-      ...(newStatus === "scheduled" && scheduledAt ? { scheduled_at: new Date(scheduledAt).toISOString() } : {}),
-    }),
+    mutationFn: (newStatus: string) => apiRequest("PATCH", `/posts/${post?.id}`, buildPayload({ status: newStatus })),
     onSuccess: (_, newStatus) => {
       invalidate();
       toast({ title: `Post ${newStatus}` });
@@ -203,6 +291,9 @@ function PostDetailModal({ post, open, onClose, pages }: PostDetailModalProps) {
               data-testid="input-post-content"
             />
           </div>
+
+          <ImageUploadSection imageUrl={imageUrl} onChange={setImageUrl} testIdPrefix="modal" />
+
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label className="text-xs text-muted-foreground uppercase tracking-wide">Platform</Label>
@@ -418,6 +509,7 @@ function CalendarTab({ pages }: { pages: SocialPage[] }) {
                     data-testid={`chip-post-${p.id}`}
                   >
                     <PlatformIcon platform={p.platform} className="w-2.5 h-2.5 flex-shrink-0" />
+                    {p.imageUrl && <ImageIcon className="w-2.5 h-2.5 flex-shrink-0 opacity-70" />}
                     <span className="truncate">{(p.content ?? "").substring(0, 25)}</span>
                   </button>
                 ))
@@ -505,6 +597,11 @@ function QueueTab({ pages }: { pages: SocialPage[] }) {
                             {formatSchedule(post.scheduledAt)}
                           </span>
                         )}
+                        {post.imageUrl && (
+                          <span className="text-xs text-muted-foreground flex items-center gap-1" data-testid={`icon-image-${post.id}`}>
+                            <ImageIcon className="w-2.5 h-2.5" />
+                          </span>
+                        )}
                         {post.status && (
                           <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium ${(STATUS_META[post.status] ?? STATUS_META.draft).className}`}>
                             {(STATUS_META[post.status] ?? STATUS_META.draft).label}
@@ -588,6 +685,7 @@ function GenerateTab() {
   const [theme, setTheme] = useState("");
   const [formatOpt, setFormatOpt] = useState("");
   const [guidance, setGuidance] = useState("");
+  const [imageUrl, setImageUrl] = useState("");
   const [generating, setGenerating] = useState(false);
   const [weekGenerating, setWeekGenerating] = useState(false);
   const [result, setResult] = useState("");
@@ -598,7 +696,9 @@ function GenerateTab() {
     setGenerating(true);
     setResult("");
     try {
-      const res = await apiRequest<Record<string, unknown>>("POST", "/posts/generate", { project, theme, format: formatOpt, guidance });
+      const body: Record<string, unknown> = { project, theme, format: formatOpt, guidance };
+      if (imageUrl) body.image_url = imageUrl;
+      const res = await apiRequest<Record<string, unknown>>("POST", "/posts/generate", body);
       setResult((res.content ?? res.text ?? res.result ?? "") as string);
     } catch (err) {
       toast({ title: "Failed to generate content", description: (err as Error).message, variant: "destructive" });
@@ -624,9 +724,15 @@ function GenerateTab() {
   const handleSaveDraft = async () => {
     setSavingDraft(true);
     try {
-      await apiRequest("POST", "/posts", { content_text: result, status: "draft", platform: "facebook" });
+      await apiRequest("POST", "/posts", {
+        content_text: result,
+        status: "draft",
+        platform: "facebook",
+        ...(imageUrl ? { image_url: imageUrl } : {}),
+      });
       toast({ title: "Saved as draft" });
       setResult("");
+      setImageUrl("");
       qc.invalidateQueries({ queryKey: ["/posts"] });
     } catch (err) {
       toast({ title: "Failed to save draft", description: (err as Error).message, variant: "destructive" });
@@ -704,6 +810,8 @@ function GenerateTab() {
           />
         </div>
       </div>
+
+      <ImageUploadSection imageUrl={imageUrl} onChange={setImageUrl} testIdPrefix="gen" />
 
       <div className="flex gap-2 flex-wrap">
         <Button

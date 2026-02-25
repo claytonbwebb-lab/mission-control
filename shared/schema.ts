@@ -61,6 +61,7 @@ export interface SocialPost {
   pageId: string;
   pageName: string;
   content: string;
+  imageUrl?: string;
   scheduledAt?: number | string;
   status: "draft" | "approved" | "scheduled" | "published" | "failed";
   createdAt: number | string;
