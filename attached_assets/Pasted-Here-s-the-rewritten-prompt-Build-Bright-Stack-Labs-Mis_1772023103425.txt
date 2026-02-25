@@ -1,0 +1,104 @@
+Here's the rewritten prompt:
+
+───
+
+Build "Bright Stack Labs Mission Control" — a private operations dashboard.
+
+Stack: React + Vite, Tailwind CSS, React Router, @hello-pangea/dnd (for drag-and-drop kanban).
+
+Branding: Dark sidebar, clean command-centre aesthetic. Header: "Bright Stack Labs ⚡ Mission Control". Sidebar nav with icons. Professional but not corporate — feels like a founder's ops tool.
+
+Auth: Single user. Password login screen. POST {API_URL}/auth/login with { password }. Store token in localStorage. All API calls: Authorization: Bearer {token}. 401 → redirect to login.
+
+Env var: VITE_API_URL — backend base URL. Use everywhere.
+
+───
+
+SECTION 1 — MISSION BOARD (default home)
+
+Kanban board — Trello-style. Four columns:
+
+• 💡 Ideas — things Steve has thought of, not started
+• 🔧 In Progress — Clawbot is working on it
+• 👀 Review — done, needs Steve's eyes
+• ✅ Complete — shipped/done
+
+Each card has:
+
+• Title
+• Optional description (expandable)
+• Label/project tag (colour-coded): InvoiceWizard 🧾 / Life Coach Steven 🎯 / WeSayIDo 💍 / Horse Race System 🏇 / Bright Stack Labs ⚡ / Other
+• Priority badge: Low / Medium / High / Urgent
+• Created date
+• "Assigned to" chip: Steve / Clawbot
+
+Interactions:
+
+• Drag cards between columns (react-beautiful-dnd or @hello-pangea/dnd)
+• Click card → open detail modal (edit title, description, label, priority, move column)
+• "Add card" button at top of each column — quick-add with just a title
+• Filter bar across the top: filter by project label
+
+API calls:
+
+• GET /tasks → list all
+• POST /tasks → create
+• PATCH /tasks/:id → update (including status/column)
+• DELETE /tasks/:id → delete
+
+───
+
+SECTION 2 — SOCIAL MEDIA
+
+Multi-platform, multi-account scheduler. Left sub-nav: Accounts / Calendar / Queue / Generate.
+
+Accounts tab:
+
+• List of connected social pages from GET /pages
+• Table: Platform icon, Page Name, Page ID, Status (connected/token expired)
+• "Add account" button (placeholder for now)
+
+Calendar tab:
+
+• Weekly grid (Mon–Sun), posts shown as coloured chips by platform (Facebook=blue, Instagram=pink, Twitter/X=black)
+• Click chip → Post Detail modal
+• Week navigation arrows
+• GET /posts/calendar?from={unix}&to={unix}
+
+Queue tab:
+
+• Grouped list: Drafts → Approved → Scheduled → Published → Failed
+• Per row: platform icon, page name, date/time, post preview (60 chars), status badge, action buttons
+• Draft actions: Edit, Approve, Reject
+• Approved: Edit, Schedule, Publish Now, Reject
+• GET /posts, POST /posts/:id/approve, POST /posts/:id/reject, POST /posts/:id/publish
+
+Post Detail modal:
+
+• Editable content textarea
+• Platform selector (Facebook / Instagram / Twitter — single select for now)
+• Page selector (from connected pages)
+• Date + time picker (shown in UK time)
+• Status badge
+• Save / Approve / Reject / Publish Now / Delete buttons
+
+Generate tab:
+
+• Project selector: which brand/account
+• Theme dropdown + Format dropdown (see original prompt values)
+• Extra guidance free text
+• Generate button → POST /generate → editable result
+• Save as Draft button
+• "Generate Full Week (Mon–Fri)" → POST /generate/week → 5 editable cards with schedule times → Save All as Drafts
+
+───
+
+SECTION 3 — AI USAGE (Anthropic)
+
+Page title: "AI Usage & Billing"
+
+Three panels:
+
+1. Credit balance panel — Calls GET /ai/usage on the backend (backend proxies to Anthropic billing API). Shows: remaining credit (£/$ formatted), usage this month, usage last month. Loading spinner while fetching. Error state if API key missing.
+2. Usage over time chart — Simple bar chart (use Recharts). X axis = last 7 days. Y axis = input + output tokens. Two bars per day (input=blue, output=purple). Data from GET /ai/usage/daily.
+3. Recent activity table — Last 20 API calls: date, model used, input tokens, output tokens, estimated cost. From GET /ai/usage/recent.
