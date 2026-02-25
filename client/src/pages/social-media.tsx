@@ -4,7 +4,7 @@ import { format, startOfWeek, addDays, parseISO } from "date-fns";
 import {
   ChevronLeft, ChevronRight, Plus, Edit2, Check, X, Clock,
   Send, Trash2, AlertCircle, Loader2, Sparkles, Calendar,
-  List, Users, Zap, ImageIcon, Upload
+  List, Users, Zap, ImageIcon, Upload, Wand2
 } from "lucide-react";
 import { SiFacebook, SiInstagram, SiX } from "react-icons/si";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,7 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Switch } from "@/components/ui/switch";
 import { apiRequest } from "@/lib/auth";
 import type { SocialPage, SocialPost } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
@@ -122,9 +123,20 @@ function PlatformIcon({ platform, className = "w-4 h-4" }: { platform: string; c
 const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
-function ImageUploadSection({ imageUrl, onChange, testIdPrefix }: { imageUrl: string; onChange: (url: string) => void; testIdPrefix: string }) {
+interface ImageUploadSectionProps {
+  imageUrl: string;
+  onChange: (url: string) => void;
+  testIdPrefix: string;
+  generatePromptDefault?: string;
+  showGenerate?: boolean;
+}
+
+function ImageUploadSection({ imageUrl, onChange, testIdPrefix, generatePromptDefault, showGenerate }: ImageUploadSectionProps) {
   const { toast } = useToast();
   const [uploading, setUploading] = useState(false);
+  const [generatingImg, setGeneratingImg] = useState(false);
+  const [genPromptOpen, setGenPromptOpen] = useState(false);
+  const [genPrompt, setGenPrompt] = useState("");
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -156,6 +168,24 @@ function ImageUploadSection({ imageUrl, onChange, testIdPrefix }: { imageUrl: st
     }
   };
 
+  const handleGenerateImage = async () => {
+    if (!genPrompt.trim()) {
+      toast({ title: "Enter a prompt", variant: "destructive" });
+      return;
+    }
+    setGeneratingImg(true);
+    try {
+      const res = await apiRequest<{ url: string }>("POST", "/media/generate", { prompt: genPrompt.trim() });
+      onChange(res.url);
+      toast({ title: "Image generated" });
+      setGenPromptOpen(false);
+    } catch (err) {
+      toast({ title: "Image generation failed", description: (err as Error).message, variant: "destructive" });
+    } finally {
+      setGeneratingImg(false);
+    }
+  };
+
   return (
     <div className="space-y-1.5">
       <Label className="text-xs text-muted-foreground uppercase tracking-wide">Image</Label>
@@ -171,7 +201,7 @@ function ImageUploadSection({ imageUrl, onChange, testIdPrefix }: { imageUrl: st
           type="button"
           size="sm"
           variant="secondary"
-          className="flex-shrink-0 relative"
+          className="flex-shrink-0"
           disabled={uploading}
           data-testid={`${testIdPrefix}-upload-file`}
           onClick={() => document.getElementById(`${testIdPrefix}-file-input`)?.click()}
@@ -179,6 +209,23 @@ function ImageUploadSection({ imageUrl, onChange, testIdPrefix }: { imageUrl: st
           {uploading ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> : <Upload className="w-3.5 h-3.5 mr-1" />}
           Upload
         </Button>
+        {showGenerate && (
+          <Button
+            type="button"
+            size="sm"
+            variant="secondary"
+            className="flex-shrink-0"
+            disabled={generatingImg}
+            data-testid={`${testIdPrefix}-generate-image`}
+            onClick={() => {
+              setGenPrompt(generatePromptDefault ?? "");
+              setGenPromptOpen(!genPromptOpen);
+            }}
+          >
+            <Wand2 className="w-3.5 h-3.5 mr-1" />
+            Generate
+          </Button>
+        )}
         <input
           id={`${testIdPrefix}-file-input`}
           type="file"
@@ -187,6 +234,26 @@ function ImageUploadSection({ imageUrl, onChange, testIdPrefix }: { imageUrl: st
           onChange={handleFileUpload}
         />
       </div>
+      {showGenerate && genPromptOpen && (
+        <div className="flex gap-2 mt-1.5">
+          <Input
+            value={genPrompt}
+            onChange={(e) => setGenPrompt(e.target.value)}
+            placeholder="Describe the image to generate..."
+            className="flex-1"
+            data-testid={`${testIdPrefix}-gen-prompt`}
+          />
+          <Button
+            size="sm"
+            onClick={handleGenerateImage}
+            disabled={generatingImg || !genPrompt.trim()}
+            data-testid={`${testIdPrefix}-gen-prompt-submit`}
+          >
+            {generatingImg ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> : <Wand2 className="w-3.5 h-3.5 mr-1" />}
+            Go
+          </Button>
+        </div>
+      )}
       {imageUrl && (
         <div className="mt-2 relative inline-block">
           <img
@@ -292,7 +359,13 @@ function PostDetailModal({ post, open, onClose, pages }: PostDetailModalProps) {
             />
           </div>
 
-          <ImageUploadSection imageUrl={imageUrl} onChange={setImageUrl} testIdPrefix="modal" />
+          <ImageUploadSection
+            imageUrl={imageUrl}
+            onChange={setImageUrl}
+            testIdPrefix="modal"
+            showGenerate
+            generatePromptDefault={content ? `Social media image for: ${content.substring(0, 120)}` : ""}
+          />
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
@@ -587,6 +660,15 @@ function QueueTab({ pages }: { pages: SocialPage[] }) {
                     <div className={`inline-flex items-center justify-center w-7 h-7 rounded ${PLATFORM_COLORS[post.platform] ?? "bg-muted"}`}>
                       <PlatformIcon platform={post.platform} />
                     </div>
+                    {post.imageUrl && (
+                      <img
+                        src={post.imageUrl}
+                        alt=""
+                        className="w-10 h-10 rounded border border-border object-cover flex-shrink-0"
+                        data-testid={`thumb-image-${post.id}`}
+                        onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                      />
+                    )}
                     <div className="flex-1 min-w-0">
                       <p className="text-sm text-foreground truncate">{(post.content ?? "").substring(0, 60)}{(post.content ?? "").length > 60 ? "..." : ""}</p>
                       <div className="flex items-center gap-2 mt-0.5 flex-wrap">
@@ -686,20 +768,30 @@ function GenerateTab() {
   const [formatOpt, setFormatOpt] = useState("");
   const [guidance, setGuidance] = useState("");
   const [imageUrl, setImageUrl] = useState("");
+  const [autoImage, setAutoImage] = useState(true);
+  const [imagePrompt, setImagePrompt] = useState("");
   const [generating, setGenerating] = useState(false);
   const [weekGenerating, setWeekGenerating] = useState(false);
   const [result, setResult] = useState("");
+  const [resultImageUrl, setResultImageUrl] = useState("");
   const [weekPosts, setWeekPosts] = useState<GeneratedPost[]>([]);
   const [savingDraft, setSavingDraft] = useState(false);
 
   const handleGenerate = async () => {
     setGenerating(true);
     setResult("");
+    setResultImageUrl("");
     try {
-      const body: Record<string, unknown> = { project, theme, format: formatOpt, guidance };
+      const body: Record<string, unknown> = { project, theme, format: formatOpt, guidance, auto_image: autoImage };
+      if (imagePrompt.trim()) body.image_prompt = imagePrompt.trim();
       if (imageUrl) body.image_url = imageUrl;
       const res = await apiRequest<Record<string, unknown>>("POST", "/posts/generate", body);
       setResult((res.content ?? res.text ?? res.result ?? "") as string);
+      const returnedImg = (res.image_url ?? res.imageUrl ?? "") as string;
+      if (returnedImg) {
+        setResultImageUrl(returnedImg);
+        if (!imageUrl) setImageUrl(returnedImg);
+      }
     } catch (err) {
       toast({ title: "Failed to generate content", description: (err as Error).message, variant: "destructive" });
     } finally {
@@ -711,7 +803,9 @@ function GenerateTab() {
     setWeekGenerating(true);
     setWeekPosts([]);
     try {
-      const res = await apiRequest<Record<string, unknown>>("POST", "/posts/generate/week", { project, theme, format: formatOpt, guidance });
+      const body: Record<string, unknown> = { project, theme, format: formatOpt, guidance, auto_image: autoImage };
+      if (imagePrompt.trim()) body.image_prompt = imagePrompt.trim();
+      const res = await apiRequest<Record<string, unknown>>("POST", "/posts/generate/week", body);
       const posts = (res.posts ?? res.drafts ?? res.results ?? []) as GeneratedPost[];
       setWeekPosts(posts);
     } catch (err) {
@@ -724,15 +818,17 @@ function GenerateTab() {
   const handleSaveDraft = async () => {
     setSavingDraft(true);
     try {
+      const finalImage = imageUrl || resultImageUrl;
       await apiRequest("POST", "/posts", {
         content_text: result,
         status: "draft",
         platform: "facebook",
-        ...(imageUrl ? { image_url: imageUrl } : {}),
+        ...(finalImage ? { image_url: finalImage } : {}),
       });
       toast({ title: "Saved as draft" });
       setResult("");
       setImageUrl("");
+      setResultImageUrl("");
       qc.invalidateQueries({ queryKey: ["/posts"] });
     } catch (err) {
       toast({ title: "Failed to save draft", description: (err as Error).message, variant: "destructive" });
@@ -750,6 +846,7 @@ function GenerateTab() {
           status: "draft",
           platform: "facebook",
           scheduled_at: p.scheduledTime ?? p.scheduled_time ?? undefined,
+          ...((p as Record<string, unknown>).image_url ? { image_url: (p as Record<string, unknown>).image_url } : {}),
         })
       ));
       toast({ title: `${weekPosts.length} posts saved as drafts` });
@@ -811,7 +908,32 @@ function GenerateTab() {
         </div>
       </div>
 
-      <ImageUploadSection imageUrl={imageUrl} onChange={setImageUrl} testIdPrefix="gen" />
+      <div className="space-y-3 border border-border rounded-md p-3">
+        <div className="flex items-center justify-between">
+          <Label className="text-xs text-muted-foreground uppercase tracking-wide">Image Generation</Label>
+          <div className="flex items-center gap-2">
+            <Label htmlFor="auto-image-toggle" className="text-xs text-muted-foreground">Auto image</Label>
+            <Switch
+              id="auto-image-toggle"
+              checked={autoImage}
+              onCheckedChange={setAutoImage}
+              data-testid="switch-auto-image"
+            />
+          </div>
+        </div>
+        {autoImage && (
+          <div className="space-y-1.5">
+            <Label className="text-xs text-muted-foreground uppercase tracking-wide">Image Prompt (optional)</Label>
+            <Input
+              value={imagePrompt}
+              onChange={(e) => setImagePrompt(e.target.value)}
+              placeholder={theme && formatOpt ? `${theme} - ${formatOpt}` : "Describe the image style or subject..."}
+              data-testid="input-image-prompt"
+            />
+          </div>
+        )}
+        <ImageUploadSection imageUrl={imageUrl} onChange={setImageUrl} testIdPrefix="gen" />
+      </div>
 
       <div className="flex gap-2 flex-wrap">
         <Button
@@ -843,6 +965,18 @@ function GenerateTab() {
             className="resize-none"
             data-testid="textarea-gen-result"
           />
+          {resultImageUrl && (
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground uppercase tracking-wide">Generated Image</Label>
+              <img
+                src={resultImageUrl}
+                alt="Generated"
+                className="h-24 w-auto rounded border border-border object-cover"
+                data-testid="img-gen-result"
+                onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+              />
+            </div>
+          )}
           <Button size="sm" variant="secondary" onClick={handleSaveDraft} disabled={savingDraft} data-testid="button-save-draft">
             {savingDraft ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> : null}
             Save as Draft
@@ -853,22 +987,29 @@ function GenerateTab() {
       {weekPosts.length > 0 && (
         <div className="space-y-3">
           <Label className="text-xs text-muted-foreground uppercase tracking-wide">Generated Week ({weekPosts.length} posts)</Label>
-          {weekPosts.map((p, i) => (
-            <div key={p.id ?? i} className="space-y-1">
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-muted-foreground font-medium">
-                  {(p.scheduledTime ?? p.scheduled_time) ? (() => { try { return format(new Date(p.scheduledTime ?? p.scheduled_time!), "EEE d MMM, HH:mm"); } catch { return `Post ${i + 1}`; } })() : `Post ${i + 1}`}
-                </span>
+          {weekPosts.map((p, i) => {
+            const wpImg = (p as Record<string, unknown>).image_url as string | undefined;
+            return (
+              <div key={p.id ?? i} className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground font-medium">
+                    {(p.scheduledTime ?? p.scheduled_time) ? (() => { try { return format(new Date(p.scheduledTime ?? p.scheduled_time!), "EEE d MMM, HH:mm"); } catch { return `Post ${i + 1}`; } })() : `Post ${i + 1}`}
+                  </span>
+                  {wpImg && <ImageIcon className="w-3 h-3 text-muted-foreground" />}
+                </div>
+                <Textarea
+                  value={p.content}
+                  onChange={(e) => setWeekPosts(prev => prev.map((pp, j) => j === i ? { ...pp, content: e.target.value } : pp))}
+                  rows={3}
+                  className="resize-none"
+                  data-testid={`textarea-week-post-${i}`}
+                />
+                {wpImg && (
+                  <img src={wpImg} alt="" className="h-16 w-auto rounded border border-border object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+                )}
               </div>
-              <Textarea
-                value={p.content}
-                onChange={(e) => setWeekPosts(prev => prev.map((pp, j) => j === i ? { ...pp, content: e.target.value } : pp))}
-                rows={3}
-                className="resize-none"
-                data-testid={`textarea-week-post-${i}`}
-              />
-            </div>
-          ))}
+            );
+          })}
           <Button size="sm" variant="secondary" onClick={handleSaveAllDrafts} disabled={savingDraft} data-testid="button-save-all-drafts">
             {savingDraft ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> : null}
             Save All as Drafts
