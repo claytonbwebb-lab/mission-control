@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { format, startOfWeek, addDays, fromUnixTime, getUnixTime } from "date-fns";
+import { format, startOfWeek, addDays, parseISO } from "date-fns";
 import {
   ChevronLeft, ChevronRight, Plus, Edit2, Check, X, Clock,
   Send, Trash2, AlertCircle, Loader2, Sparkles, Calendar,
@@ -10,7 +10,6 @@ import { SiFacebook, SiInstagram, SiX } from "react-icons/si";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
-
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -59,6 +58,60 @@ const THEME_OPTIONS = ["Educational", "Promotional", "Engagement", "Behind the S
 const FORMAT_OPTIONS = ["Short post (under 100 words)", "Medium post (150-200 words)", "Long form (300+ words)", "Thread/carousel", "Story/reel caption", "Poll post"];
 const PROJECT_OPTIONS = ["InvoiceWizard", "Life Coach Steven", "WeSayIDo", "Horse Race System", "Bright Stack Labs"];
 
+function normalizePost(raw: Record<string, unknown>): SocialPost {
+  return {
+    id: (raw.id ?? raw._id ?? "") as string,
+    platform: (raw.platform ?? "facebook") as SocialPost["platform"],
+    pageId: (raw.pageId ?? raw.page_id ?? "") as string,
+    pageName: (raw.pageName ?? raw.page_name ?? "") as string,
+    content: (raw.content ?? "") as string,
+    scheduledAt: raw.scheduledAt ?? raw.scheduled_at ?? undefined,
+    status: (raw.status ?? "draft") as SocialPost["status"],
+    createdAt: raw.createdAt ?? raw.created_at ?? Date.now(),
+  } as SocialPost;
+}
+
+function normalizePage(raw: Record<string, unknown>): SocialPage {
+  return {
+    id: (raw.id ?? raw._id ?? "") as string,
+    platform: (raw.platform ?? "facebook") as SocialPage["platform"],
+    name: (raw.name ?? "") as string,
+    pageId: (raw.pageId ?? raw.page_id ?? "") as string,
+    status: (raw.status ?? "connected") as SocialPage["status"],
+  };
+}
+
+function formatSchedule(val: unknown): string {
+  if (!val) return "";
+  if (typeof val === "string") {
+    try { return format(parseISO(val), "d MMM HH:mm"); } catch { return val; }
+  }
+  if (typeof val === "number") {
+    try { return format(new Date(val > 1e12 ? val : val * 1000), "d MMM HH:mm"); } catch { return ""; }
+  }
+  return "";
+}
+
+function scheduledToDatetimeLocal(val: unknown): string {
+  if (!val) return "";
+  try {
+    const d = typeof val === "string" ? parseISO(val) : new Date(typeof val === "number" && val < 1e12 ? val * 1000 : val as number);
+    return format(d, "yyyy-MM-dd'T'HH:mm");
+  } catch {
+    return "";
+  }
+}
+
+function scheduledToDateStr(val: unknown): string {
+  if (!val) return "";
+  try {
+    const d = typeof val === "string" ? parseISO(val) : new Date(typeof val === "number" && val < 1e12 ? val * 1000 : val as number);
+    return format(d, "yyyy-MM-dd");
+  } catch {
+    return "";
+  }
+}
+
 function PlatformIcon({ platform, className = "w-4 h-4" }: { platform: string; className?: string }) {
   const Icon = PLATFORM_ICON[platform];
   if (!Icon) return null;
@@ -75,12 +128,19 @@ interface PostDetailModalProps {
 function PostDetailModal({ post, open, onClose, pages }: PostDetailModalProps) {
   const qc = useQueryClient();
   const { toast } = useToast();
-  const [content, setContent] = useState(post?.content ?? "");
-  const [platform, setPlatform] = useState(post?.platform ?? "facebook");
-  const [pageId, setPageId] = useState(post?.pageId ?? "");
-  const [scheduledAt, setScheduledAt] = useState(
-    post?.scheduledAt ? format(fromUnixTime(post.scheduledAt), "yyyy-MM-dd'T'HH:mm") : ""
-  );
+  const [content, setContent] = useState("");
+  const [platform, setPlatform] = useState<string>("facebook");
+  const [pageId, setPageId] = useState("");
+  const [scheduledAt, setScheduledAt] = useState("");
+
+  useEffect(() => {
+    if (post) {
+      setContent(post.content ?? "");
+      setPlatform(post.platform ?? "facebook");
+      setPageId(post.pageId ?? "");
+      setScheduledAt(scheduledToDatetimeLocal(post.scheduledAt));
+    }
+  }, [post]);
 
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: ["/posts"] });
@@ -89,30 +149,36 @@ function PostDetailModal({ post, open, onClose, pages }: PostDetailModalProps) {
 
   const saveMutation = useMutation({
     mutationFn: () => apiRequest("PATCH", `/posts/${post?.id}`, {
-      content, platform, pageId,
-      scheduledAt: scheduledAt ? getUnixTime(new Date(scheduledAt)) : undefined,
+      content, platform, page_id: pageId,
+      scheduled_at: scheduledAt ? new Date(scheduledAt).toISOString() : undefined,
     }),
     onSuccess: () => { invalidate(); toast({ title: "Post saved" }); onClose(); },
+    onError: (err: Error) => { toast({ title: "Save failed", description: err.message, variant: "destructive" }); },
   });
 
-  const actionMutation = useMutation({
-    mutationFn: (action: string) => apiRequest("POST", `/posts/${post?.id}/${action}`),
-    onSuccess: (_, action) => {
+  const statusMutation = useMutation({
+    mutationFn: (newStatus: string) => apiRequest("PATCH", `/posts/${post?.id}`, {
+      status: newStatus,
+      ...(newStatus === "scheduled" && scheduledAt ? { scheduled_at: new Date(scheduledAt).toISOString() } : {}),
+    }),
+    onSuccess: (_, newStatus) => {
       invalidate();
-      toast({ title: `Post ${action}d` });
+      toast({ title: `Post ${newStatus}` });
       onClose();
     },
+    onError: (err: Error) => { toast({ title: "Action failed", description: err.message, variant: "destructive" }); },
   });
 
   const deleteMutation = useMutation({
     mutationFn: () => apiRequest("DELETE", `/posts/${post?.id}`),
     onSuccess: () => { invalidate(); toast({ title: "Post deleted" }); onClose(); },
+    onError: (err: Error) => { toast({ title: "Delete failed", description: err.message, variant: "destructive" }); },
   });
 
   if (!post) return null;
 
   const filteredPages = pages.filter(p => p.platform === platform);
-  const statusMeta = STATUS_META[post.status];
+  const statusMeta = STATUS_META[post.status] ?? STATUS_META.draft;
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
@@ -139,7 +205,7 @@ function PostDetailModal({ post, open, onClose, pages }: PostDetailModalProps) {
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label className="text-xs text-muted-foreground uppercase tracking-wide">Platform</Label>
-              <Select value={platform} onValueChange={(v) => setPlatform(v as "facebook" | "instagram" | "twitter")}>
+              <Select value={platform} onValueChange={setPlatform}>
                 <SelectTrigger data-testid="select-post-platform">
                   <SelectValue />
                 </SelectTrigger>
@@ -176,20 +242,21 @@ function PostDetailModal({ post, open, onClose, pages }: PostDetailModalProps) {
 
           <div className="flex flex-wrap gap-2 pt-1 border-t border-border">
             <Button size="sm" onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending} data-testid="button-save-post">
+              {saveMutation.isPending ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> : null}
               Save
             </Button>
-            {(post.status === "draft" || post.status === "approved") && (
-              <Button size="sm" variant="secondary" onClick={() => actionMutation.mutate("approve")} data-testid="button-approve-post">
+            {(post.status === "draft") && (
+              <Button size="sm" variant="secondary" onClick={() => statusMutation.mutate("approved")} disabled={statusMutation.isPending} data-testid="button-approve-post">
                 <Check className="w-3.5 h-3.5 mr-1" /> Approve
               </Button>
             )}
             {(post.status === "draft" || post.status === "approved") && (
-              <Button size="sm" variant="secondary" onClick={() => actionMutation.mutate("reject")} data-testid="button-reject-post">
+              <Button size="sm" variant="secondary" onClick={() => statusMutation.mutate("draft")} disabled={statusMutation.isPending} data-testid="button-reject-post">
                 <X className="w-3.5 h-3.5 mr-1" /> Reject
               </Button>
             )}
             {post.status === "approved" && (
-              <Button size="sm" variant="secondary" onClick={() => actionMutation.mutate("publish")} data-testid="button-publish-post">
+              <Button size="sm" variant="secondary" onClick={() => statusMutation.mutate("published")} disabled={statusMutation.isPending} data-testid="button-publish-post">
                 <Send className="w-3.5 h-3.5 mr-1" /> Publish Now
               </Button>
             )}
@@ -197,6 +264,7 @@ function PostDetailModal({ post, open, onClose, pages }: PostDetailModalProps) {
               size="sm"
               variant="destructive"
               onClick={() => deleteMutation.mutate()}
+              disabled={deleteMutation.isPending}
               className="ml-auto"
               data-testid="button-delete-post"
             >
@@ -210,9 +278,13 @@ function PostDetailModal({ post, open, onClose, pages }: PostDetailModalProps) {
 }
 
 function AccountsTab() {
-  const { data: pages, isLoading } = useQuery<SocialPage[]>({
+  const { toast } = useToast();
+  const { data: pages, isLoading, error } = useQuery<SocialPage[]>({
     queryKey: ["/pages"],
-    queryFn: () => apiRequest<SocialPage[]>("GET", "/pages"),
+    queryFn: async () => {
+      const raw = await apiRequest<Record<string, unknown>[]>("GET", "/pages");
+      return (Array.isArray(raw) ? raw : []).map(normalizePage);
+    },
   });
 
   return (
@@ -224,14 +296,21 @@ function AccountsTab() {
         </Button>
       </div>
 
+      {error && (
+        <div className="flex items-center gap-2 p-3 bg-destructive/10 border border-destructive/20 rounded-md text-destructive text-sm">
+          <AlertCircle className="w-4 h-4 flex-shrink-0" />
+          <span>Failed to load accounts: {(error as Error).message}</span>
+        </div>
+      )}
+
       {isLoading ? (
         Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-14 rounded-md" />)
-      ) : !pages?.length ? (
+      ) : !pages?.length && !error ? (
         <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
           <Users className="w-10 h-10 mb-3 opacity-40" />
           <p className="text-sm">No accounts connected</p>
         </div>
-      ) : (
+      ) : pages?.length ? (
         <div className="border border-border rounded-md overflow-hidden">
           <table className="w-full text-sm">
             <thead>
@@ -246,7 +325,7 @@ function AccountsTab() {
               {pages.map((page, i) => (
                 <tr key={page.id} className={`border-b border-border last:border-0 ${i % 2 === 0 ? "" : "bg-muted/20"}`} data-testid={`row-account-${page.id}`}>
                   <td className="px-4 py-3">
-                    <div className={`inline-flex items-center gap-1.5 px-2 py-1 rounded ${PLATFORM_COLORS[page.platform]}`}>
+                    <div className={`inline-flex items-center gap-1.5 px-2 py-1 rounded ${PLATFORM_COLORS[page.platform] ?? "bg-muted text-muted-foreground"}`}>
                       <PlatformIcon platform={page.platform} />
                       <span className="text-xs font-medium capitalize">{page.platform}</span>
                     </div>
@@ -263,27 +342,37 @@ function AccountsTab() {
             </tbody>
           </table>
         </div>
-      )}
+      ) : null}
     </div>
   );
 }
 
 function CalendarTab({ pages }: { pages: SocialPage[] }) {
+  const { toast } = useToast();
   const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date(), { weekStartsOn: 1 }));
   const [selectedPost, setSelectedPost] = useState<SocialPost | null>(null);
 
-  const weekEnd = addDays(weekStart, 7);
-  const { data: posts, isLoading } = useQuery<SocialPost[]>({
-    queryKey: ["/posts/calendar", getUnixTime(weekStart), getUnixTime(weekEnd)],
-    queryFn: () => apiRequest<SocialPost[]>("GET", `/posts/calendar?from=${getUnixTime(weekStart)}&to=${getUnixTime(weekEnd)}`),
+  const weekEnd = addDays(weekStart, 6);
+  const fromStr = format(weekStart, "yyyy-MM-dd");
+  const toStr = format(weekEnd, "yyyy-MM-dd");
+
+  const { data: posts, isLoading, error } = useQuery<SocialPost[]>({
+    queryKey: ["/posts/calendar", fromStr, toStr],
+    queryFn: async () => {
+      const raw = await apiRequest<Record<string, unknown>[]>("GET", `/posts/calendar?from=${fromStr}&to=${toStr}`);
+      return (Array.isArray(raw) ? raw : []).map(normalizePost);
+    },
   });
 
   const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
 
   const postsByDay = (day: Date) => {
-    const ts = getUnixTime(day);
-    const tsEnd = ts + 86400;
-    return (posts ?? []).filter(p => p.scheduledAt && p.scheduledAt >= ts && p.scheduledAt < tsEnd);
+    const dayStr = format(day, "yyyy-MM-dd");
+    return (posts ?? []).filter(p => {
+      if (!p.scheduledAt) return false;
+      const postDayStr = scheduledToDateStr(p.scheduledAt);
+      return postDayStr === dayStr;
+    });
   };
 
   return (
@@ -293,12 +382,19 @@ function CalendarTab({ pages }: { pages: SocialPage[] }) {
           <ChevronLeft className="w-4 h-4" />
         </Button>
         <span className="text-sm font-medium text-foreground flex-1 text-center">
-          {format(weekStart, "d MMM")} – {format(addDays(weekStart, 6), "d MMM yyyy")}
+          {format(weekStart, "d MMM")} - {format(addDays(weekStart, 6), "d MMM yyyy")}
         </span>
         <Button size="icon" variant="ghost" onClick={() => setWeekStart(d => addDays(d, 7))} data-testid="button-next-week">
           <ChevronRight className="w-4 h-4" />
         </Button>
       </div>
+
+      {error && (
+        <div className="flex items-center gap-2 p-3 bg-destructive/10 border border-destructive/20 rounded-md text-destructive text-sm">
+          <AlertCircle className="w-4 h-4 flex-shrink-0" />
+          <span>Failed to load calendar: {(error as Error).message}</span>
+        </div>
+      )}
 
       <div className="grid grid-cols-7 gap-2">
         {days.map(day => {
@@ -316,12 +412,12 @@ function CalendarTab({ pages }: { pages: SocialPage[] }) {
                 dayPosts.map(p => (
                   <button
                     key={p.id}
-                    className={`w-full text-left text-xs px-1.5 py-0.5 rounded mb-1 truncate flex items-center gap-1 ${PLATFORM_CHIP_COLORS[p.platform]}`}
+                    className={`w-full text-left text-xs px-1.5 py-0.5 rounded mb-1 truncate flex items-center gap-1 ${PLATFORM_CHIP_COLORS[p.platform] ?? "bg-muted text-foreground"}`}
                     onClick={() => setSelectedPost(p)}
                     data-testid={`chip-post-${p.id}`}
                   >
                     <PlatformIcon platform={p.platform} className="w-2.5 h-2.5 flex-shrink-0" />
-                    <span className="truncate">{p.content.substring(0, 25)}</span>
+                    <span className="truncate">{(p.content ?? "").substring(0, 25)}</span>
                   </button>
                 ))
               )}
@@ -345,22 +441,38 @@ function QueueTab({ pages }: { pages: SocialPage[] }) {
   const { toast } = useToast();
   const [selectedPost, setSelectedPost] = useState<SocialPost | null>(null);
 
-  const { data: posts, isLoading } = useQuery<SocialPost[]>({
+  const { data: posts, isLoading, error } = useQuery<SocialPost[]>({
     queryKey: ["/posts"],
-    queryFn: () => apiRequest<SocialPost[]>("GET", "/posts"),
+    queryFn: async () => {
+      const raw = await apiRequest<Record<string, unknown>[]>("GET", "/posts?status=draft,approved,scheduled");
+      return (Array.isArray(raw) ? raw : []).map(normalizePost);
+    },
   });
 
-  const actionMutation = useMutation({
-    mutationFn: ({ id, action }: { id: string; action: string }) =>
-      apiRequest("POST", `/posts/${id}/${action}`),
-    onSuccess: (_, { action }) => {
-      qc.invalidateQueries({ queryKey: ["/posts"] });
-      toast({ title: `Post ${action}d` });
+  const invalidate = () => {
+    qc.invalidateQueries({ queryKey: ["/posts"] });
+    qc.invalidateQueries({ queryKey: ["/posts/calendar"] });
+  };
+
+  const statusMutation = useMutation({
+    mutationFn: ({ id, status, scheduled_at }: { id: string; status: string; scheduled_at?: string }) =>
+      apiRequest("PATCH", `/posts/${id}`, { status, ...(scheduled_at ? { scheduled_at } : {}) }),
+    onSuccess: (_, { status }) => {
+      invalidate();
+      toast({ title: `Post ${status}` });
     },
+    onError: (err: Error) => { toast({ title: "Action failed", description: err.message, variant: "destructive" }); },
   });
 
   return (
     <div className="space-y-6">
+      {error && (
+        <div className="flex items-center gap-2 p-3 bg-destructive/10 border border-destructive/20 rounded-md text-destructive text-sm">
+          <AlertCircle className="w-4 h-4 flex-shrink-0" />
+          <span>Failed to load posts: {(error as Error).message}</span>
+        </div>
+      )}
+
       {isLoading ? (
         Array.from({ length: 2 }).map((_, i) => <Skeleton key={i} className="h-32 rounded-md" />)
       ) : (
@@ -379,17 +491,22 @@ function QueueTab({ pages }: { pages: SocialPage[] }) {
                     className="bg-card border border-card-border rounded-md px-4 py-3 flex items-center gap-3"
                     data-testid={`row-post-${post.id}`}
                   >
-                    <div className={`inline-flex items-center justify-center w-7 h-7 rounded ${PLATFORM_COLORS[post.platform]}`}>
+                    <div className={`inline-flex items-center justify-center w-7 h-7 rounded ${PLATFORM_COLORS[post.platform] ?? "bg-muted"}`}>
                       <PlatformIcon platform={post.platform} />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm text-foreground truncate">{post.content.substring(0, 60)}{post.content.length > 60 ? "..." : ""}</p>
-                      <div className="flex items-center gap-2 mt-0.5">
+                      <p className="text-sm text-foreground truncate">{(post.content ?? "").substring(0, 60)}{(post.content ?? "").length > 60 ? "..." : ""}</p>
+                      <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                         <span className="text-xs text-muted-foreground">{post.pageName}</span>
                         {post.scheduledAt && (
                           <span className="text-xs text-muted-foreground flex items-center gap-1">
                             <Clock className="w-2.5 h-2.5" />
-                            {format(fromUnixTime(post.scheduledAt), "d MMM HH:mm")}
+                            {formatSchedule(post.scheduledAt)}
+                          </span>
+                        )}
+                        {post.status && (
+                          <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium ${(STATUS_META[post.status] ?? STATUS_META.draft).className}`}>
+                            {(STATUS_META[post.status] ?? STATUS_META.draft).label}
                           </span>
                         )}
                       </div>
@@ -399,16 +516,37 @@ function QueueTab({ pages }: { pages: SocialPage[] }) {
                         <Edit2 className="w-3 h-3" />
                       </Button>
                       {post.status === "draft" && (
-                        <Button size="sm" variant="secondary" onClick={() => actionMutation.mutate({ id: post.id, action: "approve" })} data-testid={`button-approve-post-${post.id}`}>
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          onClick={() => statusMutation.mutate({ id: post.id, status: "approved" })}
+                          disabled={statusMutation.isPending}
+                          data-testid={`button-approve-post-${post.id}`}
+                        >
                           <Check className="w-3 h-3 mr-1" /> Approve
                         </Button>
                       )}
+                      {post.status === "draft" && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => statusMutation.mutate({ id: post.id, status: "draft" })}
+                          disabled={statusMutation.isPending}
+                          data-testid={`button-reject-post-${post.id}`}
+                        >
+                          <X className="w-3 h-3" />
+                        </Button>
+                      )}
                       {post.status === "approved" && (
-                        <>
-                          <Button size="sm" variant="secondary" onClick={() => actionMutation.mutate({ id: post.id, action: "publish" })} data-testid={`button-publish-post-${post.id}`}>
-                            <Send className="w-3 h-3 mr-1" /> Publish
-                          </Button>
-                        </>
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          onClick={() => statusMutation.mutate({ id: post.id, status: "published" })}
+                          disabled={statusMutation.isPending}
+                          data-testid={`button-publish-post-${post.id}`}
+                        >
+                          <Send className="w-3 h-3 mr-1" /> Publish
+                        </Button>
                       )}
                     </div>
                   </div>
@@ -418,7 +556,7 @@ function QueueTab({ pages }: { pages: SocialPage[] }) {
           );
         })
       )}
-      {!isLoading && (posts ?? []).length === 0 && (
+      {!isLoading && !error && (posts ?? []).length === 0 && (
         <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
           <List className="w-10 h-10 mb-3 opacity-40" />
           <p className="text-sm">No posts in queue</p>
@@ -439,9 +577,11 @@ interface GeneratedPost {
   id: string;
   content: string;
   scheduledTime?: string;
+  scheduled_time?: string;
 }
 
 function GenerateTab() {
+  const qc = useQueryClient();
   const { toast } = useToast();
   const [project, setProject] = useState("");
   const [theme, setTheme] = useState("");
@@ -455,11 +595,12 @@ function GenerateTab() {
 
   const handleGenerate = async () => {
     setGenerating(true);
+    setResult("");
     try {
-      const res = await apiRequest<{ content: string }>("POST", "/generate", { project, theme, format: formatOpt, guidance });
-      setResult(res.content ?? "");
-    } catch {
-      toast({ title: "Failed to generate content", variant: "destructive" });
+      const res = await apiRequest<Record<string, unknown>>("POST", "/posts/generate", { project, theme, format: formatOpt, guidance });
+      setResult((res.content ?? res.text ?? res.result ?? "") as string);
+    } catch (err) {
+      toast({ title: "Failed to generate content", description: (err as Error).message, variant: "destructive" });
     } finally {
       setGenerating(false);
     }
@@ -467,11 +608,13 @@ function GenerateTab() {
 
   const handleGenerateWeek = async () => {
     setWeekGenerating(true);
+    setWeekPosts([]);
     try {
-      const res = await apiRequest<{ posts: GeneratedPost[] }>("POST", "/generate/week", { project, theme, format: formatOpt, guidance });
-      setWeekPosts(res.posts ?? []);
-    } catch {
-      toast({ title: "Failed to generate week content", variant: "destructive" });
+      const res = await apiRequest<Record<string, unknown>>("POST", "/posts/generate/week", { project, theme, format: formatOpt, guidance });
+      const posts = (res.posts ?? res.drafts ?? res.results ?? []) as GeneratedPost[];
+      setWeekPosts(posts);
+    } catch (err) {
+      toast({ title: "Failed to generate week", description: (err as Error).message, variant: "destructive" });
     } finally {
       setWeekGenerating(false);
     }
@@ -483,8 +626,9 @@ function GenerateTab() {
       await apiRequest("POST", "/posts", { content: result, status: "draft", platform: "facebook" });
       toast({ title: "Saved as draft" });
       setResult("");
-    } catch {
-      toast({ title: "Failed to save draft", variant: "destructive" });
+      qc.invalidateQueries({ queryKey: ["/posts"] });
+    } catch (err) {
+      toast({ title: "Failed to save draft", description: (err as Error).message, variant: "destructive" });
     } finally {
       setSavingDraft(false);
     }
@@ -494,12 +638,18 @@ function GenerateTab() {
     setSavingDraft(true);
     try {
       await Promise.all(weekPosts.map(p =>
-        apiRequest("POST", "/posts", { content: p.content, status: "draft", platform: "facebook", scheduledAt: p.scheduledTime ? getUnixTime(new Date(p.scheduledTime)) : undefined })
+        apiRequest("POST", "/posts", {
+          content: p.content,
+          status: "draft",
+          platform: "facebook",
+          scheduled_at: p.scheduledTime ?? p.scheduled_time ?? undefined,
+        })
       ));
       toast({ title: `${weekPosts.length} posts saved as drafts` });
       setWeekPosts([]);
-    } catch {
-      toast({ title: "Failed to save drafts", variant: "destructive" });
+      qc.invalidateQueries({ queryKey: ["/posts"] });
+    } catch (err) {
+      toast({ title: "Failed to save drafts", description: (err as Error).message, variant: "destructive" });
     } finally {
       setSavingDraft(false);
     }
@@ -570,7 +720,7 @@ function GenerateTab() {
           data-testid="button-generate-week"
         >
           {weekGenerating ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : <Zap className="w-3.5 h-3.5 mr-1.5" />}
-          Generate Full Week (Mon–Fri)
+          Generate Full Week (Mon-Fri)
         </Button>
       </div>
 
@@ -585,6 +735,7 @@ function GenerateTab() {
             data-testid="textarea-gen-result"
           />
           <Button size="sm" variant="secondary" onClick={handleSaveDraft} disabled={savingDraft} data-testid="button-save-draft">
+            {savingDraft ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> : null}
             Save as Draft
           </Button>
         </div>
@@ -594,10 +745,10 @@ function GenerateTab() {
         <div className="space-y-3">
           <Label className="text-xs text-muted-foreground uppercase tracking-wide">Generated Week ({weekPosts.length} posts)</Label>
           {weekPosts.map((p, i) => (
-            <div key={p.id} className="space-y-1">
+            <div key={p.id ?? i} className="space-y-1">
               <div className="flex items-center gap-2">
                 <span className="text-xs text-muted-foreground font-medium">
-                  {p.scheduledTime ? format(new Date(p.scheduledTime), "EEE d MMM, HH:mm") : `Post ${i + 1}`}
+                  {(p.scheduledTime ?? p.scheduled_time) ? (() => { try { return format(new Date(p.scheduledTime ?? p.scheduled_time!), "EEE d MMM, HH:mm"); } catch { return `Post ${i + 1}`; } })() : `Post ${i + 1}`}
                 </span>
               </div>
               <Textarea
@@ -610,6 +761,7 @@ function GenerateTab() {
             </div>
           ))}
           <Button size="sm" variant="secondary" onClick={handleSaveAllDrafts} disabled={savingDraft} data-testid="button-save-all-drafts">
+            {savingDraft ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> : null}
             Save All as Drafts
           </Button>
         </div>
@@ -621,7 +773,10 @@ function GenerateTab() {
 export default function SocialMediaPage() {
   const { data: pages = [] } = useQuery<SocialPage[]>({
     queryKey: ["/pages"],
-    queryFn: () => apiRequest<SocialPage[]>("GET", "/pages"),
+    queryFn: async () => {
+      const raw = await apiRequest<Record<string, unknown>[]>("GET", "/pages");
+      return (Array.isArray(raw) ? raw : []).map(normalizePage);
+    },
   });
 
   return (

@@ -61,9 +61,9 @@ export interface SocialPost {
   pageId: string;
   pageName: string;
   content: string;
-  scheduledAt?: number;
+  scheduledAt?: number | string;
   status: "draft" | "approved" | "scheduled" | "published" | "failed";
-  createdAt: number;
+  createdAt: number | string;
 }
 
 export interface CreatePostInput {
