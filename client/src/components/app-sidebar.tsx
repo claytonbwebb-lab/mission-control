@@ -16,6 +16,7 @@ import {
   Cpu,
   LogOut,
   Zap,
+  Timer,
 } from "lucide-react";
 import { clearToken } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
@@ -24,6 +25,7 @@ const navItems = [
   { title: "Mission Board", url: "/", icon: LayoutDashboard },
   { title: "Social Media", url: "/social", icon: Share2 },
   { title: "AI Usage", url: "/ai-usage", icon: Cpu },
+  { title: "Cron Jobs", url: "/cron", icon: Timer },
 ];
 
 export function AppSidebar() {
