@@ -16,7 +16,11 @@ export function isAuthenticated(): boolean {
   return !!getToken();
 }
 
-const getApiBase = () => import.meta.env.VITE_API_URL || "";
+function getApiBase(): string {
+  const env = import.meta.env.VITE_API_URL;
+  if (env) return env;
+  return "/api";
+}
 
 export async function apiRequest<T = unknown>(
   method: string,
