@@ -64,7 +64,7 @@ function normalizePost(raw: Record<string, unknown>): SocialPost {
     platform: (raw.platform ?? "facebook") as SocialPost["platform"],
     pageId: (raw.pageId ?? raw.page_id ?? "") as string,
     pageName: (raw.pageName ?? raw.page_name ?? "") as string,
-    content: (raw.content ?? "") as string,
+    content: (raw.content_text ?? raw.content ?? "") as string,
     scheduledAt: raw.scheduledAt ?? raw.scheduled_at ?? undefined,
     status: (raw.status ?? "draft") as SocialPost["status"],
     createdAt: raw.createdAt ?? raw.created_at ?? Date.now(),
@@ -149,7 +149,7 @@ function PostDetailModal({ post, open, onClose, pages }: PostDetailModalProps) {
 
   const saveMutation = useMutation({
     mutationFn: () => apiRequest("PATCH", `/posts/${post?.id}`, {
-      content, platform, page_id: pageId,
+      content_text: content, platform, page_id: pageId,
       scheduled_at: scheduledAt ? new Date(scheduledAt).toISOString() : undefined,
     }),
     onSuccess: () => { invalidate(); toast({ title: "Post saved" }); onClose(); },
@@ -159,6 +159,7 @@ function PostDetailModal({ post, open, onClose, pages }: PostDetailModalProps) {
   const statusMutation = useMutation({
     mutationFn: (newStatus: string) => apiRequest("PATCH", `/posts/${post?.id}`, {
       status: newStatus,
+      content_text: content,
       ...(newStatus === "scheduled" && scheduledAt ? { scheduled_at: new Date(scheduledAt).toISOString() } : {}),
     }),
     onSuccess: (_, newStatus) => {
@@ -456,7 +457,7 @@ function QueueTab({ pages }: { pages: SocialPage[] }) {
 
   const statusMutation = useMutation({
     mutationFn: ({ id, status, scheduled_at }: { id: string; status: string; scheduled_at?: string }) =>
-      apiRequest("PATCH", `/posts/${id}`, { status, ...(scheduled_at ? { scheduled_at } : {}) }),
+      apiRequest("PATCH", `/posts/${id}`, { status, ...(scheduled_at ? { scheduled_at } : {}), }),
     onSuccess: (_, { status }) => {
       invalidate();
       toast({ title: `Post ${status}` });
@@ -623,7 +624,7 @@ function GenerateTab() {
   const handleSaveDraft = async () => {
     setSavingDraft(true);
     try {
-      await apiRequest("POST", "/posts", { content: result, status: "draft", platform: "facebook" });
+      await apiRequest("POST", "/posts", { content_text: result, status: "draft", platform: "facebook" });
       toast({ title: "Saved as draft" });
       setResult("");
       qc.invalidateQueries({ queryKey: ["/posts"] });
@@ -639,7 +640,7 @@ function GenerateTab() {
     try {
       await Promise.all(weekPosts.map(p =>
         apiRequest("POST", "/posts", {
-          content: p.content,
+          content_text: p.content,
           status: "draft",
           platform: "facebook",
           scheduled_at: p.scheduledTime ?? p.scheduled_time ?? undefined,
