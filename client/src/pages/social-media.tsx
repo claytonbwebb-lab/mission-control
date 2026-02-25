@@ -4,7 +4,7 @@ import { format, startOfWeek, addDays, parseISO } from "date-fns";
 import {
   ChevronLeft, ChevronRight, Plus, Edit2, Check, X, Clock,
   Send, Trash2, AlertCircle, Loader2, Sparkles, Calendar,
-  List, Users, Zap, ImageIcon, Upload, Wand2
+  List, Users, Zap, ImageIcon, Upload, Wand2, ExternalLink
 } from "lucide-react";
 import { SiFacebook, SiInstagram, SiX } from "react-icons/si";
 import { Button } from "@/components/ui/button";
@@ -255,14 +255,31 @@ function ImageUploadSection({ imageUrl, onChange, testIdPrefix, generatePromptDe
         </div>
       )}
       {imageUrl && (
-        <div className="mt-2 relative inline-block">
-          <img
-            src={imageUrl}
-            alt="Preview"
-            className="h-20 w-auto rounded border border-border object-cover"
-            data-testid={`${testIdPrefix}-image-preview`}
-            onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
-          />
+        <div className="mt-2 flex items-end gap-2">
+          <a href={imageUrl} target="_blank" rel="noopener noreferrer" className="block group relative">
+            <img
+              src={imageUrl}
+              alt="Preview"
+              className="max-h-40 w-auto rounded border border-border object-contain cursor-pointer transition-opacity group-hover:opacity-80"
+              data-testid={`${testIdPrefix}-image-preview`}
+              onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+            />
+            <span className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+              <span className="bg-black/60 rounded-full p-1.5">
+                <ExternalLink className="w-4 h-4 text-white" />
+              </span>
+            </span>
+          </a>
+          <a
+            href={imageUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors"
+            data-testid={`${testIdPrefix}-view-full`}
+          >
+            <ExternalLink className="w-3 h-3" />
+            View full size
+          </a>
         </div>
       )}
     </div>
