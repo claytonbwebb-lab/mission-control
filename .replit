@@ -42,4 +42,4 @@ waitForPort = 5000
 [userenv]
 
 [userenv.shared]
-VITE_API_URL = "http://13.49.47.171/api"
+VITE_API_URL = "https://mission.brightstacklabs.co.uk/api"
