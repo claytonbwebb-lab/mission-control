@@ -59,12 +59,12 @@ interface TaskCardProps {
 
 function TaskCard({ task, index, onClick }: TaskCardProps) {
   const [expanded, setExpanded] = useState(false);
-  const labelMeta = LABEL_META[task.label];
-  const priorityMeta = PRIORITY_META[task.priority];
-  const assigneeMeta = ASSIGNEE_META[task.assignee];
+  const labelMeta = LABEL_META[task.label] ?? LABEL_META.other;
+  const priorityMeta = PRIORITY_META[task.priority] ?? PRIORITY_META.medium;
+  const assigneeMeta = ASSIGNEE_META[task.assignee] ?? ASSIGNEE_META.steve;
 
   return (
-    <Draggable draggableId={task.id} index={index}>
+    <Draggable draggableId={String(task.id)} index={index}>
       {(provided, snapshot) => (
         <div
           ref={provided.innerRef}
