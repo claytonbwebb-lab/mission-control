@@ -289,7 +289,7 @@ function ImageUploadSection({ imageUrl, onChange, testIdPrefix, generatePromptDe
 interface PostDetailModalProps {
   post: SocialPost | null;
   open: boolean;
-  onClose: () => void;
+  onClose: (saved?: boolean) => void;
   pages: SocialPage[];
 }
 
@@ -329,7 +329,7 @@ function PostDetailModal({ post, open, onClose, pages }: PostDetailModalProps) {
 
   const saveMutation = useMutation({
     mutationFn: () => apiRequest("PATCH", `/posts/${post?.id}`, buildPayload()),
-    onSuccess: () => { invalidate(); toast({ title: "Post saved" }); onClose(); },
+    onSuccess: () => { invalidate(); toast({ title: "Post saved" }); onClose(true); },
     onError: (err: Error) => { toast({ title: "Save failed", description: err.message, variant: "destructive" }); },
   });
 
@@ -338,14 +338,14 @@ function PostDetailModal({ post, open, onClose, pages }: PostDetailModalProps) {
     onSuccess: (_, newStatus) => {
       invalidate();
       toast({ title: `Post ${newStatus}` });
-      onClose();
+      onClose(true);
     },
     onError: (err: Error) => { toast({ title: "Action failed", description: err.message, variant: "destructive" }); },
   });
 
   const deleteMutation = useMutation({
     mutationFn: () => apiRequest("DELETE", `/posts/${post?.id}`),
-    onSuccess: () => { invalidate(); toast({ title: "Post deleted" }); onClose(); },
+    onSuccess: () => { invalidate(); toast({ title: "Post deleted" }); onClose(true); },
     onError: (err: Error) => { toast({ title: "Delete failed", description: err.message, variant: "destructive" }); },
   });
 
@@ -777,7 +777,7 @@ interface GeneratedPost {
   scheduled_time?: string;
 }
 
-function GenerateTab({ pages }: { pages: SocialPage[] }) {
+function GenerateTab({ pages, onSwitchTab }: { pages: SocialPage[]; onSwitchTab: (tab: string) => void }) {
   const qc = useQueryClient();
   const { toast } = useToast();
   const [project, setProject] = useState("");
@@ -789,26 +789,41 @@ function GenerateTab({ pages }: { pages: SocialPage[] }) {
   const [imagePrompt, setImagePrompt] = useState("");
   const [generating, setGenerating] = useState(false);
   const [weekGenerating, setWeekGenerating] = useState(false);
-  const [result, setResult] = useState("");
-  const [resultImageUrl, setResultImageUrl] = useState("");
+  const [generatedPost, setGeneratedPost] = useState<SocialPost | null>(null);
+  const [schedulePost, setSchedulePost] = useState<SocialPost | null>(null);
   const [weekPosts, setWeekPosts] = useState<GeneratedPost[]>([]);
   const [savingDraft, setSavingDraft] = useState(false);
+  const [pendingAction, setPendingAction] = useState<"single" | "week" | null>(null);
 
-  const handleGenerate = async () => {
+  const confirmAndRun = (action: "single" | "week", fn: () => void) => {
+    if (generatedPost) {
+      setPendingAction(action);
+    } else {
+      fn();
+    }
+  };
+
+  const handleConfirmRegenerate = () => {
+    if (pendingAction === "single") {
+      setPendingAction(null);
+      doGenerate();
+    } else if (pendingAction === "week") {
+      setPendingAction(null);
+      doGenerateWeek();
+    }
+  };
+
+  const doGenerate = async () => {
     setGenerating(true);
-    setResult("");
-    setResultImageUrl("");
+    setGeneratedPost(null);
     try {
       const body: Record<string, unknown> = { project, theme, format: formatOpt, guidance, auto_image: autoImage };
       if (imagePrompt.trim()) body.image_prompt = imagePrompt.trim();
       if (imageUrl) body.image_url = imageUrl;
       const res = await apiRequest<Record<string, unknown>>("POST", "/posts/generate", body);
-      setResult((res.content ?? res.text ?? res.result ?? "") as string);
-      const returnedImg = (res.image_url ?? res.imageUrl ?? "") as string;
-      if (returnedImg) {
-        setResultImageUrl(returnedImg);
-        if (!imageUrl) setImageUrl(returnedImg);
-      }
+      const post = normalizePost(res);
+      setGeneratedPost(post);
+      qc.invalidateQueries({ queryKey: ["/posts"] });
     } catch (err) {
       toast({ title: "Failed to generate content", description: (err as Error).message, variant: "destructive" });
     } finally {
@@ -816,15 +831,17 @@ function GenerateTab({ pages }: { pages: SocialPage[] }) {
     }
   };
 
-  const handleGenerateWeek = async () => {
+  const doGenerateWeek = async () => {
     setWeekGenerating(true);
     setWeekPosts([]);
+    setGeneratedPost(null);
     try {
       const body: Record<string, unknown> = { project, theme, format: formatOpt, guidance, auto_image: autoImage };
       if (imagePrompt.trim()) body.image_prompt = imagePrompt.trim();
       const res = await apiRequest<Record<string, unknown>>("POST", "/posts/generate/week", body);
       const posts = (res.posts ?? res.drafts ?? res.results ?? []) as GeneratedPost[];
       setWeekPosts(posts);
+      qc.invalidateQueries({ queryKey: ["/posts"] });
     } catch (err) {
       toast({ title: "Failed to generate week", description: (err as Error).message, variant: "destructive" });
     } finally {
@@ -832,28 +849,27 @@ function GenerateTab({ pages }: { pages: SocialPage[] }) {
     }
   };
 
-  const handleSaveDraft = async () => {
-    setSavingDraft(true);
-    try {
-      const finalImage = imageUrl || resultImageUrl;
-      const defaultPageId = pages.length > 0 ? pages[0].pageId : undefined;
-      await apiRequest("POST", "/posts", {
-        content_text: result,
-        status: "draft",
-        platform: "facebook",
-        ...(defaultPageId ? { page_id: defaultPageId } : {}),
-        ...(finalImage ? { image_url: finalImage } : {}),
-      });
-      toast({ title: "Saved as draft" });
-      setResult("");
-      setImageUrl("");
-      setResultImageUrl("");
-      qc.invalidateQueries({ queryKey: ["/posts"] });
-    } catch (err) {
-      toast({ title: "Failed to save draft", description: (err as Error).message, variant: "destructive" });
-    } finally {
-      setSavingDraft(false);
+  const handleViewInQueue = () => {
+    qc.invalidateQueries({ queryKey: ["/posts"] });
+    setGeneratedPost(null);
+    onSwitchTab("queue");
+  };
+
+  const handleApproveSchedule = () => {
+    if (generatedPost) {
+      setSchedulePost(generatedPost);
     }
+  };
+
+  const handleDiscard = async () => {
+    if (generatedPost?.id) {
+      try {
+        await apiRequest("DELETE", `/posts/${generatedPost.id}`);
+        qc.invalidateQueries({ queryKey: ["/posts"] });
+      } catch {}
+    }
+    setGeneratedPost(null);
+    toast({ title: "Draft discarded" });
   };
 
   const handleSaveAllDrafts = async () => {
@@ -958,7 +974,7 @@ function GenerateTab({ pages }: { pages: SocialPage[] }) {
 
       <div className="flex gap-2 flex-wrap">
         <Button
-          onClick={handleGenerate}
+          onClick={() => confirmAndRun("single", doGenerate)}
           disabled={generating || !project}
           data-testid="button-generate"
         >
@@ -967,7 +983,7 @@ function GenerateTab({ pages }: { pages: SocialPage[] }) {
         </Button>
         <Button
           variant="secondary"
-          onClick={handleGenerateWeek}
+          onClick={() => confirmAndRun("week", doGenerateWeek)}
           disabled={weekGenerating || !project}
           data-testid="button-generate-week"
         >
@@ -976,32 +992,61 @@ function GenerateTab({ pages }: { pages: SocialPage[] }) {
         </Button>
       </div>
 
-      {result && (
-        <div className="space-y-2">
-          <Label className="text-xs text-muted-foreground uppercase tracking-wide">Generated Content</Label>
-          <Textarea
-            value={result}
-            onChange={(e) => setResult(e.target.value)}
-            rows={6}
-            className="resize-none"
-            data-testid="textarea-gen-result"
-          />
-          {resultImageUrl && (
-            <div className="space-y-1">
-              <Label className="text-xs text-muted-foreground uppercase tracking-wide">Generated Image</Label>
-              <img
-                src={resultImageUrl}
-                alt="Generated"
-                className="h-24 w-auto rounded border border-border object-cover"
-                data-testid="img-gen-result"
-                onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
-              />
+      {pendingAction && (
+        <div className="border border-amber-500/30 bg-amber-500/10 rounded-md p-3 space-y-2">
+          <p className="text-sm text-foreground">You have an unsaved generated post. Generating again will replace it.</p>
+          <div className="flex gap-2">
+            <Button size="sm" variant="secondary" onClick={handleConfirmRegenerate} data-testid="button-confirm-regenerate">
+              Generate Anyway
+            </Button>
+            <Button size="sm" variant="ghost" onClick={() => setPendingAction(null)} data-testid="button-cancel-regenerate">
+              Cancel
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {generatedPost && (
+        <div className="border border-border rounded-md p-4 space-y-3 bg-card" data-testid="generated-post-card">
+          <div className="flex items-center gap-2">
+            <Label className="text-xs text-muted-foreground uppercase tracking-wide">Generated Post</Label>
+            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-emerald-500/15 text-emerald-500 dark:text-emerald-300">
+              Saved as Draft
+            </span>
+          </div>
+          <p className="text-sm text-foreground whitespace-pre-wrap" data-testid="text-generated-content">{generatedPost.content}</p>
+          {generatedPost.imageUrl && (
+            <div className="flex items-end gap-2">
+              <a href={generatedPost.imageUrl} target="_blank" rel="noopener noreferrer" className="block group relative">
+                <img
+                  src={generatedPost.imageUrl}
+                  alt="Generated"
+                  className="max-h-40 w-auto rounded border border-border object-contain cursor-pointer transition-opacity group-hover:opacity-80"
+                  data-testid="img-gen-result"
+                  onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                />
+                <span className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                  <span className="bg-black/60 rounded-full p-1.5">
+                    <ExternalLink className="w-4 h-4 text-white" />
+                  </span>
+                </span>
+              </a>
             </div>
           )}
-          <Button size="sm" variant="secondary" onClick={handleSaveDraft} disabled={savingDraft} data-testid="button-save-draft">
-            {savingDraft ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> : null}
-            Save as Draft
-          </Button>
+          <div className="flex gap-2 flex-wrap pt-1 border-t border-border">
+            <Button size="sm" onClick={handleViewInQueue} data-testid="button-view-queue">
+              <List className="w-3.5 h-3.5 mr-1.5" />
+              View in Queue
+            </Button>
+            <Button size="sm" variant="secondary" onClick={handleApproveSchedule} data-testid="button-approve-schedule">
+              <Check className="w-3.5 h-3.5 mr-1.5" />
+              Approve & Schedule
+            </Button>
+            <Button size="sm" variant="ghost" onClick={handleDiscard} data-testid="button-discard-draft">
+              <Trash2 className="w-3.5 h-3.5 mr-1.5" />
+              Discard
+            </Button>
+          </div>
         </div>
       )}
 
@@ -1037,11 +1082,25 @@ function GenerateTab({ pages }: { pages: SocialPage[] }) {
           </Button>
         </div>
       )}
+
+      <PostDetailModal
+        post={schedulePost}
+        open={!!schedulePost}
+        onClose={(saved) => {
+          setSchedulePost(null);
+          if (saved) {
+            setGeneratedPost(null);
+            qc.invalidateQueries({ queryKey: ["/posts"] });
+          }
+        }}
+        pages={pages}
+      />
     </div>
   );
 }
 
 export default function SocialMediaPage() {
+  const [activeTab, setActiveTab] = useState("accounts");
   const { data: pages = [] } = useQuery<SocialPage[]>({
     queryKey: ["/pages"],
     queryFn: async () => {
@@ -1056,7 +1115,7 @@ export default function SocialMediaPage() {
         <h1 className="text-base font-semibold text-foreground">Social Media</h1>
       </div>
       <div className="flex-1 overflow-y-auto p-5">
-        <Tabs defaultValue="accounts">
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="mb-5" data-testid="tabs-social">
             <TabsTrigger value="accounts" data-testid="tab-accounts">
               <Users className="w-3.5 h-3.5 mr-1.5" />Accounts
@@ -1074,7 +1133,7 @@ export default function SocialMediaPage() {
           <TabsContent value="accounts"><AccountsTab /></TabsContent>
           <TabsContent value="calendar"><CalendarTab pages={pages} /></TabsContent>
           <TabsContent value="queue"><QueueTab pages={pages} /></TabsContent>
-          <TabsContent value="generate"><GenerateTab pages={pages} /></TabsContent>
+          <TabsContent value="generate"><GenerateTab pages={pages} onSwitchTab={setActiveTab} /></TabsContent>
         </Tabs>
       </div>
     </div>
