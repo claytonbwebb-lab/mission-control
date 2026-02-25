@@ -6,7 +6,7 @@ import {
   Send, Trash2, AlertCircle, Loader2, Sparkles, Calendar,
   List, Users, Zap
 } from "lucide-react";
-import { SiFacebook, SiInstagram, SiTwitter } from "react-icons/si";
+import { SiFacebook, SiInstagram, SiX } from "react-icons/si";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
@@ -23,7 +23,7 @@ import { useToast } from "@/hooks/use-toast";
 const PLATFORM_ICON: Record<string, React.ElementType> = {
   facebook: SiFacebook,
   instagram: SiInstagram,
-  twitter: SiTwitter,
+  twitter: SiX,
 };
 
 const PLATFORM_COLORS: Record<string, string> = {
