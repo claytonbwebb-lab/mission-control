@@ -104,7 +104,6 @@ function TaskCard({ task, index, onClick }: TaskCardProps) {
             <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium ${assigneeMeta.className}`}>
               {assigneeMeta.label}
             </span>
-            <span className="ml-auto text-xs text-muted-foreground">{formatDate(task.createdAt)}</span>
           </div>
         </div>
       )}
