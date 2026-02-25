@@ -77,8 +77,8 @@ function normalizePage(raw: Record<string, unknown>): SocialPage {
   return {
     id: (raw.id ?? raw._id ?? "") as string,
     platform: (raw.platform ?? "facebook") as SocialPage["platform"],
-    name: (raw.name ?? "") as string,
-    pageId: (raw.pageId ?? raw.page_id ?? "") as string,
+    name: (raw.page_name ?? raw.pageName ?? raw.name ?? "") as string,
+    pageId: (raw.page_id ?? raw.pageId ?? "") as string,
     status: (raw.status ?? "connected") as SocialPage["status"],
   };
 }
@@ -289,11 +289,12 @@ function PostDetailModal({ post, open, onClose, pages }: PostDetailModalProps) {
     if (post) {
       setContent(post.content ?? "");
       setPlatform(post.platform ?? "facebook");
-      setPageId(post.pageId ?? "");
+      const pid = post.pageId ?? "";
+      setPageId(pid || (pages.length > 0 ? pages[0].pageId : ""));
       setScheduledAt(scheduledToDatetimeLocal(post.scheduledAt));
       setImageUrl(post.imageUrl ?? "");
     }
-  }, [post]);
+  }, [post, pages]);
 
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: ["/posts"] });
@@ -333,7 +334,6 @@ function PostDetailModal({ post, open, onClose, pages }: PostDetailModalProps) {
 
   if (!post) return null;
 
-  const filteredPages = pages.filter(p => p.platform === platform);
   const statusMeta = STATUS_META[post.status] ?? STATUS_META.draft;
 
   return (
@@ -388,8 +388,8 @@ function PostDetailModal({ post, open, onClose, pages }: PostDetailModalProps) {
                   <SelectValue placeholder="Select page" />
                 </SelectTrigger>
                 <SelectContent>
-                  {filteredPages.map(p => (
-                    <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                  {pages.map(p => (
+                    <SelectItem key={p.pageId} value={p.pageId}>{p.name} ({p.pageId})</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -621,8 +621,8 @@ function QueueTab({ pages }: { pages: SocialPage[] }) {
   };
 
   const statusMutation = useMutation({
-    mutationFn: ({ id, status, scheduled_at }: { id: string; status: string; scheduled_at?: string }) =>
-      apiRequest("PATCH", `/posts/${id}`, { status, ...(scheduled_at ? { scheduled_at } : {}), }),
+    mutationFn: ({ id, status, scheduled_at, page_id, image_url }: { id: string; status: string; scheduled_at?: string; page_id?: string; image_url?: string }) =>
+      apiRequest("PATCH", `/posts/${id}`, { status, ...(scheduled_at ? { scheduled_at } : {}), ...(page_id ? { page_id } : {}), ...(image_url ? { image_url } : {}) }),
     onSuccess: (_, { status }) => {
       invalidate();
       toast({ title: `Post ${status}` });
@@ -699,7 +699,7 @@ function QueueTab({ pages }: { pages: SocialPage[] }) {
                         <Button
                           size="sm"
                           variant="secondary"
-                          onClick={() => statusMutation.mutate({ id: post.id, status: "approved" })}
+                          onClick={() => statusMutation.mutate({ id: post.id, status: "approved", page_id: post.pageId, image_url: post.imageUrl })}
                           disabled={statusMutation.isPending}
                           data-testid={`button-approve-post-${post.id}`}
                         >
@@ -710,7 +710,7 @@ function QueueTab({ pages }: { pages: SocialPage[] }) {
                         <Button
                           size="sm"
                           variant="ghost"
-                          onClick={() => statusMutation.mutate({ id: post.id, status: "draft" })}
+                          onClick={() => statusMutation.mutate({ id: post.id, status: "draft", page_id: post.pageId, image_url: post.imageUrl })}
                           disabled={statusMutation.isPending}
                           data-testid={`button-reject-post-${post.id}`}
                         >
@@ -721,7 +721,7 @@ function QueueTab({ pages }: { pages: SocialPage[] }) {
                         <Button
                           size="sm"
                           variant="secondary"
-                          onClick={() => statusMutation.mutate({ id: post.id, status: "published" })}
+                          onClick={() => statusMutation.mutate({ id: post.id, status: "published", page_id: post.pageId, image_url: post.imageUrl })}
                           disabled={statusMutation.isPending}
                           data-testid={`button-publish-post-${post.id}`}
                         >
@@ -760,7 +760,7 @@ interface GeneratedPost {
   scheduled_time?: string;
 }
 
-function GenerateTab() {
+function GenerateTab({ pages }: { pages: SocialPage[] }) {
   const qc = useQueryClient();
   const { toast } = useToast();
   const [project, setProject] = useState("");
@@ -819,10 +819,12 @@ function GenerateTab() {
     setSavingDraft(true);
     try {
       const finalImage = imageUrl || resultImageUrl;
+      const defaultPageId = pages.length > 0 ? pages[0].pageId : undefined;
       await apiRequest("POST", "/posts", {
         content_text: result,
         status: "draft",
         platform: "facebook",
+        ...(defaultPageId ? { page_id: defaultPageId } : {}),
         ...(finalImage ? { image_url: finalImage } : {}),
       });
       toast({ title: "Saved as draft" });
@@ -840,11 +842,13 @@ function GenerateTab() {
   const handleSaveAllDrafts = async () => {
     setSavingDraft(true);
     try {
+      const defaultPageId = pages.length > 0 ? pages[0].pageId : undefined;
       await Promise.all(weekPosts.map(p =>
         apiRequest("POST", "/posts", {
           content_text: p.content,
           status: "draft",
           platform: "facebook",
+          ...(defaultPageId ? { page_id: defaultPageId } : {}),
           scheduled_at: p.scheduledTime ?? p.scheduled_time ?? undefined,
           ...((p as Record<string, unknown>).image_url ? { image_url: (p as Record<string, unknown>).image_url } : {}),
         })
@@ -1053,7 +1057,7 @@ export default function SocialMediaPage() {
           <TabsContent value="accounts"><AccountsTab /></TabsContent>
           <TabsContent value="calendar"><CalendarTab pages={pages} /></TabsContent>
           <TabsContent value="queue"><QueueTab pages={pages} /></TabsContent>
-          <TabsContent value="generate"><GenerateTab /></TabsContent>
+          <TabsContent value="generate"><GenerateTab pages={pages} /></TabsContent>
         </Tabs>
       </div>
     </div>
