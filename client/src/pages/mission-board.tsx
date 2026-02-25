@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { DragDropContext, Droppable, Draggable, type DropResult } from "@hello-pangea/dnd";
 import { Plus, X, ChevronDown, ChevronUp, Lightbulb, Wrench, Eye, CheckCircle2, AlertCircle } from "lucide-react";
@@ -121,12 +121,23 @@ interface TaskModalProps {
 }
 
 function TaskModal({ task, open, onClose, onSave, onDelete }: TaskModalProps) {
-  const [title, setTitle] = useState(task?.title ?? "");
-  const [description, setDescription] = useState(task?.description ?? "");
-  const [status, setStatus] = useState<TaskStatus>(task?.status ?? "ideas");
-  const [priority, setPriority] = useState<TaskPriority>(task?.priority ?? "medium");
-  const [label, setLabel] = useState<TaskLabel>(task?.label ?? "other");
-  const [assignee, setAssignee] = useState<TaskAssignee>(task?.assignee ?? "steve");
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [status, setStatus] = useState<TaskStatus>("ideas");
+  const [priority, setPriority] = useState<TaskPriority>("medium");
+  const [label, setLabel] = useState<TaskLabel>("other");
+  const [assignee, setAssignee] = useState<TaskAssignee>("steve");
+
+  useEffect(() => {
+    if (task) {
+      setTitle(task.title ?? "");
+      setDescription(task.description ?? "");
+      setStatus(task.status ?? "ideas");
+      setPriority(task.priority ?? "medium");
+      setLabel(task.label ?? "other");
+      setAssignee(task.assignee ?? "steve");
+    }
+  }, [task]);
 
   const handleSave = () => {
     onSave({ title, description, status, priority, label, assignee });
