@@ -396,16 +396,16 @@ export default function MissionBoard() {
         </div>
       )}
 
-      <div className="flex-1 overflow-x-auto overflow-y-hidden">
+      <div className="flex-1 overflow-auto md:overflow-x-auto md:overflow-y-hidden">
         <DragDropContext onDragEnd={handleDragEnd}>
-          <div className="flex gap-4 p-5 h-full min-w-max">
+          <div className="flex flex-col md:flex-row gap-4 p-5 md:h-full md:min-w-max">
             {COLUMNS.map(col => {
               const colTasks = tasksByColumn(col.id);
               const ColIcon = col.icon;
               return (
                 <div
                   key={col.id}
-                  className="flex flex-col w-72 flex-shrink-0"
+                  className="flex flex-col w-full md:w-72 md:flex-shrink-0"
                   data-testid={`column-${col.id}`}
                 >
                   <div className="flex items-center justify-between mb-3">
@@ -432,7 +432,7 @@ export default function MissionBoard() {
                       <div
                         ref={provided.innerRef}
                         {...provided.droppableProps}
-                        className={`flex-1 rounded-md min-h-32 p-2 transition-colors ${snapshot.isDraggingOver ? "bg-primary/5 border border-primary/20" : "bg-muted/30 border border-border/50"}`}
+                        className={`md:flex-1 rounded-md min-h-32 p-2 transition-colors ${snapshot.isDraggingOver ? "bg-primary/5 border border-primary/20" : "bg-muted/30 border border-border/50"}`}
                       >
                         {isLoading ? (
                           Array.from({ length: 2 }).map((_, i) => (
