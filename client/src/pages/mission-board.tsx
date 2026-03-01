@@ -1,17 +1,21 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { DragDropContext, Droppable, Draggable, type DropResult } from "@hello-pangea/dnd";
-import { Plus, X, ChevronDown, ChevronUp, Lightbulb, Wrench, Eye, CheckCircle2, AlertCircle } from "lucide-react";
+import {
+  Plus, X, ChevronDown, ChevronUp, Lightbulb, Wrench, Eye, CheckCircle2,
+  AlertCircle, MessageSquare, ArrowRight, Send, Loader2, User
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { apiRequest } from "@/lib/auth";
-import type { Task, TaskStatus, TaskPriority, TaskLabel, TaskAssignee } from "@shared/schema";
+import { useToast } from "@/hooks/use-toast";
+import type { Task, TaskStatus, TaskPriority, TaskLabel, TaskAssignee, ActivityEntry } from "@shared/schema";
 
 const COLUMNS: { id: TaskStatus; label: string; icon: React.ElementType }[] = [
   { id: "ideas", label: "Ideas", icon: Lightbulb },
@@ -82,6 +86,17 @@ function formatDate(dateStr: string) {
   return d.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
 }
 
+function timeAgo(epochSeconds: number): string {
+  const now = Date.now() / 1000;
+  const diff = Math.max(0, now - epochSeconds);
+  if (diff < 60) return "just now";
+  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+  if (diff < 604800) return `${Math.floor(diff / 86400)}d ago`;
+  const d = new Date(epochSeconds * 1000);
+  return d.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+}
+
 interface TaskCardProps {
   task: Task;
   index: number;
@@ -142,6 +157,58 @@ function TaskCard({ task, index, onClick }: TaskCardProps) {
   );
 }
 
+function ActivityItem({ entry }: { entry: ActivityEntry }) {
+  const authorMeta = ASSIGNEE_META[entry.author] ?? { label: entry.author, className: "bg-muted text-muted-foreground" };
+
+  if (entry.type === "comment") {
+    return (
+      <div className="flex gap-2.5" data-testid={`activity-comment-${entry.id}`}>
+        <div className={`flex items-center justify-center w-6 h-6 rounded-full flex-shrink-0 mt-0.5 ${authorMeta.className}`}>
+          <User className="w-3 h-3" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-0.5">
+            <span className="text-xs font-medium text-foreground">{authorMeta.label}</span>
+            <span className="text-xs text-muted-foreground/60">{timeAgo(entry.created_at)}</span>
+          </div>
+          <div className="bg-muted/50 border border-border rounded-lg rounded-tl-none px-3 py-2">
+            <p className="text-sm text-foreground whitespace-pre-wrap">{entry.content}</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (entry.type === "status_change") {
+    const newLabel = COLUMNS.find(c => c.id === entry.new_value)?.label ?? entry.new_value;
+    return (
+      <div className="flex items-center gap-2 py-1" data-testid={`activity-status-${entry.id}`}>
+        <ArrowRight className="w-3 h-3 text-muted-foreground flex-shrink-0" />
+        <span className="text-xs text-muted-foreground">
+          <span className="font-medium text-foreground/80">{authorMeta.label}</span>
+          {" moved to "}
+          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-primary/10 text-primary">
+            {newLabel}
+          </span>
+        </span>
+        <span className="text-xs text-muted-foreground/50 ml-auto flex-shrink-0">{timeAgo(entry.created_at)}</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-2 py-1" data-testid={`activity-field-${entry.id}`}>
+      <span className="w-3 h-3 flex-shrink-0" />
+      <span className="text-xs text-muted-foreground/70">
+        <span className="font-medium text-muted-foreground">{authorMeta.label}</span>
+        {" "}
+        {entry.content}
+      </span>
+      <span className="text-xs text-muted-foreground/50 ml-auto flex-shrink-0">{timeAgo(entry.created_at)}</span>
+    </div>
+  );
+}
+
 interface TaskModalProps {
   task: Task | null;
   open: boolean;
@@ -152,12 +219,28 @@ interface TaskModalProps {
 }
 
 function TaskModal({ task, open, onClose, onSave, onDelete, projectOptions }: TaskModalProps) {
+  const qc = useQueryClient();
+  const { toast } = useToast();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [status, setStatus] = useState<TaskStatus>("ideas");
   const [priority, setPriority] = useState<TaskPriority>("medium");
   const [label, setLabel] = useState<TaskLabel>("other");
   const [assignee, setAssignee] = useState<TaskAssignee>("steve");
+  const [comment, setComment] = useState("");
+  const [submittingComment, setSubmittingComment] = useState(false);
+  const activityEndRef = useRef<HTMLDivElement>(null);
+
+  const { data: taskDetail, isLoading: detailLoading } = useQuery<{ activity: ActivityEntry[] }>({
+    queryKey: ["/tasks", task?.id],
+    queryFn: async () => {
+      const raw = await apiRequest<Record<string, unknown>>("GET", `/tasks/${task!.id}`);
+      const activity = (Array.isArray(raw.activity) ? raw.activity : []) as ActivityEntry[];
+      return { activity };
+    },
+    enabled: !!task && open,
+    staleTime: 10_000,
+  });
 
   useEffect(() => {
     if (task) {
@@ -167,22 +250,49 @@ function TaskModal({ task, open, onClose, onSave, onDelete, projectOptions }: Ta
       setPriority(task.priority ?? "medium");
       setLabel(task.label ?? "other");
       setAssignee(task.assignee ?? "steve");
+      setComment("");
     }
   }, [task]);
+
+  useEffect(() => {
+    if (taskDetail?.activity?.length) {
+      setTimeout(() => activityEndRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
+    }
+  }, [taskDetail?.activity?.length]);
 
   const handleSave = () => {
     onSave({ title, description, status, priority, label, assignee });
   };
 
+  const handleSubmitComment = async () => {
+    if (!comment.trim() || !task) return;
+    setSubmittingComment(true);
+    try {
+      await apiRequest("POST", `/tasks/${task.id}/activity`, {
+        author: "steve",
+        content: comment.trim(),
+      });
+      setComment("");
+      qc.invalidateQueries({ queryKey: ["/tasks", task.id] });
+    } catch (err) {
+      toast({ title: "Failed to post comment", description: (err as Error).message, variant: "destructive" });
+    } finally {
+      setSubmittingComment(false);
+    }
+  };
+
   if (!task) return null;
+
+  const activity = taskDetail?.activity ?? [];
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-lg" data-testid="modal-task">
+      <DialogContent className="max-w-lg max-h-[85vh] flex flex-col" data-testid="modal-task">
         <DialogHeader>
           <DialogTitle className="text-base">Edit Task</DialogTitle>
+          <DialogDescription className="sr-only">View and edit task details, and see activity log</DialogDescription>
         </DialogHeader>
-        <div className="space-y-4 pt-1">
+        <div className="flex-1 overflow-y-auto space-y-4 pt-1 pr-1">
           <div className="space-y-1.5">
             <Label className="text-xs text-muted-foreground uppercase tracking-wide">Title</Label>
             <Input
@@ -257,6 +367,7 @@ function TaskModal({ task, open, onClose, onSave, onDelete, projectOptions }: Ta
               </Select>
             </div>
           </div>
+
           <div className="flex items-center justify-between pt-1">
             <Button
               variant="destructive"
@@ -272,6 +383,48 @@ function TaskModal({ task, open, onClose, onSave, onDelete, projectOptions }: Ta
               </Button>
               <Button size="sm" onClick={handleSave} data-testid="button-save-task">
                 Save Changes
+              </Button>
+            </div>
+          </div>
+
+          <div className="border-t border-border pt-3">
+            <div className="flex items-center gap-2 mb-3">
+              <MessageSquare className="w-3.5 h-3.5 text-muted-foreground" />
+              <Label className="text-xs text-muted-foreground uppercase tracking-wide">Activity</Label>
+            </div>
+            {detailLoading ? (
+              <div className="space-y-2">
+                {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-8 rounded" />)}
+              </div>
+            ) : activity.length === 0 ? (
+              <p className="text-xs text-muted-foreground/60 py-4 text-center">No activity yet</p>
+            ) : (
+              <div className="space-y-2.5 mb-3">
+                {activity.map(entry => (
+                  <ActivityItem key={entry.id} entry={entry} />
+                ))}
+                <div ref={activityEndRef} />
+              </div>
+            )}
+
+            <div className="flex gap-2">
+              <Input
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
+                placeholder="Add a comment..."
+                className="text-sm"
+                data-testid="input-comment"
+                onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSubmitComment()}
+              />
+              <Button
+                size="icon"
+                variant="secondary"
+                onClick={handleSubmitComment}
+                disabled={!comment.trim() || submittingComment}
+                data-testid="button-submit-comment"
+                className="flex-shrink-0"
+              >
+                {submittingComment ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
               </Button>
             </div>
           </div>
@@ -310,7 +463,7 @@ function AddCardForm({ columnId, onAdd, onCancel }: AddCardFormProps) {
         <Button type="submit" size="sm" disabled={!title.trim()} data-testid={`button-add-card-${columnId}`}>
           Add
         </Button>
-        <Button type="button" variant="ghost" size="sm" onClick={onCancel}>
+        <Button type="button" variant="ghost" size="sm" onClick={onCancel} data-testid={`button-cancel-add-${columnId}`}>
           <X className="w-3.5 h-3.5" />
         </Button>
       </div>
@@ -354,7 +507,7 @@ export default function MissionBoard() {
     if (!result.destination) return;
     const taskId = result.draggableId;
     const newStatus = result.destination.droppableId as TaskStatus;
-    updateMutation.mutate({ id: taskId, status: newStatus });
+    updateMutation.mutate({ id: taskId, status: newStatus, author: "steve" });
   }, [updateMutation]);
 
   const handleAddCard = (title: string, status: TaskStatus) => {
@@ -371,7 +524,7 @@ export default function MissionBoard() {
   const handleSaveTask = async (updates: Partial<Task>) => {
     if (!selectedTask) return;
     const apiData = toApiPayload(updates);
-    await updateMutation.mutateAsync({ id: selectedTask.id, ...apiData });
+    await updateMutation.mutateAsync({ id: selectedTask.id, ...apiData, author: "steve" });
     await qc.refetchQueries({ queryKey: ["/tasks"] });
     setModalOpen(false);
     setSelectedTask(null);

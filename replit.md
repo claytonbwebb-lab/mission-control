@@ -20,9 +20,12 @@ A private operations dashboard for Bright Stack Labs.
 - Kanban board with drag-and-drop (`@hello-pangea/dnd`)
 - Columns: Ideas, In Progress, Review, Complete
 - Task cards with: title, description, project label, priority badge, assignee chip, date
-- Add card button per column, click-to-edit modal
+- Add card button per column, click-to-edit modal with activity log
+- Activity log: chronological entries (comments, status changes, field changes) from `GET /tasks/:id`
+- Comment posting via `POST /tasks/:id/activity` with `{ author: "steve", content }`
+- All saves (modal + drag-drop) include `author: "steve"` for attribution
 - Filter bar by project label
-- API: `GET/POST/PATCH/DELETE {VITE_API_URL}/tasks`
+- API: `GET/POST/PATCH/DELETE {VITE_API_URL}/tasks`, `GET /tasks/:id` (with activity), `POST /tasks/:id/activity`
 
 ### Section 2 — Social Media (`/social`)
 - **Accounts tab**: Connected social pages table (`GET {VITE_API_URL}/pages`)

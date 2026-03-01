@@ -34,6 +34,22 @@ export interface Task {
   updatedAt?: string;
 }
 
+export interface ActivityEntry {
+  id: number;
+  task_id: number;
+  author: string;
+  type: "status_change" | "field_change" | "comment";
+  content: string;
+  field?: string;
+  old_value?: string;
+  new_value?: string;
+  created_at: number;
+}
+
+export interface TaskDetail extends Task {
+  activity: ActivityEntry[];
+}
+
 export interface CreateTaskInput {
   title: string;
   description?: string;
