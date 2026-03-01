@@ -25,14 +25,18 @@ const COLUMNS: { id: TaskStatus; label: string; icon: React.ElementType }[] = [
   { id: "complete", label: "Complete", icon: CheckCircle2 },
 ];
 
+const ALL_PROJECTS = [
+  "invoicewizard", "lifecoach", "wesayido", "horserace",
+  "brightstacklabs", "mission-control", "other",
+] as const;
+
 const LABEL_META: Record<string, { label: string; className: string }> = {
-  "invoice-wizard": { label: "InvoiceWizard", className: "bg-blue-500/15 text-blue-400 dark:text-blue-300" },
-  "life-coach-steven": { label: "Life Coach Steven", className: "bg-emerald-500/15 text-emerald-500 dark:text-emerald-300" },
+  "invoicewizard": { label: "InvoiceWizard", className: "bg-blue-500/15 text-blue-400 dark:text-blue-300" },
+  "lifecoach": { label: "Life Coach Steven", className: "bg-emerald-500/15 text-emerald-500 dark:text-emerald-300" },
   "wesayido": { label: "WeSayIDo", className: "bg-pink-500/15 text-pink-500 dark:text-pink-300" },
-  "horse-race": { label: "Horse Race System", className: "bg-amber-500/15 text-amber-500 dark:text-amber-300" },
-  "bright-stack-labs": { label: "Bright Stack Labs", className: "bg-violet-500/15 text-violet-500 dark:text-violet-300" },
+  "horserace": { label: "Horse Race System", className: "bg-amber-500/15 text-amber-500 dark:text-amber-300" },
+  "brightstacklabs": { label: "Bright Stack Labs", className: "bg-violet-500/15 text-violet-500 dark:text-violet-300" },
   "mission-control": { label: "Mission Control", className: "bg-cyan-500/15 text-cyan-500 dark:text-cyan-300" },
-  "revenue": { label: "Revenue", className: "bg-green-500/15 text-green-500 dark:text-green-300" },
   "other": { label: "Other", className: "bg-muted text-muted-foreground" },
 };
 
@@ -579,8 +583,6 @@ export default function MissionBoard() {
     setSelectedTask(null);
   };
 
-  const allLabels = [...new Set((tasks ?? []).map(t => t.label))].sort();
-
   const filteredTasks = (tasks ?? []).filter(
     t => filterLabel === "all" || t.label === filterLabel
   );
@@ -609,14 +611,14 @@ export default function MissionBoard() {
             >
               All
             </button>
-            {allLabels.map(l => (
+            {ALL_PROJECTS.map(l => (
               <button
                 key={l}
                 className={`text-xs px-2.5 py-1 rounded-md border transition-colors ${filterLabel === l ? "bg-primary text-primary-foreground border-primary" : "bg-card border-card-border text-muted-foreground"}`}
                 onClick={() => setFilterLabel(l)}
                 data-testid={`filter-${l}`}
               >
-                {(LABEL_META[l] ?? { label: l }).label}
+                {LABEL_META[l].label}
               </button>
             ))}
           </div>
@@ -713,7 +715,7 @@ export default function MissionBoard() {
         onClose={() => { setModalOpen(false); setSelectedTask(null); }}
         onSave={handleSaveTask}
         onDelete={handleDeleteTask}
-        projectOptions={allLabels.length > 0 ? allLabels : ["other"]}
+        projectOptions={[...ALL_PROJECTS]}
       />
     </div>
   );
