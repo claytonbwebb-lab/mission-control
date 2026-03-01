@@ -334,15 +334,17 @@ export default function MissionBoard() {
     setAddingColumn(null);
   };
 
-  const handleSaveTask = (updates: Partial<Task>) => {
+  const handleSaveTask = async (updates: Partial<Task>) => {
     if (!selectedTask) return;
-    updateMutation.mutate({ id: selectedTask.id, ...updates });
+    await updateMutation.mutateAsync({ id: selectedTask.id, ...updates });
+    await qc.refetchQueries({ queryKey: ["/tasks"] });
     setModalOpen(false);
     setSelectedTask(null);
   };
 
-  const handleDeleteTask = (id: string) => {
-    deleteMutation.mutate(id);
+  const handleDeleteTask = async (id: string) => {
+    await deleteMutation.mutateAsync(id);
+    await qc.refetchQueries({ queryKey: ["/tasks"] });
     setModalOpen(false);
     setSelectedTask(null);
   };
