@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { format, startOfWeek, addDays, parseISO } from "date-fns";
+import { format, startOfWeek, startOfMonth, endOfMonth, addDays, addMonths, parseISO } from "date-fns";
 import {
   ChevronLeft, ChevronRight, Plus, Edit2, Check, X, Clock,
   Send, Trash2, AlertCircle, Loader2, Sparkles, Calendar,
@@ -529,14 +529,23 @@ function AccountsTab() {
   );
 }
 
+type CalendarView = "monthly" | "daily";
+
 function CalendarTab({ pages }: { pages: SocialPage[] }) {
   const { toast } = useToast();
-  const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date(), { weekStartsOn: 1 }));
+  const [view, setView] = useState<CalendarView>("monthly");
+  const [currentMonth, setCurrentMonth] = useState(() => startOfMonth(new Date()));
+  const [selectedDay, setSelectedDay] = useState(() => new Date());
   const [selectedPost, setSelectedPost] = useState<SocialPost | null>(null);
 
-  const weekEnd = addDays(weekStart, 6);
-  const fromStr = format(weekStart, "yyyy-MM-dd");
-  const toStr = format(weekEnd, "yyyy-MM-dd");
+  const monthStart = startOfMonth(currentMonth);
+  const monthEnd = endOfMonth(currentMonth);
+  const gridStart = startOfWeek(monthStart, { weekStartsOn: 1 });
+  const gridEndDate = addDays(startOfWeek(addDays(monthEnd, 7), { weekStartsOn: 1 }), -1);
+  const totalGridDays = Math.round((gridEndDate.getTime() - gridStart.getTime()) / 86400000) + 1;
+
+  const fromStr = format(gridStart, "yyyy-MM-dd");
+  const toStr = format(gridEndDate, "yyyy-MM-dd");
 
   const { data: posts, isLoading, error } = useQuery<SocialPost[]>({
     queryKey: ["/posts/calendar", fromStr, toStr],
@@ -546,29 +555,64 @@ function CalendarTab({ pages }: { pages: SocialPage[] }) {
     },
   });
 
-  const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
+  const gridDays = Array.from({ length: totalGridDays }, (_, i) => addDays(gridStart, i));
 
   const postsByDay = (day: Date) => {
     const dayStr = format(day, "yyyy-MM-dd");
     return (posts ?? []).filter(p => {
       if (!p.scheduledAt) return false;
-      const postDayStr = scheduledToDateStr(p.scheduledAt);
-      return postDayStr === dayStr;
+      return scheduledToDateStr(p.scheduledAt) === dayStr;
     });
   };
 
+  const todayStr = format(new Date(), "yyyy-MM-dd");
+  const selectedDayPosts = postsByDay(selectedDay);
+
+  const navigatePrev = () => {
+    if (view === "monthly") setCurrentMonth(d => addMonths(d, -1));
+    else setSelectedDay(d => addDays(d, -1));
+  };
+  const navigateNext = () => {
+    if (view === "monthly") setCurrentMonth(d => addMonths(d, 1));
+    else setSelectedDay(d => addDays(d, 1));
+  };
+
+  const handleDayClick = (day: Date) => {
+    setSelectedDay(day);
+    setView("daily");
+  };
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       <div className="flex items-center gap-3">
-        <Button size="icon" variant="ghost" onClick={() => setWeekStart(d => addDays(d, -7))} data-testid="button-prev-week">
+        <Button size="icon" variant="ghost" onClick={navigatePrev} data-testid="button-prev-week">
           <ChevronLeft className="w-4 h-4" />
         </Button>
-        <span className="text-sm font-medium text-foreground flex-1 text-center">
-          {format(weekStart, "d MMM")} - {format(addDays(weekStart, 6), "d MMM yyyy")}
+        <span className="text-sm font-medium text-foreground flex-1 text-center" data-testid="text-calendar-range">
+          {view === "monthly"
+            ? format(currentMonth, "MMMM yyyy")
+            : format(selectedDay, "EEEE, d MMMM yyyy")}
         </span>
-        <Button size="icon" variant="ghost" onClick={() => setWeekStart(d => addDays(d, 7))} data-testid="button-next-week">
+        <Button size="icon" variant="ghost" onClick={navigateNext} data-testid="button-next-week">
           <ChevronRight className="w-4 h-4" />
         </Button>
+      </div>
+
+      <div className="flex items-center justify-center gap-1 bg-muted/50 rounded-lg p-0.5 w-fit mx-auto">
+        <button
+          onClick={() => setView("monthly")}
+          className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${view === "monthly" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+          data-testid="button-view-monthly"
+        >
+          Month
+        </button>
+        <button
+          onClick={() => setView("daily")}
+          className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${view === "daily" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+          data-testid="button-view-daily"
+        >
+          Day
+        </button>
       </div>
 
       {error && (
@@ -578,36 +622,119 @@ function CalendarTab({ pages }: { pages: SocialPage[] }) {
         </div>
       )}
 
-      <div className="grid grid-cols-7 gap-2">
-        {days.map(day => {
-          const dayPosts = postsByDay(day);
-          const isToday = format(day, "yyyy-MM-dd") === format(new Date(), "yyyy-MM-dd");
-          return (
-            <div key={day.toISOString()} className={`min-h-32 rounded-md border p-2 ${isToday ? "border-primary/40 bg-primary/5" : "border-border bg-card"}`} data-testid={`cal-day-${format(day, "yyyy-MM-dd")}`}>
-              <div className="flex items-center gap-1 mb-2">
-                <span className="text-xs font-medium text-muted-foreground">{format(day, "EEE")}</span>
-                <span className={`text-xs font-bold ${isToday ? "text-primary" : "text-foreground"}`}>{format(day, "d")}</span>
-              </div>
-              {isLoading ? (
-                <Skeleton className="h-5 rounded" />
-              ) : (
-                dayPosts.map(p => (
+      {view === "monthly" && (
+        <div>
+          <div className="grid grid-cols-7 gap-px mb-1">
+            {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map(d => (
+              <div key={d} className="text-center text-xs font-medium text-muted-foreground py-1">{d}</div>
+            ))}
+          </div>
+          <div className="grid grid-cols-7 gap-1">
+            {gridDays.map(day => {
+              const dayPosts = postsByDay(day);
+              const dayStr = format(day, "yyyy-MM-dd");
+              const isToday = dayStr === todayStr;
+              const isCurrentMonth = day.getMonth() === currentMonth.getMonth();
+              return (
+                <button
+                  key={day.toISOString()}
+                  onClick={() => handleDayClick(day)}
+                  className={`min-h-[5.5rem] rounded-md border p-1.5 text-left transition-colors hover:border-primary/40
+                    ${isToday ? "border-primary/40 bg-primary/5" : "border-border bg-card"}
+                    ${!isCurrentMonth ? "opacity-40" : ""}`}
+                  data-testid={`cal-day-${dayStr}`}
+                >
+                  <span className={`text-xs font-bold block mb-1 ${isToday ? "text-primary" : "text-foreground"}`}>
+                    {format(day, "d")}
+                  </span>
+                  {isLoading ? (
+                    <Skeleton className="h-4 rounded" />
+                  ) : (
+                    dayPosts.slice(0, 3).map(p => (
+                      <div
+                        key={p.id}
+                        className={`text-[10px] px-1 py-0.5 rounded mb-0.5 truncate flex items-center gap-0.5 ${PLATFORM_CHIP_COLORS[p.platform] ?? "bg-muted text-foreground"}`}
+                        data-testid={`chip-post-${p.id}`}
+                      >
+                        <PlatformIcon platform={p.platform} className="w-2.5 h-2.5 flex-shrink-0" />
+                        {p.imageUrl && <ImageIcon className="w-2 h-2 flex-shrink-0 opacity-70" />}
+                      </div>
+                    ))
+                  )}
+                  {dayPosts.length > 3 && (
+                    <span className="text-[10px] text-muted-foreground">+{dayPosts.length - 3}</span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {view === "daily" && (
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setView("monthly")}
+              className="text-xs text-primary hover:underline"
+              data-testid="button-back-to-month"
+            >
+              Back to month
+            </button>
+          </div>
+          {isLoading ? (
+            <div className="space-y-2">
+              {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-16 rounded" />)}
+            </div>
+          ) : selectedDayPosts.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+              <Calendar className="w-8 h-8 mb-2 opacity-40" />
+              <p className="text-sm">No posts scheduled for this day</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {selectedDayPosts.map(p => {
+                const time = p.scheduledAt ? (() => {
+                  const ts = Number(p.scheduledAt);
+                  const d = !isNaN(ts) && ts > 1e9 ? new Date(ts * 1000) : new Date(p.scheduledAt);
+                  return isNaN(d.getTime()) ? "" : format(d, "HH:mm");
+                })() : "";
+                return (
                   <button
                     key={p.id}
-                    className={`w-full text-left text-xs px-1.5 py-0.5 rounded mb-1 truncate flex items-center gap-1 ${PLATFORM_CHIP_COLORS[p.platform] ?? "bg-muted text-foreground"}`}
                     onClick={() => setSelectedPost(p)}
-                    data-testid={`chip-post-${p.id}`}
+                    className="w-full text-left p-3 rounded-lg border border-border bg-card hover:border-primary/30 transition-colors"
+                    data-testid={`daily-post-${p.id}`}
                   >
-                    <PlatformIcon platform={p.platform} className="w-2.5 h-2.5 flex-shrink-0" />
-                    {p.imageUrl && <ImageIcon className="w-2.5 h-2.5 flex-shrink-0 opacity-70" />}
-                    <span className="truncate">{(p.content ?? "").substring(0, 25)}</span>
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium ${PLATFORM_CHIP_COLORS[p.platform] ?? "bg-muted text-foreground"}`}>
+                        <PlatformIcon platform={p.platform} className="w-3 h-3" />
+                        {p.platform}
+                      </span>
+                      {time && <span className="text-xs text-muted-foreground">{time}</span>}
+                      <span className={`ml-auto text-xs px-1.5 py-0.5 rounded ${
+                        p.status === "published" ? "bg-green-500/10 text-green-500" :
+                        p.status === "scheduled" ? "bg-blue-500/10 text-blue-500" :
+                        p.status === "approved" ? "bg-emerald-500/10 text-emerald-500" :
+                        "bg-muted text-muted-foreground"
+                      }`}>
+                        {p.status}
+                      </span>
+                    </div>
+                    <p className="text-sm text-foreground line-clamp-2">{p.content}</p>
+                    {p.imageUrl && (
+                      <div className="flex items-center gap-1 mt-1.5 text-xs text-muted-foreground">
+                        <ImageIcon className="w-3 h-3" />
+                        <span>Has image</span>
+                      </div>
+                    )}
                   </button>
-                ))
-              )}
+                );
+              })}
             </div>
-          );
-        })}
-      </div>
+          )}
+        </div>
+      )}
 
       <PostDetailModal
         post={selectedPost}
