@@ -75,24 +75,32 @@ export interface CreatePostInput {
   status: "draft" | "approved" | "scheduled" | "published" | "failed";
 }
 
+export interface AiMonthUsage {
+  input: number;
+  output: number;
+  cost: number;
+  calls: number;
+}
+
 export interface AiUsageData {
-  remainingCredit: number;
-  usageThisMonth: number;
-  usageLastMonth: number;
-  currency: string;
+  balance: number;
+  thisMonth: AiMonthUsage;
+  lastMonth: AiMonthUsage;
 }
 
 export interface AiDailyUsage {
   date: string;
-  inputTokens: number;
-  outputTokens: number;
+  label: string;
+  input_tokens: number;
+  output_tokens: number;
+  cost_usd: number;
 }
 
 export interface AiRecentCall {
-  id: string;
-  date: string;
   model: string;
-  inputTokens: number;
-  outputTokens: number;
-  estimatedCost: number;
+  input_tokens: number;
+  output_tokens: number;
+  cost_usd: number;
+  source: string;
+  created_at: string;
 }
