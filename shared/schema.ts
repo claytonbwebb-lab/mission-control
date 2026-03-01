@@ -18,14 +18,8 @@ export type User = typeof users.$inferSelect;
 
 export type TaskStatus = "ideas" | "inprogress" | "review" | "complete";
 export type TaskPriority = "low" | "medium" | "high" | "urgent";
-export type TaskLabel =
-  | "invoice_wizard"
-  | "life_coach_steven"
-  | "wesayido"
-  | "horse_race"
-  | "bright_stack_labs"
-  | "other";
-export type TaskAssignee = "steve" | "clawbot";
+export type TaskLabel = string;
+export type TaskAssignee = string;
 
 export interface Task {
   id: string;
@@ -35,7 +29,9 @@ export interface Task {
   priority: TaskPriority;
   label: TaskLabel;
   assignee: TaskAssignee;
+  position?: number;
   createdAt: string;
+  updatedAt?: string;
 }
 
 export interface CreateTaskInput {
@@ -43,8 +39,8 @@ export interface CreateTaskInput {
   description?: string;
   status: TaskStatus;
   priority: TaskPriority;
-  label: TaskLabel;
-  assignee: TaskAssignee;
+  project: string;
+  assigned_to: string;
 }
 
 export interface SocialPage {

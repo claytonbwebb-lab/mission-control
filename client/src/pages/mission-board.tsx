@@ -20,13 +20,15 @@ const COLUMNS: { id: TaskStatus; label: string; icon: React.ElementType }[] = [
   { id: "complete", label: "Complete", icon: CheckCircle2 },
 ];
 
-const LABEL_META: Record<TaskLabel, { label: string; className: string }> = {
-  invoice_wizard: { label: "InvoiceWizard", className: "bg-blue-500/15 text-blue-400 dark:text-blue-300" },
-  life_coach_steven: { label: "Life Coach Steven", className: "bg-emerald-500/15 text-emerald-500 dark:text-emerald-300" },
-  wesayido: { label: "WeSayIDo", className: "bg-pink-500/15 text-pink-500 dark:text-pink-300" },
-  horse_race: { label: "Horse Race System", className: "bg-amber-500/15 text-amber-500 dark:text-amber-300" },
-  bright_stack_labs: { label: "Bright Stack Labs", className: "bg-violet-500/15 text-violet-500 dark:text-violet-300" },
-  other: { label: "Other", className: "bg-muted text-muted-foreground" },
+const LABEL_META: Record<string, { label: string; className: string }> = {
+  "invoice-wizard": { label: "InvoiceWizard", className: "bg-blue-500/15 text-blue-400 dark:text-blue-300" },
+  "life-coach-steven": { label: "Life Coach Steven", className: "bg-emerald-500/15 text-emerald-500 dark:text-emerald-300" },
+  "wesayido": { label: "WeSayIDo", className: "bg-pink-500/15 text-pink-500 dark:text-pink-300" },
+  "horse-race": { label: "Horse Race System", className: "bg-amber-500/15 text-amber-500 dark:text-amber-300" },
+  "bright-stack-labs": { label: "Bright Stack Labs", className: "bg-violet-500/15 text-violet-500 dark:text-violet-300" },
+  "mission-control": { label: "Mission Control", className: "bg-cyan-500/15 text-cyan-500 dark:text-cyan-300" },
+  "revenue": { label: "Revenue", className: "bg-green-500/15 text-green-500 dark:text-green-300" },
+  "other": { label: "Other", className: "bg-muted text-muted-foreground" },
 };
 
 const PRIORITY_META: Record<TaskPriority, { label: string; className: string }> = {
@@ -36,18 +38,47 @@ const PRIORITY_META: Record<TaskPriority, { label: string; className: string }> 
   urgent: { label: "Urgent", className: "bg-destructive/15 text-destructive" },
 };
 
-const ASSIGNEE_META: Record<TaskAssignee, { label: string; className: string }> = {
+const ASSIGNEE_META: Record<string, { label: string; className: string }> = {
   steve: { label: "Steve", className: "bg-sky-500/15 text-sky-500 dark:text-sky-300" },
   clawbot: { label: "Clawbot", className: "bg-violet-500/15 text-violet-500 dark:text-violet-300" },
 };
 
-const ALL_LABELS: TaskLabel[] = ["invoice_wizard", "life_coach_steven", "wesayido", "horse_race", "bright_stack_labs", "other"];
 const ALL_PRIORITIES: TaskPriority[] = ["low", "medium", "high", "urgent"];
 const ALL_STATUSES: TaskStatus[] = ["ideas", "inprogress", "review", "complete"];
-const ALL_ASSIGNEES: TaskAssignee[] = ["steve", "clawbot"];
+const ALL_ASSIGNEES: string[] = ["steve", "clawbot"];
+
+function normalizeTask(raw: Record<string, unknown>): Task {
+  const status = String(raw.status ?? "ideas");
+  return {
+    id: String(raw.id ?? ""),
+    title: String(raw.title ?? ""),
+    description: (raw.description ?? "") as string,
+    status: (ALL_STATUSES.includes(status as TaskStatus) ? status : "ideas") as TaskStatus,
+    priority: String(raw.priority ?? "medium") as TaskPriority,
+    label: String(raw.project ?? raw.label ?? "other"),
+    assignee: String(raw.assigned_to ?? raw.assignee ?? "clawbot"),
+    position: (raw.position ?? 0) as number,
+    createdAt: String(raw.created_at ?? raw.createdAt ?? ""),
+    updatedAt: (raw.updated_at ?? raw.updatedAt ?? undefined) as string | undefined,
+  };
+}
+
+function toApiPayload(updates: Partial<Task>): Record<string, unknown> {
+  const payload: Record<string, unknown> = {};
+  if (updates.title !== undefined) payload.title = updates.title;
+  if (updates.description !== undefined) payload.description = updates.description;
+  if (updates.status !== undefined) payload.status = updates.status;
+  if (updates.priority !== undefined) payload.priority = updates.priority;
+  if (updates.label !== undefined) payload.project = updates.label;
+  if (updates.assignee !== undefined) payload.assigned_to = updates.assignee;
+  return payload;
+}
 
 function formatDate(dateStr: string) {
-  const d = new Date(dateStr);
+  if (!dateStr) return "";
+  const ts = Number(dateStr);
+  const d = !isNaN(ts) && ts > 1e9 ? new Date(ts * 1000) : new Date(dateStr);
+  if (isNaN(d.getTime())) return "";
   return d.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
 }
 
@@ -117,9 +148,10 @@ interface TaskModalProps {
   onClose: () => void;
   onSave: (updates: Partial<Task>) => void;
   onDelete: (id: string) => void;
+  projectOptions: string[];
 }
 
-function TaskModal({ task, open, onClose, onSave, onDelete }: TaskModalProps) {
+function TaskModal({ task, open, onClose, onSave, onDelete, projectOptions }: TaskModalProps) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [status, setStatus] = useState<TaskStatus>("ideas");
@@ -200,26 +232,26 @@ function TaskModal({ task, open, onClose, onSave, onDelete }: TaskModalProps) {
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs text-muted-foreground uppercase tracking-wide">Project</Label>
-              <Select value={label} onValueChange={(v) => setLabel(v as TaskLabel)}>
+              <Select value={label} onValueChange={(v) => setLabel(v)}>
                 <SelectTrigger data-testid="select-task-label">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {ALL_LABELS.map(l => (
-                    <SelectItem key={l} value={l}>{LABEL_META[l].label}</SelectItem>
+                  {projectOptions.map(l => (
+                    <SelectItem key={l} value={l}>{(LABEL_META[l] ?? { label: l }).label}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs text-muted-foreground uppercase tracking-wide">Assigned To</Label>
-              <Select value={assignee} onValueChange={(v) => setAssignee(v as TaskAssignee)}>
+              <Select value={assignee} onValueChange={(v) => setAssignee(v)}>
                 <SelectTrigger data-testid="select-task-assignee">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   {ALL_ASSIGNEES.map(a => (
-                    <SelectItem key={a} value={a}>{ASSIGNEE_META[a].label}</SelectItem>
+                    <SelectItem key={a} value={a}>{(ASSIGNEE_META[a] ?? { label: a }).label}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -295,17 +327,20 @@ export default function MissionBoard() {
 
   const { data: tasks, isLoading, error } = useQuery<Task[]>({
     queryKey: ["/tasks"],
-    queryFn: () => apiRequest<Task[]>("GET", "/tasks"),
+    queryFn: async () => {
+      const raw = await apiRequest<Record<string, unknown>[]>("GET", "/tasks");
+      return (Array.isArray(raw) ? raw : []).map(normalizeTask);
+    },
     staleTime: 30000,
   });
 
   const createMutation = useMutation({
-    mutationFn: (data: Partial<Task>) => apiRequest<Task>("POST", "/tasks", data),
+    mutationFn: (data: Record<string, unknown>) => apiRequest<Task>("POST", "/tasks", data),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["/tasks"] }),
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, ...data }: Partial<Task> & { id: string }) =>
+    mutationFn: ({ id, ...data }: Record<string, unknown> & { id: string }) =>
       apiRequest<Task>("PATCH", `/tasks/${id}`, data),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["/tasks"] }),
   });
@@ -327,16 +362,16 @@ export default function MissionBoard() {
       title,
       status,
       priority: "medium",
-      label: "other",
-      assignee: "clawbot",
-      createdAt: new Date().toISOString(),
+      project: "other",
+      assigned_to: "clawbot",
     });
     setAddingColumn(null);
   };
 
   const handleSaveTask = async (updates: Partial<Task>) => {
     if (!selectedTask) return;
-    await updateMutation.mutateAsync({ id: selectedTask.id, ...updates });
+    const apiData = toApiPayload(updates);
+    await updateMutation.mutateAsync({ id: selectedTask.id, ...apiData });
     await qc.refetchQueries({ queryKey: ["/tasks"] });
     setModalOpen(false);
     setSelectedTask(null);
@@ -348,6 +383,8 @@ export default function MissionBoard() {
     setModalOpen(false);
     setSelectedTask(null);
   };
+
+  const allLabels = [...new Set((tasks ?? []).map(t => t.label))].sort();
 
   const filteredTasks = (tasks ?? []).filter(
     t => filterLabel === "all" || t.label === filterLabel
@@ -377,14 +414,14 @@ export default function MissionBoard() {
             >
               All
             </button>
-            {ALL_LABELS.map(l => (
+            {allLabels.map(l => (
               <button
                 key={l}
                 className={`text-xs px-2.5 py-1 rounded-md border transition-colors ${filterLabel === l ? "bg-primary text-primary-foreground border-primary" : "bg-card border-card-border text-muted-foreground"}`}
                 onClick={() => setFilterLabel(l)}
                 data-testid={`filter-${l}`}
               >
-                {LABEL_META[l].label}
+                {(LABEL_META[l] ?? { label: l }).label}
               </button>
             ))}
           </div>
@@ -481,6 +518,7 @@ export default function MissionBoard() {
         onClose={() => { setModalOpen(false); setSelectedTask(null); }}
         onSave={handleSaveTask}
         onDelete={handleDeleteTask}
+        projectOptions={allLabels.length > 0 ? allLabels : ["other"]}
       />
     </div>
   );
