@@ -15,7 +15,7 @@ import type { Task, TaskStatus, TaskPriority, TaskLabel, TaskAssignee } from "@s
 
 const COLUMNS: { id: TaskStatus; label: string; icon: React.ElementType }[] = [
   { id: "ideas", label: "Ideas", icon: Lightbulb },
-  { id: "in_progress", label: "In Progress", icon: Wrench },
+  { id: "inprogress", label: "In Progress", icon: Wrench },
   { id: "review", label: "Review", icon: Eye },
   { id: "complete", label: "Complete", icon: CheckCircle2 },
 ];
@@ -43,7 +43,7 @@ const ASSIGNEE_META: Record<TaskAssignee, { label: string; className: string }> 
 
 const ALL_LABELS: TaskLabel[] = ["invoice_wizard", "life_coach_steven", "wesayido", "horse_race", "bright_stack_labs", "other"];
 const ALL_PRIORITIES: TaskPriority[] = ["low", "medium", "high", "urgent"];
-const ALL_STATUSES: TaskStatus[] = ["ideas", "in_progress", "review", "complete"];
+const ALL_STATUSES: TaskStatus[] = ["ideas", "inprogress", "review", "complete"];
 const ALL_ASSIGNEES: TaskAssignee[] = ["steve", "clawbot"];
 
 function formatDate(dateStr: string) {
@@ -356,7 +356,7 @@ export default function MissionBoard() {
 
   const columnColors: Record<TaskStatus, string> = {
     ideas: "text-amber-500 dark:text-amber-400",
-    in_progress: "text-blue-500 dark:text-blue-400",
+    inprogress: "text-blue-500 dark:text-blue-400",
     review: "text-violet-500 dark:text-violet-400",
     complete: "text-emerald-500 dark:text-emerald-400",
   };

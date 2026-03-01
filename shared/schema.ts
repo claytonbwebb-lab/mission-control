@@ -16,7 +16,7 @@ export const insertUserSchema = createInsertSchema(users).pick({
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 
-export type TaskStatus = "ideas" | "in_progress" | "review" | "complete";
+export type TaskStatus = "ideas" | "inprogress" | "review" | "complete";
 export type TaskPriority = "low" | "medium" | "high" | "urgent";
 export type TaskLabel =
   | "invoice_wizard"
