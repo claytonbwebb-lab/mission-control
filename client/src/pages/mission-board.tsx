@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { DragDropContext, Droppable, Draggable, type DropResult } from "@hello-pangea/dnd";
 import {
   Plus, X, ChevronDown, ChevronUp, Lightbulb, Wrench, Eye, CheckCircle2,
-  AlertCircle, MessageSquare, ArrowRight, Send, Loader2, User
+  AlertCircle, MessageSquare, ArrowRight, Send, Loader2, User, Repeat
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Switch } from "@/components/ui/switch";
 import { apiRequest } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
 import type { Task, TaskStatus, TaskPriority, TaskLabel, TaskAssignee, ActivityEntry } from "@shared/schema";
@@ -62,6 +63,8 @@ function normalizeTask(raw: Record<string, unknown>): Task {
     label: String(raw.project ?? raw.label ?? "other"),
     assignee: String(raw.assigned_to ?? raw.assignee ?? "clawbot"),
     position: (raw.position ?? 0) as number,
+    is_repeatable: (raw.is_repeatable ?? 0) as number,
+    cadence: (raw.cadence ?? undefined) as Task["cadence"],
     createdAt: String(raw.created_at ?? raw.createdAt ?? ""),
     updatedAt: (raw.updated_at ?? raw.updatedAt ?? undefined) as string | undefined,
   };
@@ -75,6 +78,8 @@ function toApiPayload(updates: Partial<Task>): Record<string, unknown> {
   if (updates.priority !== undefined) payload.priority = updates.priority;
   if (updates.label !== undefined) payload.project = updates.label;
   if (updates.assignee !== undefined) payload.assigned_to = updates.assignee;
+  if (updates.is_repeatable !== undefined) payload.is_repeatable = updates.is_repeatable;
+  if (updates.cadence !== undefined) payload.cadence = updates.cadence;
   return payload;
 }
 
@@ -122,8 +127,15 @@ function TaskCard({ task, index, onClick }: TaskCardProps) {
         >
           <div className="flex items-start justify-between gap-2 mb-2">
             <p className="text-sm font-medium text-card-foreground leading-snug flex-1">{task.title}</p>
-            <div className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium whitespace-nowrap ${priorityMeta.className}`}>
-              {priorityMeta.label}
+            <div className="flex items-center gap-1">
+              {!!task.is_repeatable && (
+                <span className="inline-flex items-center px-1 py-0.5 rounded text-xs bg-violet-500/10 text-violet-500" title={`Repeats ${task.cadence ?? ""}`.trim()} data-testid={`badge-repeat-${task.id}`}>
+                  <Repeat className="w-3 h-3" />
+                </span>
+              )}
+              <div className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium whitespace-nowrap ${priorityMeta.className}`}>
+                {priorityMeta.label}
+              </div>
             </div>
           </div>
 
@@ -227,6 +239,8 @@ function TaskModal({ task, open, onClose, onSave, onDelete, projectOptions }: Ta
   const [priority, setPriority] = useState<TaskPriority>("medium");
   const [label, setLabel] = useState<TaskLabel>("other");
   const [assignee, setAssignee] = useState<TaskAssignee>("steve");
+  const [isRepeatable, setIsRepeatable] = useState(false);
+  const [cadence, setCadence] = useState<"daily" | "weekly" | "monthly">("weekly");
   const [comment, setComment] = useState("");
   const [submittingComment, setSubmittingComment] = useState(false);
   const activityEndRef = useRef<HTMLDivElement>(null);
@@ -250,6 +264,8 @@ function TaskModal({ task, open, onClose, onSave, onDelete, projectOptions }: Ta
       setPriority(task.priority ?? "medium");
       setLabel(task.label ?? "other");
       setAssignee(task.assignee ?? "steve");
+      setIsRepeatable(!!task.is_repeatable);
+      setCadence(task.cadence ?? "weekly");
       setComment("");
     }
   }, [task]);
@@ -261,7 +277,11 @@ function TaskModal({ task, open, onClose, onSave, onDelete, projectOptions }: Ta
   }, [taskDetail?.activity?.length]);
 
   const handleSave = () => {
-    onSave({ title, description, status, priority, label, assignee });
+    onSave({
+      title, description, status, priority, label, assignee,
+      is_repeatable: isRepeatable ? 1 : 0,
+      cadence: isRepeatable ? cadence : undefined,
+    });
   };
 
   const handleSubmitComment = async () => {
@@ -366,6 +386,28 @@ function TaskModal({ task, open, onClose, onSave, onDelete, projectOptions }: Ta
                 </SelectContent>
               </Select>
             </div>
+          </div>
+
+          <div className="space-y-3 pt-1">
+            <div className="flex items-center justify-between">
+              <Label className="text-xs text-muted-foreground uppercase tracking-wide">Repeatable</Label>
+              <Switch checked={isRepeatable} onCheckedChange={setIsRepeatable} data-testid="switch-repeatable" />
+            </div>
+            {isRepeatable && (
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground uppercase tracking-wide">Cadence</Label>
+                <Select value={cadence} onValueChange={(v) => setCadence(v as "daily" | "weekly" | "monthly")}>
+                  <SelectTrigger data-testid="select-cadence">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="daily">Daily</SelectItem>
+                    <SelectItem value="weekly">Weekly</SelectItem>
+                    <SelectItem value="monthly">Monthly</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
           </div>
 
           <div className="flex items-center justify-between pt-1">

@@ -30,6 +30,8 @@ export interface Task {
   label: TaskLabel;
   assignee: TaskAssignee;
   position?: number;
+  is_repeatable?: number;
+  cadence?: "daily" | "weekly" | "monthly";
   createdAt: string;
   updatedAt?: string;
 }
