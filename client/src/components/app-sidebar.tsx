@@ -9,6 +9,7 @@ import {
   SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
+  useSidebar,
 } from "@/components/ui/sidebar";
 import {
   LayoutDashboard,
@@ -30,6 +31,7 @@ const navItems = [
 
 export function AppSidebar() {
   const [location] = useLocation();
+  const { setOpenMobile } = useSidebar();
 
   const handleLogout = () => {
     clearToken();
@@ -63,7 +65,7 @@ export function AppSidebar() {
                       data-active={isActive}
                       className="data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground"
                     >
-                      <Link href={item.url} data-testid={`nav-${item.title.toLowerCase().replace(/ /g, "-")}`}>
+                      <Link href={item.url} onClick={() => setOpenMobile(false)} data-testid={`nav-${item.title.toLowerCase().replace(/ /g, "-")}`}>
                         <item.icon className="w-4 h-4" />
                         <span>{item.title}</span>
                       </Link>

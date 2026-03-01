@@ -1227,7 +1227,7 @@ function GenerateTab({ pages, onSwitchTab }: { pages: SocialPage[]; onSwitchTab:
 }
 
 export default function SocialMediaPage() {
-  const [activeTab, setActiveTab] = useState("accounts");
+  const [activeTab, setActiveTab] = useState("queue");
   const { data: pages = [] } = useQuery<SocialPage[]>({
     queryKey: ["/pages"],
     queryFn: async () => {
