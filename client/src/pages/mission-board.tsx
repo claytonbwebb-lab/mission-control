@@ -562,7 +562,7 @@ export default function MissionBoard() {
       status,
       priority: "medium",
       project: "other",
-      assigned_to: "clawbot",
+      assigned_to: "steve",
     });
     setAddingColumn(null);
   };
