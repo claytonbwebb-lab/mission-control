@@ -583,6 +583,8 @@ export default function MissionBoard() {
     setSelectedTask(null);
   };
 
+  const repeatableTasks = (tasks ?? []).filter(t => !!t.is_repeatable);
+
   const filteredTasks = (tasks ?? []).filter(
     t => filterLabel === "all" || t.label === filterLabel
   );
@@ -633,8 +635,9 @@ export default function MissionBoard() {
       )}
 
       <div className="flex-1 overflow-auto md:overflow-x-auto md:overflow-y-hidden">
+        <div className="flex flex-col md:flex-row gap-4 p-5 md:h-full md:min-w-max">
         <DragDropContext onDragEnd={handleDragEnd}>
-          <div className="flex flex-col md:flex-row gap-4 p-5 md:h-full md:min-w-max">
+          <div className="contents">
             {COLUMNS.map(col => {
               const colTasks = tasksByColumn(col.id);
               const ColIcon = col.icon;
@@ -707,6 +710,56 @@ export default function MissionBoard() {
             })}
           </div>
         </DragDropContext>
+
+        <div className="flex flex-col w-full md:w-72 md:flex-shrink-0" data-testid="column-repeatable">
+          <div className="flex items-center gap-2 mb-3">
+            <Repeat className="w-4 h-4 text-violet-500 dark:text-violet-400" />
+            <span className="text-sm font-semibold text-foreground">Repeatable</span>
+            <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded-full">
+              {repeatableTasks.length}
+            </span>
+          </div>
+          <div className="md:flex-1 rounded-md min-h-32 p-2 bg-violet-500/5 border border-violet-500/20">
+            {isLoading ? (
+              Array.from({ length: 2 }).map((_, i) => (
+                <Skeleton key={i} className="h-20 mb-2 rounded-md" />
+              ))
+            ) : repeatableTasks.length === 0 ? (
+              <div className="flex items-center justify-center h-16 text-xs text-muted-foreground/60">
+                No repeatable tasks
+              </div>
+            ) : (
+              repeatableTasks.map(task => (
+                <div
+                  key={task.id}
+                  className="bg-card border border-card-border rounded-md p-3 mb-2 cursor-pointer select-none hover-elevate"
+                  onClick={() => { setSelectedTask(task); setModalOpen(true); }}
+                  data-testid={`card-repeatable-${task.id}`}
+                >
+                  <div className="flex items-start justify-between gap-2 mb-1.5">
+                    <p className="text-sm font-medium text-card-foreground leading-snug flex-1">{task.title}</p>
+                    <div className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium whitespace-nowrap ${(PRIORITY_META[task.priority] ?? PRIORITY_META.medium).className}`}>
+                      {(PRIORITY_META[task.priority] ?? PRIORITY_META.medium).label}
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium bg-violet-500/15 text-violet-500 dark:text-violet-300">
+                      <Repeat className="w-2.5 h-2.5" />
+                      {task.cadence ? task.cadence.charAt(0).toUpperCase() + task.cadence.slice(1) : "Repeating"}
+                    </span>
+                    <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium ${(LABEL_META[task.label] ?? LABEL_META.other).className}`}>
+                      {(LABEL_META[task.label] ?? LABEL_META.other).label}
+                    </span>
+                    <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium ${(ASSIGNEE_META[task.assignee] ?? ASSIGNEE_META.steve).className}`}>
+                      {(ASSIGNEE_META[task.assignee] ?? ASSIGNEE_META.steve).label}
+                    </span>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+        </div>
       </div>
 
       <TaskModal
