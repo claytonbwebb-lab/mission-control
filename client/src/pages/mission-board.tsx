@@ -590,7 +590,7 @@ export default function MissionBoard() {
   );
 
   const tasksByColumn = (status: TaskStatus) =>
-    filteredTasks.filter(t => t.status === status);
+    filteredTasks.filter(t => t.status === status && !t.is_repeatable);
 
   const columnColors: Record<TaskStatus, string> = {
     ideas: "text-amber-500 dark:text-amber-400",
