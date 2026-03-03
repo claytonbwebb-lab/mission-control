@@ -27,7 +27,7 @@ const COLUMNS: { id: TaskStatus; label: string; icon: React.ElementType }[] = [
 
 const ALL_PROJECTS = [
   "invoicewizard", "lifecoach", "wesayido", "horserace",
-  "brightstacklabs", "mission-control", "other",
+  "brightstacklabs", "mission-control", "personal", "other",
 ] as const;
 
 const LABEL_META: Record<string, { label: string; className: string }> = {
@@ -37,6 +37,7 @@ const LABEL_META: Record<string, { label: string; className: string }> = {
   "horserace": { label: "Horse Race System", className: "bg-amber-500/15 text-amber-500 dark:text-amber-300" },
   "brightstacklabs": { label: "Bright Stack Labs", className: "bg-violet-500/15 text-violet-500 dark:text-violet-300" },
   "mission-control": { label: "Mission Control", className: "bg-cyan-500/15 text-cyan-500 dark:text-cyan-300" },
+  "personal": { label: "Personal", className: "bg-slate-500/15 text-slate-400 dark:text-slate-300" },
   "other": { label: "Other", className: "bg-muted text-muted-foreground" },
 };
 
