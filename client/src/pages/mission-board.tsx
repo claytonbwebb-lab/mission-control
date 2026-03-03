@@ -719,6 +719,7 @@ function AddCardForm({ columnId, onAdd, onCancel }: AddCardFormProps) {
 export default function MissionBoard() {
   const qc = useQueryClient();
   const [filterLabel, setFilterLabel] = useState<TaskLabel | "all">("all");
+  const [filterAssignee, setFilterAssignee] = useState<string>("all");
   const [addingColumn, setAddingColumn] = useState<TaskStatus | null>(null);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
@@ -782,10 +783,14 @@ export default function MissionBoard() {
     setSelectedTask(null);
   };
 
-  const repeatableTasks = (tasks ?? []).filter(t => !!t.is_repeatable);
+  const repeatableTasks = (tasks ?? []).filter(t => !!t.is_repeatable &&
+    (filterLabel === "all" || t.label === filterLabel) &&
+    (filterAssignee === "all" || t.assignee === filterAssignee)
+  );
 
   const filteredTasks = (tasks ?? []).filter(
-    t => filterLabel === "all" || t.label === filterLabel
+    t => (filterLabel === "all" || t.label === filterLabel) &&
+         (filterAssignee === "all" || t.assignee === filterAssignee)
   );
 
   const tasksByColumn = (status: TaskStatus) =>
@@ -820,6 +825,21 @@ export default function MissionBoard() {
                 data-testid={`filter-${l}`}
               >
                 {LABEL_META[l].label}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-xs text-muted-foreground">Assignee:</span>
+          <div className="flex gap-1.5">
+            {[{ value: "all", label: "All" }, { value: "steve", label: "Steve" }, { value: "clawbot", label: "Clawbot" }].map(opt => (
+              <button
+                key={opt.value}
+                className={`text-xs px-2.5 py-1 rounded-md border transition-colors ${filterAssignee === opt.value ? "bg-primary text-primary-foreground border-primary" : "bg-card border-card-border text-muted-foreground"}`}
+                onClick={() => setFilterAssignee(opt.value)}
+                data-testid={`filter-assignee-${opt.value}`}
+              >
+                {opt.label}
               </button>
             ))}
           </div>
