@@ -182,6 +182,46 @@ function TaskCard({ task, index, onClick }: TaskCardProps) {
   );
 }
 
+function CommentContent({ content, entryId, fallbackImageUrl }: { content: string; entryId: number; fallbackImageUrl?: string }) {
+  const mdImageRegex = /!\[\]\(([^)]+)\)/g;
+  const parts: { type: "text" | "image"; value: string }[] = [];
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+  while ((match = mdImageRegex.exec(content)) !== null) {
+    if (match.index > lastIndex) {
+      parts.push({ type: "text", value: content.slice(lastIndex, match.index) });
+    }
+    parts.push({ type: "image", value: match[1] });
+    lastIndex = mdImageRegex.lastIndex;
+  }
+  if (lastIndex < content.length) {
+    parts.push({ type: "text", value: content.slice(lastIndex) });
+  }
+
+  const hasInlineImages = parts.some(p => p.type === "image");
+
+  if (parts.length === 0 && !fallbackImageUrl) return null;
+
+  return (
+    <>
+      {parts.map((p, i) =>
+        p.type === "text" ? (
+          p.value.trim() ? <p key={i} className="text-sm text-foreground whitespace-pre-wrap">{p.value.trim()}</p> : null
+        ) : (
+          <a key={i} href={p.value} target="_blank" rel="noopener noreferrer" className="block mt-1.5" data-testid={`comment-image-${entryId}-${i}`}>
+            <img src={p.value} alt="Comment attachment" className="max-w-full max-h-48 rounded-md border border-border/50 object-contain cursor-pointer hover:opacity-90 transition-opacity" />
+          </a>
+        )
+      )}
+      {!hasInlineImages && fallbackImageUrl && (
+        <a href={fallbackImageUrl} target="_blank" rel="noopener noreferrer" className="block mt-1.5" data-testid={`comment-image-${entryId}`}>
+          <img src={fallbackImageUrl} alt="Comment attachment" className="max-w-full max-h-48 rounded-md border border-border/50 object-contain cursor-pointer hover:opacity-90 transition-opacity" />
+        </a>
+      )}
+    </>
+  );
+}
+
 function ActivityItem({ entry }: { entry: ActivityEntry }) {
   const authorMeta = ASSIGNEE_META[entry.author] ?? { label: entry.author, className: "bg-muted text-muted-foreground" };
 
@@ -197,16 +237,7 @@ function ActivityItem({ entry }: { entry: ActivityEntry }) {
             <span className="text-xs text-muted-foreground/60">{timeAgo(entry.created_at)}</span>
           </div>
           <div className="bg-muted/50 border border-border rounded-lg rounded-tl-none px-3 py-2">
-            {entry.content && <p className="text-sm text-foreground whitespace-pre-wrap">{entry.content}</p>}
-            {entry.image_url && (
-              <a href={entry.image_url} target="_blank" rel="noopener noreferrer" className="block mt-1.5" data-testid={`comment-image-${entry.id}`}>
-                <img
-                  src={entry.image_url}
-                  alt="Comment attachment"
-                  className="max-w-full max-h-48 rounded-md border border-border/50 object-contain cursor-pointer hover:opacity-90 transition-opacity"
-                />
-              </a>
-            )}
+            <CommentContent content={entry.content} entryId={entry.id} fallbackImageUrl={entry.image_url} />
           </div>
         </div>
       </div>
@@ -264,7 +295,7 @@ function TaskModal({ task, open, onClose, onSave, onDelete, projectOptions }: Ta
   const [isRepeatable, setIsRepeatable] = useState(false);
   const [cadence, setCadence] = useState<"daily" | "weekly" | "monthly">("weekly");
   const [comment, setComment] = useState("");
-  const [commentImage, setCommentImage] = useState<{ data: string; filename: string } | null>(null);
+  const [commentImages, setCommentImages] = useState<{ data: string; filename: string }[]>([]);
   const [submittingComment, setSubmittingComment] = useState(false);
   const activityEndRef = useRef<HTMLDivElement>(null);
   const commentFileRef = useRef<HTMLInputElement>(null);
@@ -297,7 +328,7 @@ function TaskModal({ task, open, onClose, onSave, onDelete, projectOptions }: Ta
       setIsRepeatable(!!task.is_repeatable);
       setCadence(task.cadence ?? "weekly");
       setComment("");
-      setCommentImage(null);
+      setCommentImages([]);
     }
   }, [task]);
 
@@ -316,28 +347,33 @@ function TaskModal({ task, open, onClose, onSave, onDelete, projectOptions }: Ta
   };
 
   const handleSubmitComment = async () => {
-    if ((!comment.trim() && !commentImage) || !task) return;
+    if ((!comment.trim() && commentImages.length === 0) || !task) return;
     setSubmittingComment(true);
     try {
-      let imageUrl: string | undefined;
-      if (commentImage) {
+      const uploadedUrls: string[] = [];
+      for (const img of commentImages) {
         const uploadRes = await apiRequest<{ url: string }>("POST", `/tasks/${task.id}/images`, {
-          data: commentImage.data,
-          filename: commentImage.filename,
+          data: img.data,
+          filename: img.filename,
         });
-        imageUrl = uploadRes.url;
+        uploadedUrls.push(uploadRes.url);
+      }
+      let content = comment.trim();
+      if (uploadedUrls.length > 0) {
+        const mdImages = uploadedUrls.map(u => `![](${u})`).join("\n");
+        content = content ? `${content}\n${mdImages}` : mdImages;
       }
       const body: Record<string, string> = {
         author: "steve",
         type: "comment",
-        content: comment.trim() || (commentImage ? `Attached ${commentImage.filename}` : ""),
+        content: content || "Attached images",
       };
-      if (imageUrl) {
-        body.image_url = imageUrl;
+      if (uploadedUrls.length > 0) {
+        body.image_url = uploadedUrls[0];
       }
       await apiRequest("POST", `/tasks/${task.id}/activity`, body);
       setComment("");
-      setCommentImage(null);
+      setCommentImages([]);
       qc.invalidateQueries({ queryKey: ["/tasks", task.id] });
       qc.invalidateQueries({ queryKey: ["/tasks"] });
     } catch (err) {
@@ -349,15 +385,20 @@ function TaskModal({ task, open, onClose, onSave, onDelete, projectOptions }: Ta
 
   const handleCommentImageSelect = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
-    const file = files[0];
-    if (!file.type.startsWith("image/")) return;
-    const dataUri = await new Promise<string>((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    });
-    setCommentImage({ data: dataUri, filename: file.name });
+    const newImages: { data: string; filename: string }[] = [];
+    for (const file of Array.from(files)) {
+      if (!file.type.startsWith("image/")) continue;
+      const dataUri = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+      newImages.push({ data: dataUri, filename: file.name });
+    }
+    if (newImages.length > 0) {
+      setCommentImages(prev => [...prev, ...newImages]);
+    }
   };
 
   const handleFileUpload = async (files: FileList | File[]) => {
@@ -614,17 +655,20 @@ function TaskModal({ task, open, onClose, onSave, onDelete, projectOptions }: Ta
               </div>
             )}
 
-            {commentImage && (
-              <div className="flex items-center gap-2 mb-2 p-2 bg-muted/50 rounded-md border border-border">
-                <img src={commentImage.data} alt={commentImage.filename} className="w-12 h-12 object-cover rounded" />
-                <span className="text-xs text-muted-foreground flex-1 truncate">{commentImage.filename}</span>
-                <button
-                  onClick={() => setCommentImage(null)}
-                  className="text-muted-foreground hover:text-foreground"
-                  data-testid="button-remove-comment-image"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
+            {commentImages.length > 0 && (
+              <div className="flex gap-2 mb-2 flex-wrap">
+                {commentImages.map((img, i) => (
+                  <div key={i} className="relative group">
+                    <img src={img.data} alt={img.filename} className="w-14 h-14 object-cover rounded border border-border" />
+                    <button
+                      onClick={() => setCommentImages(prev => prev.filter((_, j) => j !== i))}
+                      className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                      data-testid={`button-remove-comment-image-${i}`}
+                    >
+                      <X className="w-2.5 h-2.5" />
+                    </button>
+                  </div>
+                ))}
               </div>
             )}
             <div className="flex gap-2">
@@ -649,6 +693,7 @@ function TaskModal({ task, open, onClose, onSave, onDelete, projectOptions }: Ta
                 ref={commentFileRef}
                 type="file"
                 accept="image/*"
+                multiple
                 className="hidden"
                 onChange={(e) => { handleCommentImageSelect(e.target.files); e.target.value = ""; }}
               />
@@ -656,7 +701,7 @@ function TaskModal({ task, open, onClose, onSave, onDelete, projectOptions }: Ta
                 size="icon"
                 variant="secondary"
                 onClick={handleSubmitComment}
-                disabled={(!comment.trim() && !commentImage) || submittingComment}
+                disabled={(!comment.trim() && commentImages.length === 0) || submittingComment}
                 data-testid="button-submit-comment"
                 className="flex-shrink-0"
               >
