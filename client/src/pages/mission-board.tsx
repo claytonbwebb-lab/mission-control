@@ -4,7 +4,7 @@ import { DragDropContext, Droppable, Draggable, type DropResult } from "@hello-p
 import {
   Plus, X, ChevronDown, ChevronUp, Lightbulb, Wrench, Eye, CheckCircle2,
   AlertCircle, MessageSquare, ArrowRight, Send, Loader2, User, Repeat,
-  ImageIcon, Upload, Trash2
+  ImageIcon, Upload, Trash2, RefreshCw
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -723,8 +723,10 @@ export default function MissionBoard() {
   const [addingColumn, setAddingColumn] = useState<TaskStatus | null>(null);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
 
-  const { data: tasks, isLoading, error } = useQuery<Task[]>({
+  const { data: tasks, isLoading, error, dataUpdatedAt } = useQuery<Task[]>({
     queryKey: ["/tasks"],
     queryFn: async () => {
       const raw = await apiRequest<Record<string, unknown>[]>("GET", "/tasks");
@@ -732,6 +734,32 @@ export default function MissionBoard() {
     },
     staleTime: 30000,
   });
+
+  useEffect(() => {
+    if (dataUpdatedAt) setLastUpdated(new Date(dataUpdatedAt));
+  }, [dataUpdatedAt]);
+
+  useEffect(() => {
+    const poll = () => {
+      if (document.visibilityState === "visible") {
+        qc.invalidateQueries({ queryKey: ["/tasks"] });
+      }
+    };
+    const id = setInterval(poll, 30000);
+    const onVisChange = () => {
+      if (document.visibilityState === "visible") {
+        qc.invalidateQueries({ queryKey: ["/tasks"] });
+      }
+    };
+    document.addEventListener("visibilitychange", onVisChange);
+    return () => { clearInterval(id); document.removeEventListener("visibilitychange", onVisChange); };
+  }, [qc]);
+
+  const handleManualRefresh = async () => {
+    setRefreshing(true);
+    await qc.invalidateQueries({ queryKey: ["/tasks"] });
+    setRefreshing(false);
+  };
 
   const createMutation = useMutation({
     mutationFn: (data: Record<string, unknown>) => apiRequest<Task>("POST", "/tasks", data),
@@ -843,6 +871,21 @@ export default function MissionBoard() {
               </button>
             ))}
           </div>
+        </div>
+        <div className="flex items-center gap-1.5">
+          {lastUpdated && (
+            <span className="text-xs text-muted-foreground/70" data-testid="text-last-updated">
+              Last updated: {lastUpdated.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+            </span>
+          )}
+          <button
+            onClick={handleManualRefresh}
+            disabled={refreshing}
+            className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors disabled:opacity-50"
+            data-testid="button-refresh"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? "animate-spin" : ""}`} />
+          </button>
         </div>
       </div>
 
