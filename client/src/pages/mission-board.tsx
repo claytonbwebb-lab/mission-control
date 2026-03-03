@@ -3,7 +3,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { DragDropContext, Droppable, Draggable, type DropResult } from "@hello-pangea/dnd";
 import {
   Plus, X, ChevronDown, ChevronUp, Lightbulb, Wrench, Eye, CheckCircle2,
-  AlertCircle, MessageSquare, ArrowRight, Send, Loader2, User, Repeat
+  AlertCircle, MessageSquare, ArrowRight, Send, Loader2, User, Repeat,
+  ImageIcon, Upload, Trash2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,7 +17,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { apiRequest } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
-import type { Task, TaskStatus, TaskPriority, TaskLabel, TaskAssignee, ActivityEntry } from "@shared/schema";
+import type { Task, TaskStatus, TaskPriority, TaskLabel, TaskAssignee, ActivityEntry, TaskImage } from "@shared/schema";
 
 const COLUMNS: { id: TaskStatus; label: string; icon: React.ElementType }[] = [
   { id: "ideas", label: "Ideas", icon: Lightbulb },
@@ -70,6 +71,7 @@ function normalizeTask(raw: Record<string, unknown>): Task {
     position: (raw.position ?? 0) as number,
     is_repeatable: (raw.is_repeatable ?? 0) as number,
     cadence: (raw.cadence ?? undefined) as Task["cadence"],
+    images: (Array.isArray(raw.images) ? raw.images : []) as TaskImage[],
     createdAt: String(raw.created_at ?? raw.createdAt ?? ""),
     updatedAt: (raw.updated_at ?? raw.updatedAt ?? undefined) as string | undefined,
   };
@@ -133,6 +135,12 @@ function TaskCard({ task, index, onClick }: TaskCardProps) {
           <div className="flex items-start justify-between gap-2 mb-2">
             <p className="text-sm font-medium text-card-foreground leading-snug flex-1">{task.title}</p>
             <div className="flex items-center gap-1">
+              {(task.images?.length ?? 0) > 0 && (
+                <span className="inline-flex items-center gap-0.5 px-1 py-0.5 rounded text-xs bg-sky-500/10 text-sky-500" data-testid={`badge-images-${task.id}`}>
+                  <ImageIcon className="w-3 h-3" />
+                  <span className="text-[10px]">{task.images!.length}</span>
+                </span>
+              )}
               {!!task.is_repeatable && (
                 <span className="inline-flex items-center px-1 py-0.5 rounded text-xs bg-violet-500/10 text-violet-500" title={`Repeats ${task.cadence ?? ""}`.trim()} data-testid={`badge-repeat-${task.id}`}>
                   <Repeat className="w-3 h-3" />
@@ -250,12 +258,18 @@ function TaskModal({ task, open, onClose, onSave, onDelete, projectOptions }: Ta
   const [submittingComment, setSubmittingComment] = useState(false);
   const activityEndRef = useRef<HTMLDivElement>(null);
 
-  const { data: taskDetail, isLoading: detailLoading } = useQuery<{ activity: ActivityEntry[] }>({
+  const [uploading, setUploading] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
+
+  const { data: taskDetail, isLoading: detailLoading } = useQuery<{ activity: ActivityEntry[]; images: TaskImage[] }>({
     queryKey: ["/tasks", task?.id],
     queryFn: async () => {
       const raw = await apiRequest<Record<string, unknown>>("GET", `/tasks/${task!.id}`);
       const activity = (Array.isArray(raw.activity) ? raw.activity : []) as ActivityEntry[];
-      return { activity };
+      const images = (Array.isArray(raw.images) ? raw.images : []) as TaskImage[];
+      return { activity, images };
     },
     enabled: !!task && open,
     staleTime: 10_000,
@@ -306,11 +320,59 @@ function TaskModal({ task, open, onClose, onSave, onDelete, projectOptions }: Ta
     }
   };
 
+  const handleFileUpload = async (files: FileList | File[]) => {
+    if (!task || uploading) return;
+    setUploading(true);
+    try {
+      for (const file of Array.from(files)) {
+        if (!file.type.startsWith("image/")) continue;
+        const dataUri = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+        await apiRequest("POST", `/tasks/${task.id}/images`, {
+          data: dataUri,
+          filename: file.name,
+        });
+      }
+      qc.invalidateQueries({ queryKey: ["/tasks", task.id] });
+      qc.invalidateQueries({ queryKey: ["/tasks"] });
+      toast({ title: "Image uploaded" });
+    } catch (err) {
+      toast({ title: "Upload failed", description: (err as Error).message, variant: "destructive" });
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleDeleteImage = async (imageId: number) => {
+    if (!task) return;
+    if (!window.confirm("Delete this image?")) return;
+    try {
+      await apiRequest("DELETE", `/tasks/${task.id}/images/${imageId}`);
+      qc.invalidateQueries({ queryKey: ["/tasks", task.id] });
+      qc.invalidateQueries({ queryKey: ["/tasks"] });
+      toast({ title: "Image deleted" });
+    } catch (err) {
+      toast({ title: "Delete failed", description: (err as Error).message, variant: "destructive" });
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(false);
+    if (e.dataTransfer.files.length) handleFileUpload(e.dataTransfer.files);
+  };
+
   if (!task) return null;
 
   const activity = taskDetail?.activity ?? [];
+  const images = taskDetail?.images ?? task.images ?? [];
 
   return (
+    <>
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="max-w-lg max-h-[85vh] flex flex-col" data-testid="modal-task">
         <DialogHeader>
@@ -415,6 +477,64 @@ function TaskModal({ task, open, onClose, onSave, onDelete, projectOptions }: Ta
             )}
           </div>
 
+          <div className="border-t border-border pt-3">
+            <div className="flex items-center gap-2 mb-2">
+              <ImageIcon className="w-3.5 h-3.5 text-muted-foreground" />
+              <Label className="text-xs text-muted-foreground uppercase tracking-wide">Images</Label>
+              {images.length > 0 && (
+                <span className="text-xs text-muted-foreground/60">({images.length})</span>
+              )}
+            </div>
+            {images.length > 0 && (
+              <div className="grid grid-cols-4 gap-2 mb-2">
+                {images.map(img => (
+                  <div key={img.id} className="relative group" data-testid={`image-thumb-${img.id}`}>
+                    <button
+                      onClick={() => setLightboxUrl(img.url)}
+                      className="w-full aspect-square rounded-md overflow-hidden border border-border bg-muted"
+                    >
+                      <img src={img.url} alt={img.filename} className="w-full h-full object-cover" />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteImage(img.id)}
+                      className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                      data-testid={`button-delete-image-${img.id}`}
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div
+              onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+              onDragLeave={() => setDragOver(false)}
+              onDrop={handleDrop}
+              onClick={() => fileInputRef.current?.click()}
+              className={`flex items-center justify-center gap-2 p-3 rounded-md border-2 border-dashed cursor-pointer transition-colors
+                ${dragOver ? "border-primary bg-primary/5" : "border-border hover:border-primary/40"}`}
+              data-testid="dropzone-images"
+            >
+              {uploading ? (
+                <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+              ) : (
+                <Upload className="w-4 h-4 text-muted-foreground" />
+              )}
+              <span className="text-xs text-muted-foreground">
+                {uploading ? "Uploading..." : "Drop image or click to browse"}
+              </span>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                multiple
+                className="hidden"
+                onChange={(e) => e.target.files && handleFileUpload(e.target.files)}
+                data-testid="input-file-images"
+              />
+            </div>
+          </div>
+
           <div className="flex items-center justify-between pt-1">
             <Button
               variant="destructive"
@@ -478,6 +598,23 @@ function TaskModal({ task, open, onClose, onSave, onDelete, projectOptions }: Ta
         </div>
       </DialogContent>
     </Dialog>
+
+    {lightboxUrl && (
+      <Dialog open onOpenChange={() => setLightboxUrl(null)}>
+        <DialogContent className="max-w-3xl p-2 bg-black/90 border-none" data-testid="lightbox">
+          <DialogHeader className="sr-only">
+            <DialogTitle>Image Preview</DialogTitle>
+            <DialogDescription>Full size image</DialogDescription>
+          </DialogHeader>
+          <img
+            src={lightboxUrl}
+            alt="Full size"
+            className="w-full h-auto max-h-[80vh] object-contain rounded"
+          />
+        </DialogContent>
+      </Dialog>
+    )}
+    </>
   );
 }
 

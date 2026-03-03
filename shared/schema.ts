@@ -21,6 +21,14 @@ export type TaskPriority = "low" | "medium" | "high" | "urgent";
 export type TaskLabel = string;
 export type TaskAssignee = string;
 
+export interface TaskImage {
+  id: number;
+  task_id: number;
+  filename: string;
+  url: string;
+  created_at: number;
+}
+
 export interface Task {
   id: string;
   title: string;
@@ -32,6 +40,7 @@ export interface Task {
   position?: number;
   is_repeatable?: number;
   cadence?: "daily" | "weekly" | "monthly";
+  images?: TaskImage[];
   createdAt: string;
   updatedAt?: string;
 }
