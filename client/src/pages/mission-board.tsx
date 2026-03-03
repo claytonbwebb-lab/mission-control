@@ -319,13 +319,21 @@ function TaskModal({ task, open, onClose, onSave, onDelete, projectOptions }: Ta
     if ((!comment.trim() && !commentImage) || !task) return;
     setSubmittingComment(true);
     try {
+      let imageUrl: string | undefined;
+      if (commentImage) {
+        const uploadRes = await apiRequest<{ url: string }>("POST", `/tasks/${task.id}/images`, {
+          data: commentImage.data,
+          filename: commentImage.filename,
+        });
+        imageUrl = uploadRes.url;
+      }
       const body: Record<string, string> = {
         author: "steve",
+        type: "comment",
         content: comment.trim() || (commentImage ? `Attached ${commentImage.filename}` : ""),
       };
-      if (commentImage) {
-        body.image = commentImage.data;
-        body.image_filename = commentImage.filename;
+      if (imageUrl) {
+        body.image_url = imageUrl;
       }
       await apiRequest("POST", `/tasks/${task.id}/activity`, body);
       setComment("");
