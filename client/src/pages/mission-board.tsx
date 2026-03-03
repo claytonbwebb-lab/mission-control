@@ -197,7 +197,16 @@ function ActivityItem({ entry }: { entry: ActivityEntry }) {
             <span className="text-xs text-muted-foreground/60">{timeAgo(entry.created_at)}</span>
           </div>
           <div className="bg-muted/50 border border-border rounded-lg rounded-tl-none px-3 py-2">
-            <p className="text-sm text-foreground whitespace-pre-wrap">{entry.content}</p>
+            {entry.content && <p className="text-sm text-foreground whitespace-pre-wrap">{entry.content}</p>}
+            {entry.image_url && (
+              <a href={entry.image_url} target="_blank" rel="noopener noreferrer" className="block mt-1.5" data-testid={`comment-image-${entry.id}`}>
+                <img
+                  src={entry.image_url}
+                  alt="Comment attachment"
+                  className="max-w-full max-h-48 rounded-md border border-border/50 object-contain cursor-pointer hover:opacity-90 transition-opacity"
+                />
+              </a>
+            )}
           </div>
         </div>
       </div>
@@ -255,8 +264,10 @@ function TaskModal({ task, open, onClose, onSave, onDelete, projectOptions }: Ta
   const [isRepeatable, setIsRepeatable] = useState(false);
   const [cadence, setCadence] = useState<"daily" | "weekly" | "monthly">("weekly");
   const [comment, setComment] = useState("");
+  const [commentImage, setCommentImage] = useState<{ data: string; filename: string } | null>(null);
   const [submittingComment, setSubmittingComment] = useState(false);
   const activityEndRef = useRef<HTMLDivElement>(null);
+  const commentFileRef = useRef<HTMLInputElement>(null);
 
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
@@ -286,6 +297,7 @@ function TaskModal({ task, open, onClose, onSave, onDelete, projectOptions }: Ta
       setIsRepeatable(!!task.is_repeatable);
       setCadence(task.cadence ?? "weekly");
       setComment("");
+      setCommentImage(null);
     }
   }, [task]);
 
@@ -304,20 +316,40 @@ function TaskModal({ task, open, onClose, onSave, onDelete, projectOptions }: Ta
   };
 
   const handleSubmitComment = async () => {
-    if (!comment.trim() || !task) return;
+    if ((!comment.trim() && !commentImage) || !task) return;
     setSubmittingComment(true);
     try {
-      await apiRequest("POST", `/tasks/${task.id}/activity`, {
+      const body: Record<string, string> = {
         author: "steve",
-        content: comment.trim(),
-      });
+        content: comment.trim() || (commentImage ? `Attached ${commentImage.filename}` : ""),
+      };
+      if (commentImage) {
+        body.image = commentImage.data;
+        body.image_filename = commentImage.filename;
+      }
+      await apiRequest("POST", `/tasks/${task.id}/activity`, body);
       setComment("");
+      setCommentImage(null);
       qc.invalidateQueries({ queryKey: ["/tasks", task.id] });
+      qc.invalidateQueries({ queryKey: ["/tasks"] });
     } catch (err) {
       toast({ title: "Failed to post comment", description: (err as Error).message, variant: "destructive" });
     } finally {
       setSubmittingComment(false);
     }
+  };
+
+  const handleCommentImageSelect = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    const file = files[0];
+    if (!file.type.startsWith("image/")) return;
+    const dataUri = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+    setCommentImage({ data: dataUri, filename: file.name });
   };
 
   const handleFileUpload = async (files: FileList | File[]) => {
@@ -574,6 +606,19 @@ function TaskModal({ task, open, onClose, onSave, onDelete, projectOptions }: Ta
               </div>
             )}
 
+            {commentImage && (
+              <div className="flex items-center gap-2 mb-2 p-2 bg-muted/50 rounded-md border border-border">
+                <img src={commentImage.data} alt={commentImage.filename} className="w-12 h-12 object-cover rounded" />
+                <span className="text-xs text-muted-foreground flex-1 truncate">{commentImage.filename}</span>
+                <button
+                  onClick={() => setCommentImage(null)}
+                  className="text-muted-foreground hover:text-foreground"
+                  data-testid="button-remove-comment-image"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            )}
             <div className="flex gap-2">
               <Input
                 value={comment}
@@ -585,9 +630,25 @@ function TaskModal({ task, open, onClose, onSave, onDelete, projectOptions }: Ta
               />
               <Button
                 size="icon"
+                variant="ghost"
+                onClick={() => commentFileRef.current?.click()}
+                className="flex-shrink-0"
+                data-testid="button-attach-comment-image"
+              >
+                <ImageIcon className="w-3.5 h-3.5" />
+              </Button>
+              <input
+                ref={commentFileRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => { handleCommentImageSelect(e.target.files); e.target.value = ""; }}
+              />
+              <Button
+                size="icon"
                 variant="secondary"
                 onClick={handleSubmitComment}
-                disabled={!comment.trim() || submittingComment}
+                disabled={(!comment.trim() && !commentImage) || submittingComment}
                 data-testid="button-submit-comment"
                 className="flex-shrink-0"
               >

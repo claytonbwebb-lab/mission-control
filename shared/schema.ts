@@ -54,6 +54,7 @@ export interface ActivityEntry {
   field?: string;
   old_value?: string;
   new_value?: string;
+  image_url?: string;
   created_at: number;
 }
 
