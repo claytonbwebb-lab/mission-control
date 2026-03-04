@@ -911,7 +911,7 @@ interface GeneratedPost {
 function GenerateTab({ pages, onSwitchTab, selectedPageId }: { pages: SocialPage[]; onSwitchTab: (tab: string) => void; selectedPageId: string }) {
   const qc = useQueryClient();
   const { toast } = useToast();
-  const [project, setProject] = useState("");
+  const [genPageId, setGenPageId] = useState("");
   const [theme, setTheme] = useState("");
   const [formatOpt, setFormatOpt] = useState("");
   const [guidance, setGuidance] = useState("");
@@ -928,13 +928,9 @@ function GenerateTab({ pages, onSwitchTab, selectedPageId }: { pages: SocialPage
 
   useEffect(() => {
     if (selectedPageId && selectedPageId !== "all") {
-      const page = pages.find(p => p.pageId === selectedPageId);
-      if (page) {
-        const match = PROJECT_OPTIONS.find(opt => opt.toLowerCase() === page.name.toLowerCase());
-        if (match) setProject(match);
-      }
+      setGenPageId(selectedPageId);
     }
-  }, [selectedPageId, pages]);
+  }, [selectedPageId]);
 
   const confirmAndRun = (action: "single" | "week", fn: () => void) => {
     if (generatedPost) {
@@ -954,11 +950,15 @@ function GenerateTab({ pages, onSwitchTab, selectedPageId }: { pages: SocialPage
     }
   };
 
+  const selectedPage = pages.find(p => p.pageId === genPageId);
+  const project = selectedPage?.name ?? "";
+
   const doGenerate = async () => {
     setGenerating(true);
     setGeneratedPost(null);
     try {
       const body: Record<string, unknown> = { project, theme, format: formatOpt, guidance, auto_image: autoImage };
+      if (genPageId) body.page_id = genPageId;
       if (imagePrompt.trim()) body.image_prompt = imagePrompt.trim();
       if (imageUrl) body.image_url = imageUrl;
       const res = await apiRequest<Record<string, unknown>>("POST", "/posts/generate", body);
@@ -978,6 +978,7 @@ function GenerateTab({ pages, onSwitchTab, selectedPageId }: { pages: SocialPage
     setGeneratedPost(null);
     try {
       const body: Record<string, unknown> = { project, theme, format: formatOpt, guidance, auto_image: autoImage };
+      if (genPageId) body.page_id = genPageId;
       if (imagePrompt.trim()) body.image_prompt = imagePrompt.trim();
       const res = await apiRequest<Record<string, unknown>>("POST", "/posts/generate/week", body);
       const posts = (res.posts ?? res.drafts ?? res.results ?? []) as GeneratedPost[];
@@ -1016,7 +1017,7 @@ function GenerateTab({ pages, onSwitchTab, selectedPageId }: { pages: SocialPage
   const handleSaveAllDrafts = async () => {
     setSavingDraft(true);
     try {
-      const defaultPageId = (selectedPageId && selectedPageId !== "all") ? selectedPageId : (pages.length > 0 ? pages[0].pageId : undefined);
+      const defaultPageId = genPageId || ((selectedPageId && selectedPageId !== "all") ? selectedPageId : (pages.length > 0 ? pages[0].pageId : undefined));
       await Promise.all(weekPosts.map(p =>
         apiRequest("POST", "/posts", {
           content_text: p.content,
@@ -1042,12 +1043,12 @@ function GenerateTab({ pages, onSwitchTab, selectedPageId }: { pages: SocialPage
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1.5">
           <Label className="text-xs text-muted-foreground uppercase tracking-wide">Project / Brand</Label>
-          <Select value={project} onValueChange={setProject}>
+          <Select value={genPageId} onValueChange={setGenPageId}>
             <SelectTrigger data-testid="select-gen-project">
               <SelectValue placeholder="Select project" />
             </SelectTrigger>
             <SelectContent>
-              {PROJECT_OPTIONS.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
+              {pages.map(p => <SelectItem key={p.pageId} value={p.pageId}>{p.name}</SelectItem>)}
             </SelectContent>
           </Select>
         </div>
