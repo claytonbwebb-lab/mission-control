@@ -531,7 +531,7 @@ function AccountsTab() {
 
 type CalendarView = "monthly" | "daily";
 
-function CalendarTab({ pages }: { pages: SocialPage[] }) {
+function CalendarTab({ pages, selectedPageId }: { pages: SocialPage[]; selectedPageId: string }) {
   const { toast } = useToast();
   const [view, setView] = useState<CalendarView>("monthly");
   const [currentMonth, setCurrentMonth] = useState(() => startOfMonth(new Date()));
@@ -547,10 +547,11 @@ function CalendarTab({ pages }: { pages: SocialPage[] }) {
   const fromStr = format(gridStart, "yyyy-MM-dd");
   const toStr = format(gridEndDate, "yyyy-MM-dd");
 
+  const pageParam = selectedPageId && selectedPageId !== "all" ? `&page_id=${selectedPageId}` : "";
   const { data: posts, isLoading, error } = useQuery<SocialPost[]>({
-    queryKey: ["/posts/calendar", fromStr, toStr],
+    queryKey: ["/posts/calendar", fromStr, toStr, selectedPageId],
     queryFn: async () => {
-      const raw = await apiRequest<Record<string, unknown>[]>("GET", `/posts/calendar?from=${fromStr}&to=${toStr}`);
+      const raw = await apiRequest<Record<string, unknown>[]>("GET", `/posts/calendar?from=${fromStr}&to=${toStr}${pageParam}`);
       return (Array.isArray(raw) ? raw : []).map(normalizePost);
     },
   });
@@ -746,15 +747,16 @@ function CalendarTab({ pages }: { pages: SocialPage[] }) {
   );
 }
 
-function QueueTab({ pages }: { pages: SocialPage[] }) {
+function QueueTab({ pages, selectedPageId }: { pages: SocialPage[]; selectedPageId: string }) {
   const qc = useQueryClient();
   const { toast } = useToast();
   const [selectedPost, setSelectedPost] = useState<SocialPost | null>(null);
 
+  const pageParam = selectedPageId && selectedPageId !== "all" ? `&page_id=${selectedPageId}` : "";
   const { data: posts, isLoading, error } = useQuery<SocialPost[]>({
-    queryKey: ["/posts"],
+    queryKey: ["/posts", selectedPageId],
     queryFn: async () => {
-      const raw = await apiRequest<Record<string, unknown>[]>("GET", "/posts?status=draft,approved,scheduled");
+      const raw = await apiRequest<Record<string, unknown>[]>("GET", `/posts?status=draft,approved,scheduled${pageParam}`);
       return (Array.isArray(raw) ? raw : []).map(normalizePost);
     },
   });
@@ -904,7 +906,7 @@ interface GeneratedPost {
   scheduled_time?: string;
 }
 
-function GenerateTab({ pages, onSwitchTab }: { pages: SocialPage[]; onSwitchTab: (tab: string) => void }) {
+function GenerateTab({ pages, onSwitchTab, selectedPageId }: { pages: SocialPage[]; onSwitchTab: (tab: string) => void; selectedPageId: string }) {
   const qc = useQueryClient();
   const { toast } = useToast();
   const [project, setProject] = useState("");
@@ -921,6 +923,16 @@ function GenerateTab({ pages, onSwitchTab }: { pages: SocialPage[]; onSwitchTab:
   const [weekPosts, setWeekPosts] = useState<GeneratedPost[]>([]);
   const [savingDraft, setSavingDraft] = useState(false);
   const [pendingAction, setPendingAction] = useState<"single" | "week" | null>(null);
+
+  useEffect(() => {
+    if (selectedPageId && selectedPageId !== "all") {
+      const page = pages.find(p => p.pageId === selectedPageId);
+      if (page) {
+        const match = PROJECT_OPTIONS.find(opt => opt.toLowerCase() === page.name.toLowerCase());
+        if (match) setProject(match);
+      }
+    }
+  }, [selectedPageId, pages]);
 
   const confirmAndRun = (action: "single" | "week", fn: () => void) => {
     if (generatedPost) {
@@ -1002,7 +1014,7 @@ function GenerateTab({ pages, onSwitchTab }: { pages: SocialPage[]; onSwitchTab:
   const handleSaveAllDrafts = async () => {
     setSavingDraft(true);
     try {
-      const defaultPageId = pages.length > 0 ? pages[0].pageId : undefined;
+      const defaultPageId = (selectedPageId && selectedPageId !== "all") ? selectedPageId : (pages.length > 0 ? pages[0].pageId : undefined);
       await Promise.all(weekPosts.map(p =>
         apiRequest("POST", "/posts", {
           content_text: p.content,
@@ -1228,6 +1240,7 @@ function GenerateTab({ pages, onSwitchTab }: { pages: SocialPage[]; onSwitchTab:
 
 export default function SocialMediaPage() {
   const [activeTab, setActiveTab] = useState("queue");
+  const [selectedPageId, setSelectedPageId] = useState("all");
   const { data: pages = [] } = useQuery<SocialPage[]>({
     queryKey: ["/pages"],
     queryFn: async () => {
@@ -1238,8 +1251,22 @@ export default function SocialMediaPage() {
 
   return (
     <div className="h-full flex flex-col">
-      <div className="px-5 py-3 border-b border-border bg-background">
+      <div className="px-5 py-3 border-b border-border bg-background flex items-center justify-between flex-wrap gap-2">
         <h1 className="text-base font-semibold text-foreground">Social Media</h1>
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-muted-foreground">Page:</span>
+          <Select value={selectedPageId} onValueChange={setSelectedPageId}>
+            <SelectTrigger className="h-7 text-xs w-48" data-testid="select-page-filter">
+              <SelectValue placeholder="All Pages" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all" data-testid="page-filter-all">All Pages</SelectItem>
+              {pages.map(p => (
+                <SelectItem key={p.pageId} value={p.pageId} data-testid={`page-filter-${p.pageId}`}>{p.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
       <div className="flex-1 overflow-y-auto p-5">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -1258,9 +1285,9 @@ export default function SocialMediaPage() {
             </TabsTrigger>
           </TabsList>
           <TabsContent value="accounts"><AccountsTab /></TabsContent>
-          <TabsContent value="calendar"><CalendarTab pages={pages} /></TabsContent>
-          <TabsContent value="queue"><QueueTab pages={pages} /></TabsContent>
-          <TabsContent value="generate"><GenerateTab pages={pages} onSwitchTab={setActiveTab} /></TabsContent>
+          <TabsContent value="calendar"><CalendarTab pages={pages} selectedPageId={selectedPageId} /></TabsContent>
+          <TabsContent value="queue"><QueueTab pages={pages} selectedPageId={selectedPageId} /></TabsContent>
+          <TabsContent value="generate"><GenerateTab pages={pages} onSwitchTab={setActiveTab} selectedPageId={selectedPageId} /></TabsContent>
         </Tabs>
       </div>
     </div>
