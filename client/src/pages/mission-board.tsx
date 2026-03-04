@@ -4,7 +4,7 @@ import { DragDropContext, Droppable, Draggable, type DropResult } from "@hello-p
 import {
   Plus, X, ChevronDown, ChevronUp, Lightbulb, Wrench, Eye, CheckCircle2,
   AlertCircle, MessageSquare, ArrowRight, Send, Loader2, User, Repeat,
-  ImageIcon, Upload, Trash2, RefreshCw
+  ImageIcon, Upload, Trash2, RefreshCw, Pencil, Check
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -222,12 +222,50 @@ function CommentContent({ content, entryId, fallbackImageUrl }: { content: strin
   );
 }
 
-function ActivityItem({ entry }: { entry: ActivityEntry }) {
+function ActivityItem({ entry, taskId, onEdited }: { entry: ActivityEntry; taskId?: string; onEdited?: () => void }) {
   const authorMeta = ASSIGNEE_META[entry.author] ?? { label: entry.author, className: "bg-muted text-muted-foreground" };
+  const [editing, setEditing] = useState(false);
+  const [editContent, setEditContent] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const startEdit = () => {
+    const textOnly = entry.content.replace(/!\[\]\([^)]+\)\n?/g, "").trim();
+    setEditContent(textOnly);
+    setEditing(true);
+  };
+
+  const cancelEdit = () => { setEditing(false); setEditContent(""); };
+
+  const saveEdit = async () => {
+    if (!taskId) return;
+    setSaving(true);
+    try {
+      const base = import.meta.env.VITE_API_URL || "/api";
+      const token = localStorage.getItem("bsl_mc_token");
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+      const imageRefs = entry.content.match(/!\[\]\([^)]+\)/g) || [];
+      let newContent = editContent.trim();
+      if (imageRefs.length > 0) {
+        newContent = newContent ? `${newContent}\n${imageRefs.join("\n")}` : imageRefs.join("\n");
+      }
+      await fetch(`${base}/tasks/${taskId}/activity/${entry.id}`, {
+        method: "PATCH",
+        headers,
+        body: JSON.stringify({ content: newContent, author: "steve" }),
+      });
+      setEditing(false);
+      onEdited?.();
+    } catch (err) {
+      console.error("Failed to edit comment:", err);
+    } finally {
+      setSaving(false);
+    }
+  };
 
   if (entry.type === "comment") {
     return (
-      <div className="flex gap-2.5" data-testid={`activity-comment-${entry.id}`}>
+      <div className="flex gap-2.5 group/comment" data-testid={`activity-comment-${entry.id}`}>
         <div className={`flex items-center justify-center w-6 h-6 rounded-full flex-shrink-0 mt-0.5 ${authorMeta.className}`}>
           <User className="w-3 h-3" />
         </div>
@@ -235,10 +273,40 @@ function ActivityItem({ entry }: { entry: ActivityEntry }) {
           <div className="flex items-center gap-2 mb-0.5">
             <span className="text-xs font-medium text-foreground">{authorMeta.label}</span>
             <span className="text-xs text-muted-foreground/60">{timeAgo(entry.created_at)}</span>
+            {entry.content.includes("(edited)") ? null : !editing && (
+              <button
+                onClick={startEdit}
+                className="opacity-0 group-hover/comment:opacity-100 transition-opacity p-0.5 rounded hover:bg-muted"
+                data-testid={`button-edit-comment-${entry.id}`}
+              >
+                <Pencil className="w-3 h-3 text-muted-foreground" />
+              </button>
+            )}
           </div>
-          <div className="bg-muted/50 border border-border rounded-lg rounded-tl-none px-3 py-2">
-            <CommentContent content={entry.content} entryId={entry.id} fallbackImageUrl={entry.image_url} />
-          </div>
+          {editing ? (
+            <div className="space-y-2">
+              <Textarea
+                value={editContent}
+                onChange={(e) => setEditContent(e.target.value)}
+                className="text-sm min-h-[60px]"
+                data-testid={`textarea-edit-comment-${entry.id}`}
+                autoFocus
+              />
+              <div className="flex gap-1.5">
+                <Button size="sm" className="h-6 text-xs px-2" onClick={saveEdit} disabled={saving || !editContent.trim()} data-testid={`button-save-comment-${entry.id}`}>
+                  {saving ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : <Check className="w-3 h-3 mr-1" />}
+                  Save
+                </Button>
+                <Button size="sm" variant="ghost" className="h-6 text-xs px-2" onClick={cancelEdit} disabled={saving} data-testid={`button-cancel-edit-${entry.id}`}>
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="bg-muted/50 border border-border rounded-lg rounded-tl-none px-3 py-2">
+              <CommentContent content={entry.content} entryId={entry.id} fallbackImageUrl={entry.image_url} />
+            </div>
+          )}
         </div>
       </div>
     );
@@ -649,7 +717,7 @@ function TaskModal({ task, open, onClose, onSave, onDelete, projectOptions }: Ta
             ) : (
               <div className="space-y-2.5 mb-3">
                 {activity.map(entry => (
-                  <ActivityItem key={entry.id} entry={entry} />
+                  <ActivityItem key={entry.id} entry={entry} taskId={task?.id} onEdited={() => qc.invalidateQueries({ queryKey: ["/tasks", task?.id] })} />
                 ))}
                 <div ref={activityEndRef} />
               </div>
