@@ -771,6 +771,7 @@ function AddCardForm({ columnId, onAdd, onCancel }: AddCardFormProps) {
 
 export default function MissionBoard() {
   const qc = useQueryClient();
+  const { toast } = useToast();
   const [filterLabel, setFilterLabel] = useState<TaskLabel | "all">("all");
   const [filterAssignee, setFilterAssignee] = useState<string>("all");
   const [addingColumn, setAddingColumn] = useState<TaskStatus | null>(null);
@@ -778,6 +779,7 @@ export default function MissionBoard() {
   const [modalOpen, setModalOpen] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [checkingTasks, setCheckingTasks] = useState(false);
 
   const { data: tasks, isLoading, error, dataUpdatedAt } = useQuery<Task[]>({
     queryKey: ["/tasks"],
@@ -812,6 +814,33 @@ export default function MissionBoard() {
     setRefreshing(true);
     await qc.invalidateQueries({ queryKey: ["/tasks"] });
     setRefreshing(false);
+  };
+
+  const handleCheckTasks = async () => {
+    setCheckingTasks(true);
+    try {
+      const base = import.meta.env.VITE_API_URL || "/api";
+      const token = localStorage.getItem("bsl_mc_token");
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+      let res: Response;
+      try {
+        res = await fetch(`${base}/clawbot/check-tasks`, { method: "POST", headers });
+      } catch (_networkErr) {
+        toast({ title: "Failed to reach Clawbot", variant: "destructive" });
+        setCheckingTasks(false);
+        return;
+      }
+      if (res.ok) {
+        toast({ title: "🦞 Clawbot is on it!", className: "bg-emerald-600 text-white border-emerald-700" });
+      } else {
+        toast({ title: "Failed to reach Clawbot", variant: "destructive" });
+      }
+    } catch (err) {
+      console.error("Check tasks error:", err);
+      toast({ title: "Failed to reach Clawbot", variant: "destructive" });
+    }
+    setCheckingTasks(false);
   };
 
   const createMutation = useMutation({
@@ -887,7 +916,19 @@ export default function MissionBoard() {
   return (
     <div className="h-full flex flex-col">
       <div className="flex items-center justify-between px-5 py-3 border-b border-border bg-background flex-wrap gap-2">
-        <h1 className="text-base font-semibold text-foreground">Mission Board</h1>
+        <div className="flex items-center gap-3">
+          <h1 className="text-base font-semibold text-foreground">Mission Board</h1>
+          <Button
+            size="sm"
+            onClick={handleCheckTasks}
+            disabled={checkingTasks}
+            className="h-7 text-xs"
+            data-testid="button-check-tasks"
+          >
+            {checkingTasks ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" /> : <span className="mr-1.5">🦞</span>}
+            {checkingTasks ? "Checking…" : "Check Tasks"}
+          </Button>
+        </div>
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-xs text-muted-foreground">Filter:</span>
           <div className="flex gap-1.5 flex-wrap">
