@@ -547,11 +547,12 @@ function CalendarTab({ pages, selectedPageId }: { pages: SocialPage[]; selectedP
   const fromStr = format(gridStart, "yyyy-MM-dd");
   const toStr = format(gridEndDate, "yyyy-MM-dd");
 
-  const pageParam = selectedPageId && selectedPageId !== "all" ? `&page_id=${selectedPageId}` : "";
   const { data: posts, isLoading, error } = useQuery<SocialPost[]>({
     queryKey: ["/posts/calendar", fromStr, toStr, selectedPageId],
-    queryFn: async () => {
-      const raw = await apiRequest<Record<string, unknown>[]>("GET", `/posts/calendar?from=${fromStr}&to=${toStr}${pageParam}`);
+    queryFn: async ({ queryKey }) => {
+      const pid = queryKey[3] as string;
+      const pageFilter = pid && pid !== "all" ? `&page_id=${pid}` : "";
+      const raw = await apiRequest<Record<string, unknown>[]>("GET", `/posts/calendar?from=${fromStr}&to=${toStr}${pageFilter}`);
       return (Array.isArray(raw) ? raw : []).map(normalizePost);
     },
   });
@@ -752,11 +753,12 @@ function QueueTab({ pages, selectedPageId }: { pages: SocialPage[]; selectedPage
   const { toast } = useToast();
   const [selectedPost, setSelectedPost] = useState<SocialPost | null>(null);
 
-  const pageParam = selectedPageId && selectedPageId !== "all" ? `&page_id=${selectedPageId}` : "";
   const { data: posts, isLoading, error } = useQuery<SocialPost[]>({
     queryKey: ["/posts", selectedPageId],
-    queryFn: async () => {
-      const raw = await apiRequest<Record<string, unknown>[]>("GET", `/posts?status=draft,approved,scheduled${pageParam}`);
+    queryFn: async ({ queryKey }) => {
+      const pid = queryKey[1] as string;
+      const pageFilter = pid && pid !== "all" ? `&page_id=${pid}` : "";
+      const raw = await apiRequest<Record<string, unknown>[]>("GET", `/posts?status=draft,approved,scheduled${pageFilter}`);
       return (Array.isArray(raw) ? raw : []).map(normalizePost);
     },
   });
