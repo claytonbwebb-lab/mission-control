@@ -1058,8 +1058,8 @@ export default function MissionBoard() {
         </div>
       )}
 
-      <div className="flex-1 overflow-auto md:overflow-x-auto md:overflow-y-hidden">
-        <div className="flex flex-col md:flex-row gap-4 p-5 md:h-full md:min-w-max">
+      <div className="flex-1 overflow-auto">
+        <div className="flex flex-col md:flex-row gap-4 p-5 md:min-w-max">
         <DragDropContext onDragEnd={handleDragEnd}>
           <div className="contents">
             {COLUMNS.map(col => {
