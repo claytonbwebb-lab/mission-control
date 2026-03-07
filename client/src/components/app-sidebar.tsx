@@ -18,6 +18,7 @@ import {
   LogOut,
   Zap,
   Timer,
+  ShieldCheck,
 } from "lucide-react";
 import { clearToken } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
@@ -27,6 +28,7 @@ const navItems = [
   { title: "Social Media", url: "/social", icon: Share2 },
   { title: "AI Usage", url: "/ai-usage", icon: Cpu },
   { title: "Cron Jobs", url: "/cron", icon: Timer },
+  { title: "Recovery", url: "/recovery", icon: ShieldCheck },
 ];
 
 export function AppSidebar() {

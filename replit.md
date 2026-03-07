@@ -35,7 +35,14 @@ A private operations dashboard for Bright Stack Labs.
 - Post detail modal with edit/approve/reject/publish/delete actions
 - API: Various `/posts`, `/pages`, `/generate` endpoints on `VITE_API_URL`
 
-### Section 3 — AI Usage (`/ai-usage`)
+### Section 3 — Recovery (`/recovery`)
+- Emergency recovery procedures page
+- Fetches markdown from `GET {VITE_API_URL}/docs/recovery` (no auth required)
+- Renders markdown as formatted HTML using `marked` library
+- Code blocks with dark background, monospace font, and copy-to-clipboard buttons
+- Sidebar link with shield icon
+
+### Section 4 — AI Usage (`/ai-usage`)
 - Credit balance panel
 - 7-day token usage bar chart (Recharts)
 - Recent API calls table
@@ -54,6 +61,7 @@ A private operations dashboard for Bright Stack Labs.
 - `client/src/components/theme-provider.tsx` — Dark/light mode ThemeProvider
 - `client/src/pages/mission-board.tsx` — Kanban board with DnD
 - `client/src/pages/social-media.tsx` — Social media scheduler
+- `client/src/pages/recovery.tsx` — Emergency recovery docs page
 - `client/src/pages/ai-usage.tsx` — Anthropic billing dashboard
 - `server/routes.ts` — Express routes (AI usage proxy)
 - `shared/schema.ts` — TypeScript types for all data models
