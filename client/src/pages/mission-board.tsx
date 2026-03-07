@@ -4,7 +4,7 @@ import { DragDropContext, Droppable, Draggable, type DropResult } from "@hello-p
 import {
   Plus, X, ChevronDown, ChevronUp, Lightbulb, Wrench, Eye, CheckCircle2,
   AlertCircle, MessageSquare, ArrowRight, Send, Loader2, User, Repeat,
-  ImageIcon, Upload, Trash2, RefreshCw, Pencil, Check
+  ImageIcon, Upload, Trash2, RefreshCw, Pencil, Check, Search
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -848,11 +848,20 @@ export default function MissionBoard() {
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [checkingTasks, setCheckingTasks] = useState(false);
+  const [searchInput, setSearchInput] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+
+  useEffect(() => {
+    const timer = setTimeout(() => setSearchQuery(searchInput.trim()), 300);
+    return () => clearTimeout(timer);
+  }, [searchInput]);
 
   const { data: tasks, isLoading, error, dataUpdatedAt } = useQuery<Task[]>({
-    queryKey: ["/tasks"],
-    queryFn: async () => {
-      const raw = await apiRequest<Record<string, unknown>[]>("GET", "/tasks");
+    queryKey: ["/tasks", searchQuery],
+    queryFn: async ({ queryKey }) => {
+      const q = queryKey[1] as string;
+      const url = q ? `/tasks?q=${encodeURIComponent(q)}` : "/tasks";
+      const raw = await apiRequest<Record<string, unknown>[]>("GET", url);
       return (Array.isArray(raw) ? raw : []).map(normalizeTask);
     },
     staleTime: 30000,
@@ -996,6 +1005,25 @@ export default function MissionBoard() {
             {checkingTasks ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" /> : <span className="mr-1.5">🦞</span>}
             {checkingTasks ? "Checking…" : "Check Tasks"}
           </Button>
+        </div>
+        <div className="relative">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
+          <Input
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            placeholder="Search tasks…"
+            className="h-7 text-xs pl-8 pr-7 w-48"
+            data-testid="input-search-tasks"
+          />
+          {searchInput && (
+            <button
+              onClick={() => setSearchInput("")}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              data-testid="button-clear-search"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          )}
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-xs text-muted-foreground">Filter:</span>
