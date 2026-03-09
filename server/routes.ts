@@ -159,21 +159,89 @@ export async function registerRoutes(
     return res.json(demoPosts[idx]);
   });
 
-  app.post("/api/generate", (req, res) => {
+  async function callOpenRouter(messages: { role: string; content: string }[]): Promise<string> {
+    const apiKey = process.env.OPENROUTER_API_KEY;
+    if (!apiKey) throw new Error("OPENROUTER_API_KEY not configured");
+
+    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "openai/gpt-4o-mini",
+        messages,
+        max_tokens: 1024,
+        temperature: 0.8,
+      }),
+    });
+
+    if (!response.ok) {
+      const errText = await response.text().catch(() => "Unknown error");
+      throw new Error(`OpenRouter API error ${response.status}: ${errText}`);
+    }
+
+    const data = await response.json() as { choices?: { message?: { content?: string } }[] };
+    const content = data.choices?.[0]?.message?.content;
+    if (!content) throw new Error("No content in OpenRouter response");
+    return content;
+  }
+
+  app.post("/api/generate", async (req, res) => {
     const { project, theme, format: fmt, guidance } = req.body;
-    const content = `Here's a ${fmt || "short post"} for ${project || "your brand"} with a ${theme || "promotional"} theme:\n\nReady to level up? At ${project || "our company"}, we believe in building tools that actually make a difference. No fluff, no filler — just results.\n\n${guidance ? `Note: ${guidance}` : "Try it today and see the difference for yourself."}`;
-    return res.json({ content });
+    try {
+      const systemPrompt = `You are a social media content writer for ${project || "a brand"}. Write engaging, authentic content. Keep posts concise and impactful. Do not use hashtags unless asked. Do not include any meta commentary — just output the post content directly.`;
+      const userPrompt = `Write a ${fmt || "short post"} with a ${theme || "promotional"} theme for ${project || "our brand"}.${guidance ? ` Additional guidance: ${guidance}` : ""}`;
+
+      const content = await callOpenRouter([
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt },
+      ]);
+      return res.json({ content });
+    } catch (err) {
+      console.error("Generate error:", err);
+      return res.status(500).json({ error: (err as Error).message });
+    }
   });
 
-  app.post("/api/generate/week", (req, res) => {
-    const { project } = req.body;
-    const dayNames = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
-    const posts = dayNames.map((d, i) => ({
-      id: randomUUID(),
-      content: `${d} post for ${project || "your brand"}: Great things are built one day at a time. Today's focus: delivering value that matters. What's your focus for the day? #${project?.replace(/\s+/g, "") || "BuildInPublic"}`,
-      scheduledTime: new Date(Date.now() + (i + 1) * day * 1000).toISOString().replace(/T.*/, "T09:00:00Z"),
-    }));
-    return res.json({ posts });
+  app.post("/api/generate/week", async (req, res) => {
+    const { project, theme, format: fmt, guidance } = req.body;
+    try {
+      const systemPrompt = `You are a social media content writer for ${project || "a brand"}. You create weekly content calendars. Write engaging, authentic content. Do not include any meta commentary.`;
+      const userPrompt = `Create a 5-day social media content plan (Monday through Friday) for ${project || "our brand"} with a ${theme || "mixed"} theme. Format: ${fmt || "short posts"}.${guidance ? ` Additional guidance: ${guidance}` : ""}
+
+Return the result as a JSON array with exactly 5 objects, each having "day" (e.g. "Monday") and "content" (the post text) fields. Return ONLY the JSON array, no markdown fencing or extra text.`;
+
+      const raw = await callOpenRouter([
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt },
+      ]);
+
+      let parsed: { day: string; content: string }[];
+      try {
+        const cleaned = raw.replace(/```json\s*/g, "").replace(/```\s*/g, "").trim();
+        parsed = JSON.parse(cleaned);
+      } catch {
+        parsed = [
+          { day: "Monday", content: raw.slice(0, 200) },
+          { day: "Tuesday", content: "Content generation partially succeeded. Please try again." },
+          { day: "Wednesday", content: "" },
+          { day: "Thursday", content: "" },
+          { day: "Friday", content: "" },
+        ];
+      }
+
+      const posts = parsed.map((p, i) => ({
+        id: randomUUID(),
+        content: p.content,
+        scheduledTime: new Date(Date.now() + (i + 1) * day * 1000).toISOString().replace(/T.*/, "T09:00:00Z"),
+      }));
+      return res.json({ posts });
+    } catch (err) {
+      console.error("Generate week error:", err);
+      return res.status(500).json({ error: (err as Error).message });
+    }
   });
 
   function requireAuth(req: Request, res: Response, next: NextFunction) {
