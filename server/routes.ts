@@ -1,6 +1,7 @@
-import type { Express } from "express";
+import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { randomUUID } from "crypto";
+import path from "path";
 
 interface DemoTask {
   id: string;
@@ -173,6 +174,23 @@ export async function registerRoutes(
       scheduledTime: new Date(Date.now() + (i + 1) * day * 1000).toISOString().replace(/T.*/, "T09:00:00Z"),
     }));
     return res.json({ posts });
+  });
+
+  function requireAuth(req: Request, res: Response, next: NextFunction) {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+    const token = authHeader.slice(7);
+    if (!token || token.length < 10) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+    next();
+  }
+
+  app.get("/api/architecture", requireAuth, (_req, res) => {
+    const filePath = path.resolve(process.cwd(), "server", "public", "architecture.html");
+    res.sendFile(filePath);
   });
 
   return httpServer;

@@ -35,7 +35,14 @@ A private operations dashboard for Bright Stack Labs.
 - Post detail modal with edit/approve/reject/publish/delete actions
 - API: Various `/posts`, `/pages`, `/generate` endpoints on `VITE_API_URL`
 
-### Section 3 — Recovery (`/recovery`)
+### Section 3 — Architecture (`/architecture`)
+- System architecture diagram page
+- Served from `GET /api/architecture` (local Express route, requires Bearer token auth)
+- HTML content fetched at build time from external backend, stored in `server/public/architecture.html`
+- Rendered in an iframe to preserve its own self-contained styles
+- Sidebar link with Blocks icon
+
+### Section 4 — Recovery (`/recovery`)
 - Emergency recovery procedures page
 - Fetches markdown from `GET {VITE_API_URL}/docs/recovery` (no auth required)
 - Renders markdown as formatted HTML using `marked` library
@@ -61,6 +68,7 @@ A private operations dashboard for Bright Stack Labs.
 - `client/src/components/theme-provider.tsx` — Dark/light mode ThemeProvider
 - `client/src/pages/mission-board.tsx` — Kanban board with DnD
 - `client/src/pages/social-media.tsx` — Social media scheduler
+- `client/src/pages/architecture.tsx` — Architecture diagram page (iframe)
 - `client/src/pages/recovery.tsx` — Emergency recovery docs page
 - `client/src/pages/ai-usage.tsx` — Anthropic billing dashboard
 - `server/routes.ts` — Express routes (AI usage proxy)
