@@ -161,7 +161,7 @@ export async function registerRoutes(
 
   app.post("/api/generate", async (req, res) => {
     try {
-      const response = await fetch("https://mission.brightstacklabs.co.uk/generate", {
+      const response = await fetch("https://mission.brightstacklabs.co.uk/posts/generate", {
         method: "POST",
         headers: {
           "Authorization": "Bearer BrightStack2026!",
@@ -183,7 +183,7 @@ export async function registerRoutes(
 
   app.post("/api/generate/week", async (req, res) => {
     try {
-      const response = await fetch("https://mission.brightstacklabs.co.uk/generate/week", {
+      const response = await fetch("https://mission.brightstacklabs.co.uk/posts/generate-week", {
         method: "POST",
         headers: {
           "Authorization": "Bearer BrightStack2026!",
