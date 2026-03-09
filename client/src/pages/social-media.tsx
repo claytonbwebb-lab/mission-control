@@ -961,8 +961,17 @@ function GenerateTab({ pages, onSwitchTab, selectedPageId }: { pages: SocialPage
       if (genPageId) body.page_id = genPageId;
       if (imagePrompt.trim()) body.image_prompt = imagePrompt.trim();
       if (imageUrl) body.image_url = imageUrl;
-      const res = await apiRequest<Record<string, unknown>>("POST", "/posts/generate", body);
-      const post = normalizePost(res);
+      const res = await fetch("/api/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) {
+        const errText = await res.text().catch(() => "Unknown error");
+        throw new Error(`API error ${res.status}: ${errText}`);
+      }
+      const data = await res.json();
+      const post = normalizePost(data);
       setGeneratedPost(post);
       qc.invalidateQueries({ queryKey: ["/posts"] });
     } catch (err) {
@@ -980,8 +989,17 @@ function GenerateTab({ pages, onSwitchTab, selectedPageId }: { pages: SocialPage
       const body: Record<string, unknown> = { project, theme, format: formatOpt, guidance, auto_image: autoImage };
       if (genPageId) body.page_id = genPageId;
       if (imagePrompt.trim()) body.image_prompt = imagePrompt.trim();
-      const res = await apiRequest<Record<string, unknown>>("POST", "/posts/generate/week", body);
-      const posts = (res.posts ?? res.drafts ?? res.results ?? []) as GeneratedPost[];
+      const res = await fetch("/api/generate/week", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) {
+        const errText = await res.text().catch(() => "Unknown error");
+        throw new Error(`API error ${res.status}: ${errText}`);
+      }
+      const data = await res.json();
+      const posts = (data.posts ?? data.drafts ?? data.results ?? []) as GeneratedPost[];
       setWeekPosts(posts);
       qc.invalidateQueries({ queryKey: ["/posts"] });
     } catch (err) {
