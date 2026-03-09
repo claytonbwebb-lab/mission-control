@@ -159,87 +159,46 @@ export async function registerRoutes(
     return res.json(demoPosts[idx]);
   });
 
-  async function callOpenRouter(messages: { role: string; content: string }[]): Promise<string> {
-    const apiKey = process.env.OPENROUTER_API_KEY;
-    if (!apiKey) throw new Error("OPENROUTER_API_KEY not configured");
-
-    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "openai/gpt-4o-mini",
-        messages,
-        max_tokens: 1024,
-        temperature: 0.8,
-      }),
-    });
-
-    if (!response.ok) {
-      const errText = await response.text().catch(() => "Unknown error");
-      throw new Error(`OpenRouter API error ${response.status}: ${errText}`);
-    }
-
-    const data = await response.json() as { choices?: { message?: { content?: string } }[] };
-    const content = data.choices?.[0]?.message?.content;
-    if (!content) throw new Error("No content in OpenRouter response");
-    return content;
-  }
-
   app.post("/api/generate", async (req, res) => {
-    const { project, theme, format: fmt, guidance } = req.body;
     try {
-      const systemPrompt = `You are a social media content writer for ${project || "a brand"}. Write engaging, authentic content. Keep posts concise and impactful. Do not use hashtags unless asked. Do not include any meta commentary — just output the post content directly.`;
-      const userPrompt = `Write a ${fmt || "short post"} with a ${theme || "promotional"} theme for ${project || "our brand"}.${guidance ? ` Additional guidance: ${guidance}` : ""}`;
-
-      const content = await callOpenRouter([
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt },
-      ]);
-      return res.json({ content });
+      const response = await fetch("https://mission.brightstacklabs.co.uk/posts/generate", {
+        method: "POST",
+        headers: {
+          "Authorization": "Bearer BrightStack2026!",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(req.body),
+      });
+      if (!response.ok) {
+        const errText = await response.text().catch(() => "Unknown error");
+        return res.status(response.status).json({ error: errText });
+      }
+      const data = await response.json();
+      return res.json(data);
     } catch (err) {
-      console.error("Generate error:", err);
+      console.error("Generate proxy error:", err);
       return res.status(500).json({ error: (err as Error).message });
     }
   });
 
   app.post("/api/generate/week", async (req, res) => {
-    const { project, theme, format: fmt, guidance } = req.body;
     try {
-      const systemPrompt = `You are a social media content writer for ${project || "a brand"}. You create weekly content calendars. Write engaging, authentic content. Do not include any meta commentary.`;
-      const userPrompt = `Create a 5-day social media content plan (Monday through Friday) for ${project || "our brand"} with a ${theme || "mixed"} theme. Format: ${fmt || "short posts"}.${guidance ? ` Additional guidance: ${guidance}` : ""}
-
-Return the result as a JSON array with exactly 5 objects, each having "day" (e.g. "Monday") and "content" (the post text) fields. Return ONLY the JSON array, no markdown fencing or extra text.`;
-
-      const raw = await callOpenRouter([
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt },
-      ]);
-
-      let parsed: { day: string; content: string }[];
-      try {
-        const cleaned = raw.replace(/```json\s*/g, "").replace(/```\s*/g, "").trim();
-        parsed = JSON.parse(cleaned);
-      } catch {
-        parsed = [
-          { day: "Monday", content: raw.slice(0, 200) },
-          { day: "Tuesday", content: "Content generation partially succeeded. Please try again." },
-          { day: "Wednesday", content: "" },
-          { day: "Thursday", content: "" },
-          { day: "Friday", content: "" },
-        ];
+      const response = await fetch("https://mission.brightstacklabs.co.uk/posts/generate/week", {
+        method: "POST",
+        headers: {
+          "Authorization": "Bearer BrightStack2026!",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(req.body),
+      });
+      if (!response.ok) {
+        const errText = await response.text().catch(() => "Unknown error");
+        return res.status(response.status).json({ error: errText });
       }
-
-      const posts = parsed.map((p, i) => ({
-        id: randomUUID(),
-        content: p.content,
-        scheduledTime: new Date(Date.now() + (i + 1) * day * 1000).toISOString().replace(/T.*/, "T09:00:00Z"),
-      }));
-      return res.json({ posts });
+      const data = await response.json();
+      return res.json(data);
     } catch (err) {
-      console.error("Generate week error:", err);
+      console.error("Generate week proxy error:", err);
       return res.status(500).json({ error: (err as Error).message });
     }
   });
