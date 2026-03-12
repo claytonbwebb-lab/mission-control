@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Low Farm Campsite | Ellerburn, North Yorkshire</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --green:  #3a5a40;
+      --green-light: #588157;
+      --cream:  #f8f4ee;
+      --brown:  #7c5c3a;
+      --text:   #2c2c2c;
+      --muted:  #6b6b6b;
+      --white:  #ffffff;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      color: var(--text);
+      background: var(--white);
+      line-height: 1.65;
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 1rem 2.5rem;
+      background: rgba(255,255,255,0.95);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid rgba(0,0,0,0.07);
+    }
+    .nav-logo {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.25rem;
+      color: var(--green);
+      font-weight: 700;
+      text-decoration: none;
+    }
+    .nav-logo span { color: var(--brown); }
+    .nav-links { display: flex; gap: 2rem; list-style: none; }
+    .nav-links a {
+      text-decoration: none; font-size: 0.9rem;
+      color: var(--muted); font-weight: 500;
+      transition: color .2s;
+    }
+    .nav-links a:hover { color: var(--green); }
+    .nav-cta {
+      background: var(--green); color: var(--white);
+      padding: .55rem 1.25rem; border-radius: 50px;
+      text-decoration: none; font-size: 0.875rem; font-weight: 600;
+      transition: background .2s;
+    }
+    .nav-cta:hover { background: var(--green-light); }
+
+    /* ── HERO ── */
+    .hero {
+      height: 100vh; min-height: 600px;
+      position: relative;
+      display: flex; align-items: center; justify-content: center;
+      text-align: center;
+      overflow: hidden;
+    }
+    .hero-bg {
+      position: absolute; inset: 0;
+      background-image: url('https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?w=1800&q=80');
+      background-size: cover; background-position: center;
+    }
+    .hero-bg::after {
+      content: '';
+      position: absolute; inset: 0;
+      background: linear-gradient(to bottom, rgba(0,0,0,.35) 0%, rgba(0,0,0,.5) 100%);
+    }
+    .hero-content { position: relative; z-index: 1; color: var(--white); padding: 1rem; }
+    .hero-badge {
+      display: inline-block;
+      background: rgba(255,255,255,.15);
+      border: 1px solid rgba(255,255,255,.4);
+      backdrop-filter: blur(4px);
+      padding: .35rem 1rem; border-radius: 50px;
+      font-size: .8rem; letter-spacing: .08em; text-transform: uppercase;
+      margin-bottom: 1.25rem;
+    }
+    .hero h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(2.5rem, 6vw, 4.5rem);
+      font-weight: 700;
+      line-height: 1.15;
+      margin-bottom: 1.25rem;
+      text-shadow: 0 2px 12px rgba(0,0,0,.3);
+    }
+    .hero p {
+      font-size: clamp(1rem, 2vw, 1.2rem);
+      max-width: 540px; margin: 0 auto 2rem;
+      opacity: .9; font-weight: 300;
+    }
+    .hero-actions { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; }
+    .btn-primary {
+      background: var(--green); color: var(--white);
+      padding: .85rem 2rem; border-radius: 50px;
+      text-decoration: none; font-weight: 600; font-size: .95rem;
+      transition: background .2s, transform .15s;
+    }
+    .btn-primary:hover { background: var(--green-light); transform: translateY(-1px); }
+    .btn-outline {
+      border: 2px solid rgba(255,255,255,.7); color: var(--white);
+      padding: .85rem 2rem; border-radius: 50px;
+      text-decoration: none; font-weight: 600; font-size: .95rem;
+      transition: background .2s;
+    }
+    .btn-outline:hover { background: rgba(255,255,255,.15); }
+
+    .hero-scroll {
+      position: absolute; bottom: 2rem; left: 50%; transform: translateX(-50%);
+      color: rgba(255,255,255,.7); font-size: .75rem;
+      letter-spacing: .1em; text-transform: uppercase;
+      display: flex; flex-direction: column; align-items: center; gap: .5rem;
+      animation: bounce 2s infinite;
+    }
+    .hero-scroll svg { width: 20px; opacity: .7; }
+    @keyframes bounce { 0%,100%{transform:translateX(-50%) translateY(0)} 50%{transform:translateX(-50%) translateY(6px)} }
+
+    /* ── STRIPS ── */
+    .strip {
+      display: flex; justify-content: center; gap: 3rem; flex-wrap: wrap;
+      padding: 1.5rem 2rem;
+      background: var(--green);
+      color: rgba(255,255,255,.9);
+      font-size: .875rem;
+    }
+    .strip-item { display: flex; align-items: center; gap: .5rem; }
+    .strip-item svg { width: 18px; opacity: .8; }
+
+    /* ── SECTION WRAPPER ── */
+    section { padding: 5rem 1.5rem; }
+    .container { max-width: 1100px; margin: 0 auto; }
+    .section-label {
+      font-size: .75rem; letter-spacing: .12em; text-transform: uppercase;
+      color: var(--green-light); font-weight: 600; margin-bottom: .5rem;
+    }
+    .section-title {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(1.75rem, 4vw, 2.75rem);
+      line-height: 1.2; margin-bottom: 1rem;
+    }
+    .section-sub { color: var(--muted); max-width: 560px; }
+
+    /* ── ABOUT ── */
+    .about-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 4rem;
+      align-items: center; margin-top: 3rem;
+    }
+    .about-img-wrap { position: relative; }
+    .about-img-wrap img {
+      width: 100%; height: 420px;
+      object-fit: cover; border-radius: 12px;
+    }
+    .about-img-badge {
+      position: absolute; bottom: -1.5rem; right: -1.5rem;
+      background: var(--green); color: var(--white);
+      padding: 1.25rem 1.5rem; border-radius: 12px;
+      text-align: center; box-shadow: 0 8px 24px rgba(0,0,0,.15);
+    }
+    .about-img-badge strong { display: block; font-size: 1.75rem; font-family: 'Playfair Display', serif; }
+    .about-img-badge span { font-size: .8rem; opacity: .85; }
+    .about-text p { margin-bottom: 1rem; color: var(--muted); }
+    .about-text p:first-of-type { color: var(--text); font-size: 1.05rem; }
+    .about-tags { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: 1.5rem; }
+    .tag {
+      background: var(--cream); color: var(--green);
+      padding: .4rem .9rem; border-radius: 50px;
+      font-size: .8rem; font-weight: 500;
+    }
+
+    /* ── FEATURES ── */
+    .features-bg { background: var(--cream); }
+    .features-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1.5rem; margin-top: 3rem;
+    }
+    .feature-card {
+      background: var(--white); border-radius: 12px;
+      padding: 1.75rem; border: 1px solid rgba(0,0,0,.06);
+      transition: transform .2s, box-shadow .2s;
+    }
+    .feature-card:hover { transform: translateY(-4px); box-shadow: 0 12px 32px rgba(0,0,0,.08); }
+    .feature-icon {
+      width: 48px; height: 48px; border-radius: 12px;
+      background: var(--green); display: flex; align-items: center; justify-content: center;
+      margin-bottom: 1rem;
+    }
+    .feature-icon svg { width: 22px; color: var(--white); }
+    .feature-card h3 { font-size: 1rem; font-weight: 600; margin-bottom: .4rem; }
+    .feature-card p { font-size: .875rem; color: var(--muted); }
+
+    /* ── GALLERY ── */
+    .gallery-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      grid-template-rows: 240px 240px;
+      gap: .75rem; margin-top: 2.5rem;
+    }
+    .gallery-grid .g1 { grid-column: 1; grid-row: 1 / 3; }
+    .gallery-grid img {
+      width: 100%; height: 100%;
+      object-fit: cover; border-radius: 10px;
+      transition: transform .3s;
+    }
+    .gallery-grid img:hover { transform: scale(1.02); }
+    .gallery-more {
+      display: flex; align-items: center; justify-content: center;
+      background: var(--green); color: var(--white);
+      border-radius: 10px; font-size: .9rem; font-weight: 600;
+      text-decoration: none; cursor: pointer;
+    }
+
+    /* ── NEARBY ── */
+    .nearby-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1.25rem; margin-top: 3rem;
+    }
+    .nearby-card {
+      position: relative; border-radius: 12px; overflow: hidden;
+      height: 220px;
+    }
+    .nearby-card img {
+      width: 100%; height: 100%;
+      object-fit: cover;
+      transition: transform .3s;
+    }
+    .nearby-card:hover img { transform: scale(1.05); }
+    .nearby-card-label {
+      position: absolute; bottom: 0; left: 0; right: 0;
+      background: linear-gradient(transparent, rgba(0,0,0,.7));
+      color: var(--white); padding: 1.5rem .9rem .75rem;
+      font-size: .9rem; font-weight: 600;
+    }
+
+    /* ── RULES ── */
+    .rules-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;
+      margin-top: 2.5rem;
+    }
+    .rule-item {
+      display: flex; align-items: flex-start; gap: .75rem;
+      padding: 1rem 1.25rem;
+      border-radius: 10px; border: 1px solid rgba(0,0,0,.07);
+    }
+    .rule-icon { flex-shrink: 0; margin-top: .1rem; }
+    .rule-icon svg { width: 18px; }
+    .rule-item p { font-size: .875rem; color: var(--muted); }
+    .rule-item strong { display: block; color: var(--text); font-size: .9rem; margin-bottom: .15rem; }
+
+    /* ── CTA BAND ── */
+    .cta-band {
+      background: linear-gradient(135deg, var(--green) 0%, var(--green-light) 100%);
+      color: var(--white); text-align: center; padding: 5rem 1.5rem;
+    }
+    .cta-band h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(1.75rem, 4vw, 2.75rem); margin-bottom: 1rem;
+    }
+    .cta-band p { opacity: .85; max-width: 480px; margin: 0 auto 2rem; }
+    .btn-white {
+      background: var(--white); color: var(--green);
+      padding: .9rem 2.25rem; border-radius: 50px;
+      text-decoration: none; font-weight: 700; font-size: .95rem;
+      transition: transform .15s, box-shadow .15s;
+      display: inline-block;
+    }
+    .btn-white:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,.2); }
+
+    /* ── CONTACT ── */
+    .contact-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 4rem;
+      align-items: start; margin-top: 3rem;
+    }
+    .contact-info h3 {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.5rem; margin-bottom: 1.25rem;
+    }
+    .contact-item {
+      display: flex; gap: 1rem; margin-bottom: 1.5rem;
+    }
+    .contact-item-icon {
+      width: 44px; height: 44px; border-radius: 10px;
+      background: var(--cream);
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .contact-item-icon svg { width: 20px; color: var(--green); }
+    .contact-item strong { display: block; font-size: .8rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin-bottom: .2rem; }
+    .contact-item a, .contact-item p { color: var(--text); text-decoration: none; font-size: .95rem; }
+    .contact-item a:hover { color: var(--green); }
+    .contact-form { background: var(--cream); border-radius: 16px; padding: 2rem; }
+    .contact-form h3 { font-family: 'Playfair Display', serif; font-size: 1.35rem; margin-bottom: 1.25rem; }
+    .form-group { margin-bottom: 1rem; }
+    .form-group label { display: block; font-size: .8rem; font-weight: 600; margin-bottom: .35rem; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+    .form-group input, .form-group textarea, .form-group select {
+      width: 100%; padding: .75rem 1rem;
+      border: 1.5px solid rgba(0,0,0,.1); border-radius: 8px;
+      font-family: 'Inter', sans-serif; font-size: .9rem;
+      background: var(--white); color: var(--text);
+      transition: border-color .2s;
+    }
+    .form-group input:focus, .form-group textarea:focus, .form-group select:focus {
+      outline: none; border-color: var(--green);
+    }
+    .form-group textarea { height: 100px; resize: vertical; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; }
+    .btn-submit {
+      width: 100%; background: var(--green); color: var(--white);
+      border: none; padding: .9rem; border-radius: 8px;
+      font-size: .95rem; font-weight: 600; cursor: pointer;
+      transition: background .2s;
+    }
+    .btn-submit:hover { background: var(--green-light); }
+
+    /* ── FOOTER ── */
+    footer {
+      background: #1c2b1f; color: rgba(255,255,255,.6);
+      text-align: center; padding: 2rem 1.5rem;
+      font-size: .85rem;
+    }
+    footer a { color: rgba(255,255,255,.8); text-decoration: none; }
+    footer strong { color: rgba(255,255,255,.9); }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 768px) {
+      nav { padding: 1rem 1.25rem; }
+      .nav-links { display: none; }
+      .about-grid, .contact-grid, .rules-grid { grid-template-columns: 1fr; gap: 2rem; }
+      .about-img-badge { right: .5rem; bottom: .5rem; }
+      .gallery-grid {
+        grid-template-columns: 1fr 1fr;
+        grid-template-rows: auto;
+      }
+      .gallery-grid .g1 { grid-column: 1 / 3; grid-row: auto; height: 200px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a class="nav-logo" href="#"><span>Low Farm</span> Campsite</a>
+  <ul class="nav-links">
+    <li><a href="#about">About</a></li>
+    <li><a href="#facilities">Facilities</a></li>
+    <li><a href="#gallery">Gallery</a></li>
+    <li><a href="#nearby">Nearby</a></li>
+    <li><a href="#contact">Contact</a></li>
+  </ul>
+  <a class="nav-cta" href="#contact">Book a Stay</a>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-content">
+    <div class="hero-badge">🌿 Open April – October 2025</div>
+    <h1>Escape to the<br>Yorkshire Dales</h1>
+    <p>A peaceful, off-grid campsite hidden in the valley of Ellerburn — where dark skies, babbling streams and country walks await.</p>
+    <div class="hero-actions">
+      <a href="#contact" class="btn-primary">Book Your Pitch</a>
+      <a href="#about" class="btn-outline">Explore the Site</a>
+    </div>
+  </div>
+  <div class="hero-scroll">
+    <span>Scroll</span>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 10l5 5 5-5"/></svg>
+  </div>
+</section>
+
+<!-- STRIP -->
+<div class="strip">
+  <div class="strip-item">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+    30 Pitches Available
+  </div>
+  <div class="strip-item">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
+    Dogs Welcome
+  </div>
+  <div class="strip-item">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+    No WiFi — Proper Getaway
+  </div>
+  <div class="strip-item">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/></svg>
+    Dark Sky Stargazing
+  </div>
+  <div class="strip-item">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+    Ellerburn, North Yorkshire
+  </div>
+</div>
+
+<!-- ABOUT -->
+<section id="about">
+  <div class="container">
+    <p class="section-label">Our Story</p>
+    <h2 class="section-title">A hidden gem in<br>the Yorkshire valley</h2>
+    <div class="about-grid">
+      <div class="about-img-wrap">
+        <img src="https://images.unsplash.com/photo-1478131143081-80f7f84ca84d?w=800&q=80" alt="Low Farm Campsite valley view" loading="lazy" />
+        <div class="about-img-badge">
+          <strong>2+</strong>
+          <span>Acres of<br>grassland</span>
+        </div>
+      </div>
+      <div class="about-text">
+        <p>Hidden in the beautiful valley of Ellerburn, Low Farm Campsite sits on over two acres of grassland on our working farm. It's a place where time genuinely stands still.</p>
+        <p>With no electric hookups and limited mobile signal, we offer something rare — a real escape. Swap the screen glow for star-filled dark skies. Swap traffic noise for a babbling beck running alongside the site.</p>
+        <p>We run from April to October with 30 pitches for tents, caravans and motor homes. Children and dogs are very welcome. Horse owners can even bring their horses — we have stables and grazing available.</p>
+        <p>On summer Saturday evenings, join us for <strong>Pizza & Puds</strong> — stone-baked pizza and fresh homemade cheesecakes, served on site. It really is that kind of place.</p>
+        <div class="about-tags">
+          <span class="tag">🏕️ Tents</span>
+          <span class="tag">🚐 Caravans</span>
+          <span class="tag">🚌 Motor Homes</span>
+          <span class="tag">🐕 Dogs Welcome</span>
+          <span class="tag">🐴 Horses Welcome</span>
+          <span class="tag">👨‍👩‍👧‍👦 Families</span>
+          <span class="tag">🚴 Bikers</span>
+          <span class="tag">🥾 Walkers</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section id="facilities" class="features-bg">
+  <div class="container">
+    <p class="section-label">What's On Site</p>
+    <h2 class="section-title">Everything you need,<br>nothing you don't</h2>
+    <p class="section-sub">Off-grid doesn't mean uncomfortable. We keep it simple and natural — the way camping should be.</p>
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        </div>
+        <h3>30 Spacious Pitches</h3>
+        <p>Over two acres of grass — plenty of space between neighbours. No feeling hemmed in.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 100 20A10 10 0 0012 2zm-2 14.5v-9l7 4.5-7 4.5z"/></svg>
+        </div>
+        <h3>Stream on Site</h3>
+        <p>A beck runs alongside the campsite — brilliant for kids with wellies and paddling adventures.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+        </div>
+        <h3>Dalby Forest Access</h3>
+        <p>A direct footpath from the site straight into Dalby Forest — bike trails and walking routes on your doorstep.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87m-4-12a4 4 0 010 7.75"/></svg>
+        </div>
+        <h3>Stables & Grazing</h3>
+        <p>Bring your horse. We offer stables and grazing so you can explore the off-road bridle paths and local beaches.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/></svg>
+        </div>
+        <h3>Dark Skies</h3>
+        <p>No light pollution. On clear nights the Milky Way is clearly visible — magical for stargazers of all ages.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8h1a4 4 0 010 8h-1"/><path d="M2 8h16v9a4 4 0 01-4 4H6a4 4 0 01-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
+        </div>
+        <h3>Pizza & Puds Evenings</h3>
+        <p>Summer Saturday evenings — stone-baked pizza and homemade cheesecakes, right on site. You'll smell it before you see it.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- GALLERY -->
+<section id="gallery">
+  <div class="container">
+    <p class="section-label">Gallery</p>
+    <h2 class="section-title">See the site for yourself</h2>
+    <div class="gallery-grid">
+      <img class="g1" src="https://images.unsplash.com/photo-1537225228614-56cc3556d7ed?w=800&q=80" alt="Valley campsite view" loading="lazy" />
+      <img src="https://images.unsplash.com/photo-1510672981848-a1c4f1cb5ccf?w=600&q=80" alt="Campfire at dusk" loading="lazy" />
+      <img src="https://images.unsplash.com/photo-1517824806704-9040b037703b?w=600&q=80" alt="Morning mist in valley" loading="lazy" />
+      <img src="https://images.unsplash.com/photo-1478131143081-80f7f84ca84d?w=600&q=80" alt="Tent in field" loading="lazy" />
+      <a href="#contact" class="gallery-more">📷 Book a visit &rarr;</a>
+    </div>
+  </div>
+</section>
+
+<!-- NEARBY -->
+<section id="nearby" class="features-bg">
+  <div class="container">
+    <p class="section-label">Local Area</p>
+    <h2 class="section-title">Everything on your doorstep</h2>
+    <p class="section-sub">Thornton-le-Dale village is just a one-mile walk — one of the most photographed villages in England.</p>
+    <div class="nearby-grid">
+      <div class="nearby-card">
+        <img src="https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=600&q=80" alt="Dalby Forest trails" loading="lazy" />
+        <div class="nearby-card-label">🌲 Dalby Forest</div>
+      </div>
+      <div class="nearby-card">
+        <img src="https://images.unsplash.com/photo-1499678329028-101435549a4e?w=600&q=80" alt="Yorkshire village pub" loading="lazy" />
+        <div class="nearby-card-label">🍺 Village Pubs</div>
+      </div>
+      <div class="nearby-card">
+        <img src="https://images.unsplash.com/photo-1530305408560-82d13781b33a?w=600&q=80" alt="Country walking paths" loading="lazy" />
+        <div class="nearby-card-label">🥾 Walking Trails</div>
+      </div>
+      <div class="nearby-card">
+        <img src="https://images.unsplash.com/photo-1565073624497-7144969f0ed1?w=600&q=80" alt="Fish and chips" loading="lazy" />
+        <div class="nearby-card-label">🐟 Fish & Chips</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- RULES -->
+<section>
+  <div class="container">
+    <p class="section-label">Good to Know</p>
+    <h2 class="section-title">Our simple rules<br>for a great stay</h2>
+    <div class="rules-grid">
+      <div class="rule-item">
+        <div class="rule-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#3a5a40" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+        <div>
+          <strong>Quiet from 10pm</strong>
+          <p>Low noise rule from 10pm so all guests and wildlife can enjoy a peaceful stay.</p>
+        </div>
+      </div>
+      <div class="rule-item">
+        <div class="rule-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#3a5a40" stroke-width="2"><path d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></div>
+        <div>
+          <strong>No Groups or Parties</strong>
+          <p>This is a peaceful site for those who want to enjoy the countryside — not a party venue.</p>
+        </div>
+      </div>
+      <div class="rule-item">
+        <div class="rule-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#3a5a40" stroke-width="2"><path d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg></div>
+        <div>
+          <strong>Dogs on Leads</strong>
+          <p>Working farm with children, wildlife and livestock — dogs must be on short leads at all times.</p>
+        </div>
+      </div>
+      <div class="rule-item">
+        <div class="rule-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#3a5a40" stroke-width="2"><path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg></div>
+        <div>
+          <strong>Season: April – October</strong>
+          <p>We open on the second Friday in April and close at the end of October each year.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA BAND -->
+<div class="cta-band">
+  <h2>Ready to unplug and escape?</h2>
+  <p>30 pitches, two acres of Yorkshire countryside, and a beck right on site. Get in touch to book your pitch.</p>
+  <a href="#contact" class="btn-white">Book Your Pitch</a>
+</div>
+
+<!-- CONTACT -->
+<section id="contact">
+  <div class="container">
+    <p class="section-label">Get in Touch</p>
+    <h2 class="section-title">Book your pitch</h2>
+    <div class="contact-grid">
+      <div class="contact-info">
+        <h3>We'd love to welcome you</h3>
+        <p style="color:var(--muted); margin-bottom:2rem;">We're a small, family-run site so we handle bookings personally. Drop us an email or give us a call — we're happy to help.</p>
+        <div class="contact-item">
+          <div class="contact-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg></div>
+          <div>
+            <strong>Address</strong>
+            <p>Low Farm, Ellerburn, Thornton-Le-Dale<br>North Yorkshire, YO18 7LL</p>
+          </div>
+        </div>
+        <div class="contact-item">
+          <div class="contact-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg></div>
+          <div>
+            <strong>Phone</strong>
+            <a href="tel:01751470208">(01751) 470208</a><br>
+            <a href="tel:07972280268">07972 280268</a>
+          </div>
+        </div>
+        <div class="contact-item">
+          <div class="contact-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg></div>
+          <div>
+            <strong>Email</strong>
+            <a href="mailto:ellerburncampsite@outlook.com">ellerburncampsite@outlook.com</a>
+          </div>
+        </div>
+        <div class="contact-item">
+          <div class="contact-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg></div>
+          <div>
+            <strong>Season</strong>
+            <p>Open April to October<br>Re-opening Friday 11th April 2025</p>
+          </div>
+        </div>
+      </div>
+      <div class="contact-form">
+        <h3>Send us a message</h3>
+        <div class="form-row">
+          <div class="form-group">
+            <label>First name</label>
+            <input type="text" placeholder="Jane" />
+          </div>
+          <div class="form-group">
+            <label>Last name</label>
+            <input type="text" placeholder="Smith" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" placeholder="jane@email.com" />
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Arrival date</label>
+            <input type="date" />
+          </div>
+          <div class="form-group">
+            <label>Nights</label>
+            <select>
+              <option>1 night</option>
+              <option>2 nights</option>
+              <option>3 nights</option>
+              <option>4–7 nights</option>
+              <option>1 week+</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Pitch type</label>
+          <select>
+            <option>Tent</option>
+            <option>Caravan</option>
+            <option>Motor home / Campervan</option>
+            <option>Static caravan hire</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Message (optional)</label>
+          <textarea placeholder="Anything else we should know? Dogs, horses, special requirements..."></textarea>
+        </div>
+        <button class="btn-submit">Send Booking Enquiry →</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <p><strong>Low Farm Campsite</strong> · Ellerburn, Thornton-Le-Dale, North Yorkshire YO18 7LL</p>
+  <p style="margin-top:.5rem;"><a href="tel:01751470208">(01751) 470208</a> · <a href="mailto:ellerburncampsite@outlook.com">ellerburncampsite@outlook.com</a></p>
+  <p style="margin-top:.75rem; font-size:.75rem;">© 2025 Low Farm Campsite · Site design demo by <a href="https://brightstacklabs.co.uk">Bright Stack Labs</a></p>
+</footer>
+
+</body>
+</html>
