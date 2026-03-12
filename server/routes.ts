@@ -1,4 +1,4 @@
-import type { Express, Request, Response, NextFunction } from "express";
+import express, { type Express, type Request, type Response, type NextFunction } from "express";
 import { createServer, type Server } from "http";
 import path from "path";
 
@@ -151,6 +151,9 @@ export async function registerRoutes(
     const filePath = path.resolve(process.cwd(), "server", "public", "architecture.html");
     res.sendFile(filePath);
   });
+
+  // ── Public demos (no auth) ────────────────────────────────────────────────
+  app.use("/demos", express.static(path.resolve(process.cwd(), "server", "public", "demos")));
 
   return httpServer;
 }
