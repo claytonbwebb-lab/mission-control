@@ -334,10 +334,15 @@ function PostDetailModal({ post, open, onClose, pages }: PostDetailModalProps) {
   });
 
   const statusMutation = useMutation({
-    mutationFn: (newStatus: string) => apiRequest("PATCH", `/posts/${post?.id}`, buildPayload({ status: newStatus })),
+    mutationFn: (newStatus: string) => {
+      if (newStatus === "published") {
+        return apiRequest("POST", `/posts/${post?.id}/publish`, {});
+      }
+      return apiRequest("PATCH", `/posts/${post?.id}`, buildPayload({ status: newStatus }));
+    },
     onSuccess: (_, newStatus) => {
       invalidate();
-      toast({ title: `Post ${newStatus}` });
+      toast({ title: newStatus === "published" ? "Published to Facebook!" : `Post ${newStatus}` });
       onClose(true);
     },
     onError: (err: Error) => { toast({ title: "Action failed", description: err.message, variant: "destructive" }); },
@@ -769,8 +774,12 @@ function QueueTab({ pages, selectedPageId }: { pages: SocialPage[]; selectedPage
   };
 
   const statusMutation = useMutation({
-    mutationFn: ({ id, status, scheduled_at, page_id, image_url }: { id: string; status: string; scheduled_at?: string; page_id?: string; image_url?: string }) =>
-      apiRequest("PATCH", `/posts/${id}`, { status, ...(scheduled_at ? { scheduled_at } : {}), ...(page_id ? { page_id } : {}), ...(image_url ? { image_url } : {}) }),
+    mutationFn: ({ id, status, scheduled_at, page_id, image_url }: { id: string; status: string; scheduled_at?: string; page_id?: string; image_url?: string }) => {
+      if (status === "published") {
+        return apiRequest("POST", `/posts/${id}/publish`, {});
+      }
+      return apiRequest("PATCH", `/posts/${id}`, { status, ...(scheduled_at ? { scheduled_at } : {}), ...(page_id ? { page_id } : {}), ...(image_url ? { image_url } : {}) });
+    },
     onSuccess: (_, { status }) => {
       invalidate();
       toast({ title: `Post ${status}` });
