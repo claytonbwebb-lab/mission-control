@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Bright Stack Labs — Architecture</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0f1117; color: #e2e8f0; min-height: 100vh; padding: 32px 24px; }
+    h1 { font-size: 1.4rem; font-weight: 700; margin-bottom: 4px; }
+    .updated { font-size: 12px; color: #4a5568; margin-bottom: 32px; }
+    .diagram { display: flex; flex-direction: column; gap: 24px; max-width: 1100px; margin: 0 auto; }
+
+    .layer { background: #1a1f2e; border: 1px solid #2d3748; border-radius: 12px; padding: 20px 24px; }
+    .layer-title { font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #4a5568; margin-bottom: 16px; }
+    .nodes { display: flex; flex-wrap: wrap; gap: 12px; }
+
+    .node { border-radius: 8px; padding: 12px 16px; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 10px; border: 1px solid transparent; min-width: 160px; }
+    .node .icon { font-size: 18px; flex-shrink: 0; }
+    .node-body { display: flex; flex-direction: column; }
+    .node-name { font-weight: 700; font-size: 13px; }
+    .node-sub { font-size: 11px; font-weight: 400; margin-top: 2px; opacity: 0.7; }
+    .node-model { font-size: 10px; font-weight: 600; margin-top: 4px; opacity: 0.55; letter-spacing: 0.03em; font-style: italic; }
+
+    /* Colours */
+    .n-blue   { background: #1e3a5f; border-color: #2b6cb0; color: #90cdf4; }
+    .n-purple { background: #2d1f5e; border-color: #6b46c1; color: #d6bcfa; }
+    .n-green  { background: #1a3a2a; border-color: #276749; color: #9ae6b4; }
+    .n-orange { background: #3d2100; border-color: #c05621; color: #fbd38d; }
+    .n-red    { background: #3d1515; border-color: #c53030; color: #feb2b2; }
+    .n-teal   { background: #1a3535; border-color: #2c7a7b; color: #81e6d9; }
+    .n-grey   { background: #1e2533; border-color: #4a5568; color: #a0aec0; }
+    .n-yellow { background: #3d3000; border-color: #b7791f; color: #fefcbf; }
+    .n-pink   { background: #3d1f2d; border-color: #b83280; color: #fbb6ce; }
+
+    .arrow { text-align: center; color: #2d3748; font-size: 20px; line-height: 1; }
+
+    .connector { display: flex; align-items: center; justify-content: center; gap: 8px; color: #4a5568; font-size: 11px; letter-spacing: 0.05em; }
+    .connector-line { flex: 1; max-width: 60px; height: 1px; background: #2d3748; }
+
+    @media (max-width: 600px) { .node { min-width: 130px; } }
+  </style>
+</head>
+<body>
+
+<div style="max-width:1100px;margin:0 auto">
+  <h1>🏗️ Bright Stack Labs — System Architecture</h1>
+  <div class="updated">Last updated: 2026-03-09 · Maintained by Clawbot</div>
+
+  <div class="diagram">
+
+    <!-- INPUT -->
+    <div class="layer">
+      <div class="layer-title">Input / Interface</div>
+      <div class="nodes">
+        <div class="node n-blue"><span class="icon">✈️</span><div class="node-body"><span class="node-name">Telegram</span><span class="node-sub">Primary interface (Steve)</span></div></div>
+        <div class="node n-grey"><span class="icon">🖥️</span><div class="node-body"><span class="node-name">OpenClaw TUI</span><span class="node-sub">Terminal fallback</span></div></div>
+        <div class="node n-teal"><span class="icon">🌐</span><div class="node-body"><span class="node-name">Mission Control</span><span class="node-sub">mission.brightstacklabs.co.uk</span></div></div>
+        <div class="node n-orange"><span class="icon">🔔</span><div class="node-body"><span class="node-name">Muhammad Ping</span><span class="node-sub">VA webhook trigger</span></div></div>
+      </div>
+    </div>
+
+    <div class="arrow">↓</div>
+
+    <!-- CORE -->
+    <div class="layer">
+      <div class="layer-title">Core — AI Brain</div>
+      <div class="nodes">
+        <div class="node n-purple"><span class="icon">🦞</span><div class="node-body"><span class="node-name">Clawbot</span><span class="node-sub">Claude Sonnet 4.6 · OpenClaw Gateway · Docker/AWS</span></div></div>
+        <div class="node n-purple"><span class="icon">🤖</span><div class="node-body"><span class="node-name">OpenRouter</span><span class="node-sub">LLM routing (Anthropic/Claude)</span></div></div>
+        <div class="node n-grey"><span class="icon">🧠</span><div class="node-body"><span class="node-name">Ollama (Local)</span><span class="node-sub">qwen2.5:1.5b · systemd · port 11434</span></div></div>
+      </div>
+    </div>
+
+    <div class="arrow">↓</div>
+
+    <!-- AI APIS -->
+    <div class="layer">
+      <div class="layer-title">AI APIs</div>
+      <div class="nodes">
+        <div class="node n-green"><span class="icon">🎙️</span><div class="node-body"><span class="node-name">ElevenLabs</span><span class="node-sub">Voice clone — "Steve Males" · ID: oaJYZz6O…</span></div></div>
+        <div class="node n-green"><span class="icon">🎬</span><div class="node-body"><span class="node-name">HeyGen</span><span class="node-sub">AI Avatar video · "Steve" twin · 2 credits/mo left</span></div></div>
+        <div class="node n-blue"><span class="icon">📞</span><div class="node-body"><span class="node-name">VAPI</span><span class="node-sub">AI Phone Receptionist · Kitcheners live</span></div></div>
+        <div class="node n-orange"><span class="icon">💬</span><div class="node-body"><span class="node-name">OpenAI</span><span class="node-sub">Fallback / image gen</span></div></div>
+      </div>
+    </div>
+
+    <div class="arrow">↓</div>
+
+    <!-- SUB-AGENTS -->
+    <div class="layer">
+      <div class="layer-title">Sub-Agents</div>
+      <div class="nodes">
+        <div class="node n-yellow"><span class="icon">📣</span><div class="node-body"><span class="node-name">Chase (Sales)</span><span class="node-sub">Daily 10am — Campsite + EasyBooked campaigns</span><span class="node-model">Gemini Flash Lite</span></div></div>
+        <div class="node n-yellow"><span class="icon">⚙️</span><div class="node-body"><span class="node-name">Bolt (Dev)</span><span class="node-sub">Development tasks</span><span class="node-model">Claude Sonnet 4.5</span></div></div>
+        <div class="node n-grey"><span class="icon">✍️</span><div class="node-body"><span class="node-name">Ink (Content)</span><span class="node-sub">Planned</span></div></div>
+        <div class="node n-grey"><span class="icon">📊</span><div class="node-body"><span class="node-name">Scout (Intel)</span><span class="node-sub">Planned</span></div></div>
+      </div>
+    </div>
+
+    <div class="arrow">↓</div>
+
+    <!-- OUTREACH & CRM -->
+    <div class="layer">
+      <div class="layer-title">Outreach & CRM</div>
+      <div class="nodes">
+        <div class="node n-orange"><span class="icon">📧</span><div class="node-body"><span class="node-name">Zoho SMTP</span><span class="node-sub">EasyBooked campaign · hello@easybooked.co.uk</span></div></div>
+        <div class="node n-orange"><span class="icon">📧</span><div class="node-body"><span class="node-name">Zoho SMTP</span><span class="node-sub">InvoiceWizard / BSL · info@brightstacklabs.co.uk</span></div></div>
+        <div class="node n-orange"><span class="icon">📧</span><div class="node-body"><span class="node-name">Gmail (Clayton)</span><span class="node-sub">VA comms · clayton.b.webb@gmail.com</span></div></div>
+        <div class="node n-teal"><span class="icon">🔶</span><div class="node-body"><span class="node-name">HubSpot</span><span class="node-sub">CRM · Campsite + InvoiceWizard contacts</span></div></div>
+        <div class="node n-teal"><span class="icon">🔧</span><div class="node-body"><span class="node-name">Systeme.io</span><span class="node-sub">Horse Race System · email funnels</span></div></div>
+      </div>
+    </div>
+
+    <div class="arrow">↓</div>
+
+    <!-- DEPLOYMENT -->
+    <div class="layer">
+      <div class="layer-title">Deployment & Hosting</div>
+      <div class="nodes">
+        <div class="node n-green"><span class="icon">🐙</span><div class="node-body"><span class="node-name">GitHub</span><span class="node-sub">claytonbwebb-lab · auto-deploy trigger</span></div></div>
+        <div class="node n-green"><span class="icon">▲</span><div class="node-body"><span class="node-name">Vercel</span><span class="node-sub">stevebuildsai.com · kingswood · wesayido</span></div></div>
+        <div class="node n-blue"><span class="icon">☁️</span><div class="node-body"><span class="node-name">AWS EC2</span><span class="node-sub">13.49.47.171 · Docker · Clawbot home</span></div></div>
+        <div class="node n-blue"><span class="icon">🌐</span><div class="node-body"><span class="node-name">Replit</span><span class="node-sub">Mission Control · InvoiceWizard · WeSayIDo</span></div></div>
+        <div class="node n-grey"><span class="icon">🔁</span><div class="node-body"><span class="node-name">nginx</span><span class="node-sub">Reverse proxy · mission.brightstacklabs.co.uk</span></div></div>
+      </div>
+    </div>
+
+    <div class="arrow">↓</div>
+
+    <!-- VENTURES -->
+    <div class="layer">
+      <div class="layer-title">Active Ventures</div>
+      <div class="nodes">
+        <div class="node n-pink"><span class="icon">🎓</span><div class="node-body"><span class="node-name">AI Steve (stevebuildsai.com)</span><span class="node-sub">Training platform · ElevenLabs + HeyGen pipeline</span></div></div>
+        <div class="node n-pink"><span class="icon">📄</span><div class="node-body"><span class="node-name">InvoiceWizard</span><span class="node-sub">invoicewizard.co.uk · paused campaign</span></div></div>
+        <div class="node n-pink"><span class="icon">🐴</span><div class="node-body"><span class="node-name">Horse Race System</span><span class="node-sub">thehorseracesystem.co.uk</span></div></div>
+        <div class="node n-pink"><span class="icon">💒</span><div class="node-body"><span class="node-name">WeSayIDo</span><span class="node-sub">wesayido.wedding</span></div></div>
+        <div class="node n-pink"><span class="icon">🔧</span><div class="node-body"><span class="node-name">EasyBooked</span><span class="node-sub">easybooked.co.uk · 203 leads · active</span></div></div>
+        <div class="node n-pink"><span class="icon">🏠</span><div class="node-body"><span class="node-name">Kingswood (Client)</span><span class="node-sub">kingswood-appliance-repairs.vercel.app</span></div></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+</body>
+</html>
