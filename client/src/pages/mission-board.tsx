@@ -122,6 +122,16 @@ function TaskCard({ task, index, onClick }: TaskCardProps) {
   const labelMeta = LABEL_META[task.label] ?? LABEL_META.other;
   const priorityMeta = PRIORITY_META[task.priority] ?? PRIORITY_META.medium;
   const assigneeMeta = ASSIGNEE_META[task.assignee] ?? ASSIGNEE_META.steve;
+  
+  // Check localStorage for reminder as fallback
+  const hasReminder = (() => {
+    if (task.reminder_at) return true;
+    try {
+      const stored = localStorage.getItem("task_reminders");
+      const reminders = stored ? JSON.parse(stored) : {};
+      return !!reminders[task.id];
+    } catch { return false; }
+  })();
 
   return (
     <Draggable draggableId={String(task.id)} index={index}>
@@ -148,7 +158,7 @@ function TaskCard({ task, index, onClick }: TaskCardProps) {
                   <Repeat className="w-3 h-3" />
                 </span>
               )}
-              {!!task.reminder_at && (
+              {hasReminder && (
                 <span className="inline-flex items-center px-1 py-0.5 rounded text-xs bg-amber-500/10 text-amber-500" title={`Reminder set`} data-testid={`badge-reminder-${task.id}`}>
                   <Bell className="w-3 h-3" />
                 </span>
@@ -409,8 +419,23 @@ function TaskModal({ task, open, onClose, onSave, onDelete, projectOptions }: Ta
         setReminderDate(d);
         setReminderTime(format(d, "HH:mm"));
       } else {
-        setReminderDate(undefined);
-        setReminderTime("09:00");
+        // Check localStorage as fallback
+        try {
+          const stored = localStorage.getItem("task_reminders");
+          const reminders = stored ? JSON.parse(stored) : {};
+          const localReminder = reminders[task.id];
+          if (localReminder) {
+            const d = new Date(localReminder * 1000);
+            setReminderDate(d);
+            setReminderTime(format(d, "HH:mm"));
+          } else {
+            setReminderDate(undefined);
+            setReminderTime("09:00");
+          }
+        } catch {
+          setReminderDate(undefined);
+          setReminderTime("09:00");
+        }
       }
       setComment("");
       setCommentImages([]);
@@ -430,6 +455,10 @@ function TaskModal({ task, open, onClose, onSave, onDelete, projectOptions }: Ta
       const d = new Date(reminderDate);
       d.setHours(hours, minutes, 0, 0);
       reminderAt = Math.floor(d.getTime() / 1000);
+    }
+    // Save to localStorage as fallback (works without backend column)
+    if (task) {
+      setLocalReminder(task.id, reminderAt);
     }
     onSave({
       title, description, status, priority, label, assignee,
@@ -950,8 +979,26 @@ export default function MissionBoard() {
     return () => { clearInterval(id); document.removeEventListener("visibilitychange", onVisChange); };
   }, [qc]);
 
-  // Reminder notifications
+  // Reminder notifications - uses localStorage as fallback if no backend column
   const [notificationPermission, setNotificationPermission] = useState<NotificationPermission | "checking">("checking");
+
+  // Get reminders from localStorage as fallback
+  const getLocalReminders = useCallback(() => {
+    try {
+      const stored = localStorage.getItem("task_reminders");
+      return stored ? JSON.parse(stored) : {};
+    } catch { return {}; }
+  }, []);
+
+  const setLocalReminder = useCallback((taskId: string, timestamp: number | undefined) => {
+    const reminders = getLocalReminders();
+    if (timestamp) {
+      reminders[taskId] = timestamp;
+    } else {
+      delete reminders[taskId];
+    }
+    localStorage.setItem("task_reminders", JSON.stringify(reminders));
+  }, [getLocalReminders]);
 
   useEffect(() => {
     if (!("Notification" in window)) {
@@ -966,21 +1013,28 @@ export default function MissionBoard() {
   }, []);
 
   useEffect(() => {
-    if (notificationPermission !== "granted" || !tasks) return;
+    if (notificationPermission !== "granted") return;
+    
     const checkReminders = () => {
       const now = Date.now();
-      tasks.forEach(task => {
-        if (task.reminder_at && !task.reminder_notified) {
-          const reminderTime = task.reminder_at * 1000;
-          if (reminderTime <= now && reminderTime > now - 60000) {
-            if (Notification.permission === "granted") {
-              new Notification(`Reminder: ${task.title}`, {
-                body: task.description?.slice(0, 100) || "Task reminder",
-                icon: "/favicon.ico",
-                tag: `task-${task.id}`,
-                requireInteraction: true,
-              });
-            }
+      const localReminders = getLocalReminders();
+      
+      // Check both backend reminders and localStorage fallbacks
+      const allTasks = tasks || [];
+      allTasks.forEach(task => {
+        const reminderTime = (task.reminder_at ? task.reminder_at * 1000 : localReminders[task.id]);
+        if (reminderTime && reminderTime <= now && reminderTime > now - 60000) {
+          if (Notification.permission === "granted") {
+            const notif = new Notification(`Reminder: ${task.title}`, {
+              body: task.description?.slice(0, 100) || "Task reminder",
+              icon: "/favicon.ico",
+              tag: `task-${task.id}`,
+              requireInteraction: true,
+            });
+            notif.onclick = () => {
+              window.focus();
+              notif.close();
+            };
           }
         }
       });
@@ -988,7 +1042,7 @@ export default function MissionBoard() {
     const id = setInterval(checkReminders, 30000);
     checkReminders();
     return () => clearInterval(id);
-  }, [tasks, notificationPermission]);
+  }, [tasks, notificationPermission, getLocalReminders]);
 
   const handleManualRefresh = async () => {
     setRefreshing(true);
