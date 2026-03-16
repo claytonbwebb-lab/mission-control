@@ -1,10 +1,12 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { format } from "date-fns";
+import { Calendar } from "@/components/ui/calendar";
 import { DragDropContext, Droppable, Draggable, type DropResult } from "@hello-pangea/dnd";
 import {
   Plus, X, ChevronDown, ChevronUp, Lightbulb, Wrench, Eye, CheckCircle2,
   AlertCircle, MessageSquare, ArrowRight, Send, Loader2, User, Repeat,
-  ImageIcon, Upload, Trash2, RefreshCw, Pencil, Check, Search
+  ImageIcon, Upload, Trash2, RefreshCw, Pencil, Check, Search, Bell
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -144,6 +146,11 @@ function TaskCard({ task, index, onClick }: TaskCardProps) {
               {!!task.is_repeatable && (
                 <span className="inline-flex items-center px-1 py-0.5 rounded text-xs bg-violet-500/10 text-violet-500" title={`Repeats ${task.cadence ?? ""}`.trim()} data-testid={`badge-repeat-${task.id}`}>
                   <Repeat className="w-3 h-3" />
+                </span>
+              )}
+              {!!task.reminder_at && (
+                <span className="inline-flex items-center px-1 py-0.5 rounded text-xs bg-amber-500/10 text-amber-500" title={`Reminder set`} data-testid={`badge-reminder-${task.id}`}>
+                  <Bell className="w-3 h-3" />
                 </span>
               )}
               <div className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium whitespace-nowrap ${priorityMeta.className}`}>
@@ -362,6 +369,8 @@ function TaskModal({ task, open, onClose, onSave, onDelete, projectOptions }: Ta
   const [assignee, setAssignee] = useState<TaskAssignee>("steve");
   const [isRepeatable, setIsRepeatable] = useState(false);
   const [cadence, setCadence] = useState<"daily" | "weekly" | "monthly">("weekly");
+  const [reminderDate, setReminderDate] = useState<Date | undefined>(undefined);
+  const [reminderTime, setReminderTime] = useState("09:00");
   const [comment, setComment] = useState("");
   const [commentImages, setCommentImages] = useState<{ data: string; filename: string }[]>([]);
   const [submittingComment, setSubmittingComment] = useState(false);
@@ -395,6 +404,14 @@ function TaskModal({ task, open, onClose, onSave, onDelete, projectOptions }: Ta
       setAssignee(task.assignee ?? "steve");
       setIsRepeatable(!!task.is_repeatable);
       setCadence(task.cadence ?? "weekly");
+      if (task.reminder_at) {
+        const d = new Date(task.reminder_at * 1000);
+        setReminderDate(d);
+        setReminderTime(format(d, "HH:mm"));
+      } else {
+        setReminderDate(undefined);
+        setReminderTime("09:00");
+      }
       setComment("");
       setCommentImages([]);
     }
@@ -407,10 +424,18 @@ function TaskModal({ task, open, onClose, onSave, onDelete, projectOptions }: Ta
   }, [taskDetail?.activity?.length]);
 
   const handleSave = () => {
+    let reminderAt: number | undefined;
+    if (reminderDate) {
+      const [hours, minutes] = reminderTime.split(":").map(Number);
+      const d = new Date(reminderDate);
+      d.setHours(hours, minutes, 0, 0);
+      reminderAt = Math.floor(d.getTime() / 1000);
+    }
     onSave({
       title, description, status, priority, label, assignee,
       is_repeatable: isRepeatable ? 1 : 0,
       cadence: isRepeatable ? cadence : undefined,
+      reminder_at: reminderAt,
     });
   };
 
@@ -622,6 +647,44 @@ function TaskModal({ task, open, onClose, onSave, onDelete, projectOptions }: Ta
                     <SelectItem value="monthly">Monthly</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+            )}
+          </div>
+
+          <div className="space-y-3 pt-1">
+            <div className="flex items-center justify-between">
+              <Label className="text-xs text-muted-foreground uppercase tracking-wide">Reminder</Label>
+              <Switch checked={!!reminderDate} onCheckedChange={(checked) => setReminderDate(checked ? new Date() : undefined)} />
+            </div>
+            {reminderDate && (
+              <div className="flex gap-2">
+                <div className="flex-1">
+                  <Calendar
+                    mode="single"
+                    selected={reminderDate}
+                    onSelect={setReminderDate}
+                    className="rounded-md border"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">Time</Label>
+                  <Input
+                    type="time"
+                    value={reminderTime}
+                    onChange={(e) => setReminderTime(e.target.value)}
+                    className="w-24"
+                  />
+                  {reminderDate && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setReminderDate(undefined)}
+                      className="w-full text-xs text-destructive"
+                    >
+                      Clear
+                    </Button>
+                  )}
+                </div>
               </div>
             )}
           </div>
@@ -886,6 +949,46 @@ export default function MissionBoard() {
     document.addEventListener("visibilitychange", onVisChange);
     return () => { clearInterval(id); document.removeEventListener("visibilitychange", onVisChange); };
   }, [qc]);
+
+  // Reminder notifications
+  const [notificationPermission, setNotificationPermission] = useState<NotificationPermission | "checking">("checking");
+
+  useEffect(() => {
+    if (!("Notification" in window)) {
+      setNotificationPermission("denied");
+      return;
+    }
+    if (Notification.permission === "default") {
+      Notification.requestPermission().then(p => setNotificationPermission(p));
+    } else {
+      setNotificationPermission(Notification.permission);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (notificationPermission !== "granted" || !tasks) return;
+    const checkReminders = () => {
+      const now = Date.now();
+      tasks.forEach(task => {
+        if (task.reminder_at && !task.reminder_notified) {
+          const reminderTime = task.reminder_at * 1000;
+          if (reminderTime <= now && reminderTime > now - 60000) {
+            if (Notification.permission === "granted") {
+              new Notification(`Reminder: ${task.title}`, {
+                body: task.description?.slice(0, 100) || "Task reminder",
+                icon: "/favicon.ico",
+                tag: `task-${task.id}`,
+                requireInteraction: true,
+              });
+            }
+          }
+        }
+      });
+    };
+    const id = setInterval(checkReminders, 30000);
+    checkReminders();
+    return () => clearInterval(id);
+  }, [tasks, notificationPermission]);
 
   const handleManualRefresh = async () => {
     setRefreshing(true);

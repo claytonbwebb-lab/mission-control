@@ -40,6 +40,8 @@ export interface Task {
   position?: number;
   is_repeatable?: number;
   cadence?: "daily" | "weekly" | "monthly";
+  reminder_at?: number | null; // Unix timestamp for reminder
+  reminder_notified?: number; // 1 if notification sent
   images?: TaskImage[];
   createdAt: string;
   updatedAt?: string;
