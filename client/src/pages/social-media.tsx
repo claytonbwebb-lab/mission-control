@@ -438,8 +438,8 @@ function PostDetailModal({ post, open, onClose, pages }: PostDetailModalProps) {
               </Button>
             )}
             {(post.status === "draft" || post.status === "approved") && (
-              <Button size="sm" variant="secondary" onClick={() => statusMutation.mutate("draft")} disabled={statusMutation.isPending} data-testid="button-reject-post">
-                <X className="w-3.5 h-3.5 mr-1" /> Reject
+              <Button size="sm" variant="secondary" onClick={() => { if (confirm("Delete this post?")) deleteMutation.mutate(String(post.id)); }} disabled={deleteMutation.isPending} data-testid="button-reject-post">
+                <X className="w-3.5 h-3.5 mr-1" /> Delete
               </Button>
             )}
             {post.status === "approved" && (
@@ -787,6 +787,15 @@ function QueueTab({ pages, selectedPageId }: { pages: SocialPage[]; selectedPage
     onError: (err: Error) => { toast({ title: "Action failed", description: err.message, variant: "destructive" }); },
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => apiRequest("DELETE", `/posts/${id}`, {}),
+    onSuccess: () => {
+      invalidate();
+      toast({ title: "Post deleted" });
+    },
+    onError: (err: Error) => { toast({ title: "Delete failed", description: err.message, variant: "destructive" }); },
+  });
+
   return (
     <div className="space-y-6">
       {error && (
@@ -867,8 +876,8 @@ function QueueTab({ pages, selectedPageId }: { pages: SocialPage[]; selectedPage
                         <Button
                           size="sm"
                           variant="ghost"
-                          onClick={() => statusMutation.mutate({ id: post.id, status: "draft", page_id: post.pageId, image_url: post.imageUrl })}
-                          disabled={statusMutation.isPending}
+                          onClick={() => { if (confirm("Delete this post?")) deleteMutation.mutate(post.id); }}
+                          disabled={deleteMutation.isPending}
                           data-testid={`button-reject-post-${post.id}`}
                         >
                           <X className="w-3 h-3" />
