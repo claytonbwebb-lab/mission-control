@@ -562,7 +562,7 @@ function TaskModal({ task, open, onClose, onSave, onDelete, projectOptions }: Ta
       setComment("");
       setCommentImages([]);
       qc.invalidateQueries({ queryKey: ["/tasks", task.id] });
-      qc.invalidateQueries({ queryKey: ["/tasks"] });
+      qc.invalidateQueries({ queryKey: ["/tasks"], exact: false });
     } catch (err) {
       toast({ title: "Failed to post comment", description: (err as Error).message, variant: "destructive" });
     } finally {
@@ -606,7 +606,7 @@ function TaskModal({ task, open, onClose, onSave, onDelete, projectOptions }: Ta
         });
       }
       qc.invalidateQueries({ queryKey: ["/tasks", task.id] });
-      qc.invalidateQueries({ queryKey: ["/tasks"] });
+      qc.invalidateQueries({ queryKey: ["/tasks"], exact: false });
       toast({ title: "Image uploaded" });
     } catch (err) {
       toast({ title: "Upload failed", description: (err as Error).message, variant: "destructive" });
@@ -621,7 +621,7 @@ function TaskModal({ task, open, onClose, onSave, onDelete, projectOptions }: Ta
     try {
       await apiRequest("DELETE", `/tasks/${task.id}/images/${imageId}`);
       qc.invalidateQueries({ queryKey: ["/tasks", task.id] });
-      qc.invalidateQueries({ queryKey: ["/tasks"] });
+      qc.invalidateQueries({ queryKey: ["/tasks"], exact: false });
       toast({ title: "Image deleted" });
     } catch (err) {
       toast({ title: "Delete failed", description: (err as Error).message, variant: "destructive" });
@@ -1032,13 +1032,13 @@ export default function MissionBoard() {
   useEffect(() => {
     const poll = () => {
       if (document.visibilityState === "visible") {
-        qc.invalidateQueries({ queryKey: ["/tasks"] });
+        qc.invalidateQueries({ queryKey: ["/tasks"], exact: false });
       }
     };
     const id = setInterval(poll, 30000);
     const onVisChange = () => {
       if (document.visibilityState === "visible") {
-        qc.invalidateQueries({ queryKey: ["/tasks"] });
+        qc.invalidateQueries({ queryKey: ["/tasks"], exact: false });
       }
     };
     document.addEventListener("visibilitychange", onVisChange);
@@ -1123,7 +1123,7 @@ export default function MissionBoard() {
 
   const handleManualRefresh = async () => {
     setRefreshing(true);
-    await qc.invalidateQueries({ queryKey: ["/tasks"] });
+    await qc.invalidateQueries({ queryKey: ["/tasks"], exact: false });
     setRefreshing(false);
   };
 
@@ -1156,18 +1156,18 @@ export default function MissionBoard() {
 
   const createMutation = useMutation({
     mutationFn: (data: Record<string, unknown>) => apiRequest<Task>("POST", "/tasks", data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["/tasks"] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["/tasks"], exact: false }),
   });
 
   const updateMutation = useMutation({
     mutationFn: ({ id, ...data }: Record<string, unknown> & { id: string }) =>
       apiRequest<Task>("PATCH", `/tasks/${id}`, data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["/tasks"] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["/tasks"], exact: false }),
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => apiRequest("DELETE", `/tasks/${id}`),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["/tasks"] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["/tasks"], exact: false }),
   });
 
   const handleDragEnd = useCallback((result: DropResult) => {
@@ -1193,7 +1193,7 @@ export default function MissionBoard() {
     const apiData = toApiPayload(updates);
     try {
       await updateMutation.mutateAsync({ id: selectedTask.id, ...apiData, author: "steve" });
-      await qc.refetchQueries({ queryKey: ["/tasks"] });
+      await qc.refetchQueries({ queryKey: ["/tasks"], exact: false });
     } catch (err) {
       console.error("Save task failed:", err);
     }
@@ -1203,7 +1203,7 @@ export default function MissionBoard() {
 
   const handleDeleteTask = async (id: string) => {
     await deleteMutation.mutateAsync(id);
-    await qc.refetchQueries({ queryKey: ["/tasks"] });
+    await qc.refetchQueries({ queryKey: ["/tasks"], exact: false });
     setModalOpen(false);
     setSelectedTask(null);
   };
