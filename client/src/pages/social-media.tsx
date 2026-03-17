@@ -1237,11 +1237,17 @@ function GenerateTab({ pages, onSwitchTab, selectedPageId }: { pages: SocialPage
             const wpImg = (p as Record<string, unknown>).image_url as string | undefined;
             return (
               <div key={p.id ?? i} className="space-y-1">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center justify-between gap-2">
                   <span className="text-xs text-muted-foreground font-medium">
                     {p.day ? `${p.day}${p.theme ? ` — ${p.theme}` : ''}` : ((p.scheduledTime ?? p.scheduled_time) ? (() => { try { return format(new Date(p.scheduledTime ?? p.scheduled_time!), "EEE d MMM, HH:mm"); } catch { return `Post ${i + 1}`; } })() : `Post ${i + 1}`)}
                   </span>
-                  {wpImg && <ImageIcon className="w-3 h-3 text-muted-foreground" />}
+                  <button
+                    onClick={() => setWeekPosts(prev => prev.filter((_, j) => j !== i))}
+                    className="text-muted-foreground hover:text-destructive p-1 rounded"
+                    title="Remove this post"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
                 </div>
                 <Textarea
                   value={p.content}
