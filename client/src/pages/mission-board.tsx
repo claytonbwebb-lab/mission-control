@@ -369,6 +369,23 @@ interface TaskModalProps {
   projectOptions: string[];
 }
 
+function getLocalReminders(): Record<string, number> {
+  try {
+    const stored = localStorage.getItem("task_reminders");
+    return stored ? JSON.parse(stored) : {};
+  } catch { return {}; }
+}
+
+function setLocalReminder(taskId: string, timestamp: number | undefined) {
+  const reminders = getLocalReminders();
+  if (timestamp) {
+    reminders[taskId] = timestamp;
+  } else {
+    delete reminders[taskId];
+  }
+  localStorage.setItem("task_reminders", JSON.stringify(reminders));
+}
+
 function TaskModal({ task, open, onClose, onSave, onDelete, projectOptions }: TaskModalProps) {
   const qc = useQueryClient();
   const { toast } = useToast();
@@ -983,24 +1000,6 @@ export default function MissionBoard() {
   // Reminder notifications - uses localStorage as fallback if no backend column
   const [notificationPermission, setNotificationPermission] = useState<NotificationPermission | "checking">("checking");
 
-  // Get reminders from localStorage as fallback
-  const getLocalReminders = useCallback(() => {
-    try {
-      const stored = localStorage.getItem("task_reminders");
-      return stored ? JSON.parse(stored) : {};
-    } catch { return {}; }
-  }, []);
-
-  const setLocalReminder = useCallback((taskId: string, timestamp: number | undefined) => {
-    const reminders = getLocalReminders();
-    if (timestamp) {
-      reminders[taskId] = timestamp;
-    } else {
-      delete reminders[taskId];
-    }
-    localStorage.setItem("task_reminders", JSON.stringify(reminders));
-  }, [getLocalReminders]);
-
   useEffect(() => {
     if (!("Notification" in window)) {
       setNotificationPermission("denied");
@@ -1043,7 +1042,7 @@ export default function MissionBoard() {
     const id = setInterval(checkReminders, 30000);
     checkReminders();
     return () => clearInterval(id);
-  }, [tasks, notificationPermission, getLocalReminders]);
+  }, [tasks, notificationPermission]);
 
   const handleManualRefresh = async () => {
     setRefreshing(true);
