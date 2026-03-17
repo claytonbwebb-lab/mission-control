@@ -913,8 +913,12 @@ function QueueTab({ pages, selectedPageId }: { pages: SocialPage[]; selectedPage
 interface GeneratedPost {
   id: string;
   content: string;
+  day?: string;
+  theme?: string;
+  format?: string;
   scheduledTime?: string;
   scheduled_time?: string;
+  image_url?: string;
 }
 
 function GenerateTab({ pages, onSwitchTab, selectedPageId }: { pages: SocialPage[]; onSwitchTab: (tab: string) => void; selectedPageId: string }) {
@@ -1008,7 +1012,14 @@ function GenerateTab({ pages, onSwitchTab, selectedPageId }: { pages: SocialPage
         throw new Error(`API error ${res.status}: ${errText}`);
       }
       const data = await res.json();
-      const posts = (data.posts ?? data.drafts ?? data.results ?? []) as GeneratedPost[];
+      const posts = (data.posts ?? data.drafts ?? data.results ?? []).map((p: Record<string, unknown>) => ({
+        id: String(p.id ?? Math.random()),
+        content: (p.content_text ?? p.content ?? "") as string,
+        day: p.day as string | undefined,
+        theme: p.theme as string | undefined,
+        format: p.format as string | undefined,
+        image_url: p.image_url as string | undefined,
+      })) as GeneratedPost[];
       setWeekPosts(posts);
       qc.invalidateQueries({ queryKey: ["/posts"] });
     } catch (err) {
@@ -1228,7 +1239,7 @@ function GenerateTab({ pages, onSwitchTab, selectedPageId }: { pages: SocialPage
               <div key={p.id ?? i} className="space-y-1">
                 <div className="flex items-center gap-2">
                   <span className="text-xs text-muted-foreground font-medium">
-                    {(p.scheduledTime ?? p.scheduled_time) ? (() => { try { return format(new Date(p.scheduledTime ?? p.scheduled_time!), "EEE d MMM, HH:mm"); } catch { return `Post ${i + 1}`; } })() : `Post ${i + 1}`}
+                    {p.day ? `${p.day}${p.theme ? ` — ${p.theme}` : ''}` : ((p.scheduledTime ?? p.scheduled_time) ? (() => { try { return format(new Date(p.scheduledTime ?? p.scheduled_time!), "EEE d MMM, HH:mm"); } catch { return `Post ${i + 1}`; } })() : `Post ${i + 1}`)}
                   </span>
                   {wpImg && <ImageIcon className="w-3 h-3 text-muted-foreground" />}
                 </div>
