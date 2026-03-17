@@ -298,8 +298,8 @@ function ActivityItem({ entry, taskId, onEdited }: { entry: ActivityEntry; taskI
                   onClick={async () => {
                     if (!confirm("Delete this comment?")) return;
                     try {
-                      await apiRequest("DELETE", `/tasks/${task?.id}/activity/${entry.id}`, {});
-                      qc.invalidateQueries({ queryKey: ["/tasks", searchQuery] });
+                      await apiRequest("DELETE", `/tasks/${taskId}/activity/${entry.id}`, {});
+                      onEdited?.();
                     } catch (err) { console.error("Delete failed:", err); }
                   }}
                   className="opacity-0 group-hover/comment:opacity-100 transition-opacity p-0.5 rounded hover:bg-muted"
