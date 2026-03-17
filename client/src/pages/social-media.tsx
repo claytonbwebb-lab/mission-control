@@ -1236,7 +1236,7 @@ function GenerateTab({ pages, onSwitchTab, selectedPageId }: { pages: SocialPage
           {weekPosts.map((p, i) => {
             const wpImg = (p as Record<string, unknown>).image_url as string | undefined;
             return (
-              <div key={p.id ?? i} className="space-y-1">
+              <div key={p.id ?? i} className="space-y-1 relative group pt-2">
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-xs text-muted-foreground font-medium">
                     {p.day ? `${p.day}${p.theme ? ` — ${p.theme}` : ''}` : ((p.scheduledTime ?? p.scheduled_time) ? (() => { try { return format(new Date(p.scheduledTime ?? p.scheduled_time!), "EEE d MMM, HH:mm"); } catch { return `Post ${i + 1}`; } })() : `Post ${i + 1}`)}
@@ -1244,10 +1244,10 @@ function GenerateTab({ pages, onSwitchTab, selectedPageId }: { pages: SocialPage
                   <button
                     type="button"
                     onClick={(e) => { e.stopPropagation(); e.preventDefault(); setWeekPosts(prev => prev.filter((_, j) => j !== i)); }}
-                    className="text-muted-foreground hover:text-destructive p-1 rounded shrink-0"
+                    className="absolute top-0 right-0 text-muted-foreground hover:text-red-500 p-1.5 rounded bg-background/80 opacity-0 group-hover:opacity-100 transition-opacity"
                     title="Remove this post"
                   >
-                    <X className="w-3 h-3" />
+                    <X className="w-4 h-4" />
                   </button>
                 </div>
                 <Textarea
