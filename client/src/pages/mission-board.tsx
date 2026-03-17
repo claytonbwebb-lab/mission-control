@@ -17,6 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { apiRequest } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
 import type { Task, TaskStatus, TaskPriority, TaskLabel, TaskAssignee, ActivityEntry, TaskImage } from "@shared/schema";
@@ -384,6 +385,44 @@ function setLocalReminder(taskId: string, timestamp: number | undefined) {
     delete reminders[taskId];
   }
   localStorage.setItem("task_reminders", JSON.stringify(reminders));
+}
+
+// --- Reminder History ---
+export interface ReminderHistoryEntry {
+  id: string; // unique
+  taskId: string;
+  taskTitle: string;
+  firedAt: number; // unix seconds
+  status: "fired" | "snoozed" | "dismissed";
+  snoozedUntil?: number;
+}
+
+function getReminderHistory(): ReminderHistoryEntry[] {
+  try {
+    const stored = localStorage.getItem("reminder_history");
+    return stored ? JSON.parse(stored) : [];
+  } catch { return []; }
+}
+
+function addReminderHistory(entry: ReminderHistoryEntry) {
+  const history = getReminderHistory();
+  // avoid duplicates for same task fired within 2 min
+  const recent = history.find(h => h.taskId === entry.taskId && Math.abs(h.firedAt - entry.firedAt) < 120);
+  if (!recent) {
+    history.unshift(entry);
+    if (history.length > 50) history.splice(50);
+    localStorage.setItem("reminder_history", JSON.stringify(history));
+  }
+}
+
+function updateReminderHistoryStatus(id: string, status: ReminderHistoryEntry["status"], snoozedUntil?: number) {
+  const history = getReminderHistory();
+  const entry = history.find(h => h.id === id);
+  if (entry) {
+    entry.status = status;
+    if (snoozedUntil) entry.snoozedUntil = snoozedUntil;
+    localStorage.setItem("reminder_history", JSON.stringify(history));
+  }
 }
 
 function TaskModal({ task, open, onClose, onSave, onDelete, projectOptions }: TaskModalProps) {
@@ -997,33 +1036,58 @@ export default function MissionBoard() {
     return () => { clearInterval(id); document.removeEventListener("visibilitychange", onVisChange); };
   }, [qc]);
 
-  // Reminder notifications - uses localStorage as fallback if no backend column
+    // Reminder notifications
   const [notificationPermission, setNotificationPermission] = useState<NotificationPermission | "checking">("checking");
+  const [reminderHistory, setReminderHistory] = useState<ReminderHistoryEntry[]>(() => getReminderHistory());
+  const [reminderPanelOpen, setReminderPanelOpen] = useState(false);
+  const unreadReminderCount = reminderHistory.filter(h => h.status === "fired").length;
+
+  const refreshReminderHistory = () => setReminderHistory(getReminderHistory());
+
+  const handleSnooze = (entry: ReminderHistoryEntry, minutes: number) => {
+    const snoozedUntil = Math.floor(Date.now() / 1000) + minutes * 60;
+    updateReminderHistoryStatus(entry.id, "snoozed", snoozedUntil);
+    setLocalReminder(entry.taskId, snoozedUntil);
+    // also patch backend
+    apiRequest("PATCH", `/tasks/${entry.taskId}`, { reminder_at: snoozedUntil }).catch(() => {});
+    refreshReminderHistory();
+  };
+
+  const handleDismissReminder = (entry: ReminderHistoryEntry) => {
+    updateReminderHistoryStatus(entry.id, "dismissed");
+    setLocalReminder(entry.taskId, undefined);
+    apiRequest("PATCH", `/tasks/${entry.taskId}`, { reminder_at: null }).catch(() => {});
+    refreshReminderHistory();
+  };
 
   useEffect(() => {
     if (!("Notification" in window)) {
       setNotificationPermission("denied");
       return;
     }
-    if (Notification.permission === "default") {
-      Notification.requestPermission().then(p => setNotificationPermission(p));
-    } else {
+    if (Notification.permission !== "default") {
       setNotificationPermission(Notification.permission);
     }
   }, []);
 
   useEffect(() => {
-    if (notificationPermission !== "granted") return;
-    
     const checkReminders = () => {
       const now = Date.now();
       const localReminders = getLocalReminders();
-      
-      // Check both backend reminders and localStorage fallbacks
       const allTasks = tasks || [];
       allTasks.forEach(task => {
         const reminderTime = (task.reminder_at ? task.reminder_at * 1000 : localReminders[task.id]);
         if (reminderTime && reminderTime <= now && reminderTime > now - 60000) {
+          const historyId = `${task.id}-${Math.floor(reminderTime / 1000)}`;
+          const entry: ReminderHistoryEntry = {
+            id: historyId,
+            taskId: String(task.id),
+            taskTitle: task.title,
+            firedAt: Math.floor(reminderTime / 1000),
+            status: "fired",
+          };
+          addReminderHistory(entry);
+          refreshReminderHistory();
           if (Notification.permission === "granted") {
             const notif = new Notification(`Reminder: ${task.title}`, {
               body: task.description?.slice(0, 100) || "Task reminder",
@@ -1031,10 +1095,7 @@ export default function MissionBoard() {
               tag: `task-${task.id}`,
               requireInteraction: true,
             });
-            notif.onclick = () => {
-              window.focus();
-              notif.close();
-            };
+            notif.onclick = () => { window.focus(); notif.close(); };
           }
         }
       });
@@ -1042,7 +1103,7 @@ export default function MissionBoard() {
     const id = setInterval(checkReminders, 30000);
     checkReminders();
     return () => clearInterval(id);
-  }, [tasks, notificationPermission]);
+  }, [tasks]);
 
   const handleManualRefresh = async () => {
     setRefreshing(true);
@@ -1166,16 +1227,7 @@ export default function MissionBoard() {
             {checkingTasks ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" /> : <span className="mr-1.5">🦞</span>}
             {checkingTasks ? "Checking…" : "Check Tasks"}
           </Button>
-          {notificationPermission !== "granted" && notificationPermission !== "denied" && (
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-7 text-xs"
-              onClick={() => Notification.requestPermission().then(p => setNotificationPermission(p))}
-            >
-              <Bell className="w-3 h-3 mr-1" /> Enable Reminders
-            </Button>
-          )}
+
         </div>
         <div className="relative">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
@@ -1247,6 +1299,95 @@ export default function MissionBoard() {
           >
             <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? "animate-spin" : ""}`} />
           </button>
+
+          {/* Reminder history bell */}
+          <Popover open={reminderPanelOpen} onOpenChange={setReminderPanelOpen}>
+            <PopoverTrigger asChild>
+              <button
+                className="relative p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+                title="Reminder history"
+                onClick={() => { refreshReminderHistory(); setReminderPanelOpen(v => !v); }}
+              >
+                <Bell className="w-3.5 h-3.5" />
+                {unreadReminderCount > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 flex items-center justify-center rounded-full bg-amber-500 text-white text-[9px] font-bold leading-none">
+                    {unreadReminderCount > 9 ? "9+" : unreadReminderCount}
+                  </span>
+                )}
+              </button>
+            </PopoverTrigger>
+            <PopoverContent align="end" className="w-80 p-0 max-h-[420px] flex flex-col">
+              <div className="flex items-center justify-between px-3 py-2 border-b border-border">
+                <span className="text-sm font-semibold">Reminder History</span>
+                {reminderHistory.length > 0 && (
+                  <button
+                    className="text-xs text-muted-foreground hover:text-foreground"
+                    onClick={() => { localStorage.removeItem("reminder_history"); refreshReminderHistory(); }}
+                  >
+                    Clear all
+                  </button>
+                )}
+              </div>
+              <div className="overflow-y-auto flex-1">
+                {reminderHistory.length === 0 ? (
+                  <div className="px-3 py-6 text-center text-xs text-muted-foreground">No reminders yet</div>
+                ) : (
+                  reminderHistory.map(entry => (
+                    <div key={entry.id} className="px-3 py-2 border-b border-border last:border-0 hover:bg-muted/30">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-medium truncate">{entry.taskTitle}</p>
+                          <p className="text-[10px] text-muted-foreground mt-0.5">
+                            {format(new Date(entry.firedAt * 1000), "d MMM, HH:mm")}
+                            {entry.status === "snoozed" && entry.snoozedUntil && (
+                              <> · Snoozed until {format(new Date(entry.snoozedUntil * 1000), "HH:mm")}</>
+                            )}
+                          </p>
+                        </div>
+                        <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium shrink-0 ${
+                          entry.status === "fired" ? "bg-amber-500/15 text-amber-600" :
+                          entry.status === "snoozed" ? "bg-blue-500/15 text-blue-600" :
+                          "bg-muted text-muted-foreground"
+                        }`}>
+                          {entry.status}
+                        </span>
+                      </div>
+                      {entry.status !== "dismissed" && (
+                        <div className="flex gap-1 mt-1.5">
+                          <button
+                            className="text-[10px] px-2 py-0.5 rounded border border-border hover:bg-muted/50 text-muted-foreground"
+                            onClick={() => handleSnooze(entry, 15)}
+                          >+15m</button>
+                          <button
+                            className="text-[10px] px-2 py-0.5 rounded border border-border hover:bg-muted/50 text-muted-foreground"
+                            onClick={() => handleSnooze(entry, 60)}
+                          >+1h</button>
+                          <button
+                            className="text-[10px] px-2 py-0.5 rounded border border-border hover:bg-muted/50 text-muted-foreground"
+                            onClick={() => handleSnooze(entry, 1440)}
+                          >+1d</button>
+                          <button
+                            className="text-[10px] px-2 py-0.5 rounded border border-destructive/40 hover:bg-destructive/10 text-destructive ml-auto"
+                            onClick={() => handleDismissReminder(entry)}
+                          >Dismiss</button>
+                        </div>
+                      )}
+                    </div>
+                  ))
+                )}
+              </div>
+              {notificationPermission !== "granted" && (
+                <div className="px-3 py-2 border-t border-border bg-amber-500/5">
+                  <button
+                    className="text-xs text-amber-600 hover:underline w-full text-left"
+                    onClick={() => Notification.requestPermission().then(p => setNotificationPermission(p))}
+                  >
+                    ⚠ Enable push notifications to receive alerts
+                  </button>
+                </div>
+              )}
+            </PopoverContent>
+          </Popover>
         </div>
       </div>
 
