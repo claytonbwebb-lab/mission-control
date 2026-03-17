@@ -445,7 +445,12 @@ function TaskModal({ task, open, onClose, onSave, onDelete, projectOptions }: Ta
   const [isRepeatable, setIsRepeatable] = useState(false);
   const [cadence, setCadence] = useState<"daily" | "weekly" | "monthly">("weekly");
   const [reminderDate, setReminderDate] = useState<Date | undefined>(undefined);
-  const [reminderTime, setReminderTime] = useState("09:00");
+  const defaultReminderTime = () => {
+    const d = new Date(Date.now() + 60 * 60 * 1000);
+    d.setMinutes(0, 0, 0);
+    return format(d, "HH:mm");
+  };
+  const [reminderTime, setReminderTime] = useState(defaultReminderTime);
   const [comment, setComment] = useState("");
   const [commentImages, setCommentImages] = useState<{ data: string; filename: string }[]>([]);
   const [submittingComment, setSubmittingComment] = useState(false);
@@ -495,11 +500,11 @@ function TaskModal({ task, open, onClose, onSave, onDelete, projectOptions }: Ta
             setReminderTime(format(d, "HH:mm"));
           } else {
             setReminderDate(undefined);
-            setReminderTime("09:00");
+            setReminderTime(defaultReminderTime());
           }
         } catch {
           setReminderDate(undefined);
-          setReminderTime("09:00");
+          setReminderTime(defaultReminderTime());
         }
       }
       setComment("");
@@ -1193,12 +1198,11 @@ export default function MissionBoard() {
     const apiData = toApiPayload(updates);
     try {
       await updateMutation.mutateAsync({ id: selectedTask.id, ...apiData, author: "steve" });
-      // Immediately update cache so UI reflects changes without waiting for refetch
-      qc.setQueriesData({ queryKey: ["/tasks"], exact: false }, (old: unknown) => {
+      // Directly update the exact query key used by the tasks list
+      qc.setQueryData(["/tasks", searchQuery], (old: unknown) => {
         if (!Array.isArray(old)) return old;
         return old.map((t: Task) => t.id === selectedTask.id ? { ...t, ...updates } : t);
       });
-      qc.invalidateQueries({ queryKey: ["/tasks"], exact: false });
     } catch (err) {
       console.error("Save task failed:", err);
     }
