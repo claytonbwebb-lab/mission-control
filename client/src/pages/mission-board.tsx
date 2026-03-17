@@ -370,6 +370,21 @@ interface TaskModalProps {
   projectOptions: string[];
 }
 
+function getFiredReminderKeys(): Set<string> {
+  try {
+    const stored = localStorage.getItem("fired_reminder_keys");
+    return new Set(stored ? JSON.parse(stored) : []);
+  } catch { return new Set(); }
+}
+
+function markReminderFired(key: string) {
+  const keys = getFiredReminderKeys();
+  keys.add(key);
+  // keep last 200
+  const arr = Array.from(keys).slice(-200);
+  localStorage.setItem("fired_reminder_keys", JSON.stringify(arr));
+}
+
 function getLocalReminders(): Record<string, number> {
   try {
     const stored = localStorage.getItem("task_reminders");
@@ -1074,29 +1089,31 @@ export default function MissionBoard() {
     const checkReminders = () => {
       const now = Date.now();
       const localReminders = getLocalReminders();
+      const firedKeys = getFiredReminderKeys();
       const allTasks = tasks || [];
       allTasks.forEach(task => {
         const reminderTime = (task.reminder_at ? task.reminder_at * 1000 : localReminders[task.id]);
-        if (reminderTime && reminderTime <= now && reminderTime > now - 60000) {
-          const historyId = `${task.id}-${Math.floor(reminderTime / 1000)}`;
-          const entry: ReminderHistoryEntry = {
-            id: historyId,
-            taskId: String(task.id),
-            taskTitle: task.title,
-            firedAt: Math.floor(reminderTime / 1000),
-            status: "fired",
-          };
-          addReminderHistory(entry);
-          refreshReminderHistory();
-          if (Notification.permission === "granted") {
-            const notif = new Notification(`Reminder: ${task.title}`, {
-              body: task.description?.slice(0, 100) || "Task reminder",
-              icon: "/favicon.ico",
-              tag: `task-${task.id}`,
-              requireInteraction: true,
-            });
-            notif.onclick = () => { window.focus(); notif.close(); };
-          }
+        if (!reminderTime || reminderTime > now) return; // not yet due
+        const key = `${task.id}-${Math.floor(reminderTime / 1000)}`;
+        if (firedKeys.has(key)) return; // already fired this session
+        markReminderFired(key);
+        const entry: ReminderHistoryEntry = {
+          id: key,
+          taskId: String(task.id),
+          taskTitle: task.title,
+          firedAt: Math.floor(reminderTime / 1000),
+          status: "fired",
+        };
+        addReminderHistory(entry);
+        refreshReminderHistory();
+        if (Notification.permission === "granted") {
+          const notif = new Notification(`Reminder: ${task.title}`, {
+            body: task.description?.slice(0, 100) || "Task reminder",
+            icon: "/favicon.ico",
+            tag: `task-${task.id}`,
+            requireInteraction: true,
+          });
+          notif.onclick = () => { window.focus(); notif.close(); };
         }
       });
     };
