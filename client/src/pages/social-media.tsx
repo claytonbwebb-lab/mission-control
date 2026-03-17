@@ -1242,8 +1242,9 @@ function GenerateTab({ pages, onSwitchTab, selectedPageId }: { pages: SocialPage
                     {p.day ? `${p.day}${p.theme ? ` — ${p.theme}` : ''}` : ((p.scheduledTime ?? p.scheduled_time) ? (() => { try { return format(new Date(p.scheduledTime ?? p.scheduled_time!), "EEE d MMM, HH:mm"); } catch { return `Post ${i + 1}`; } })() : `Post ${i + 1}`)}
                   </span>
                   <button
-                    onClick={() => setWeekPosts(prev => prev.filter((_, j) => j !== i))}
-                    className="text-muted-foreground hover:text-destructive p-1 rounded"
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); e.preventDefault(); setWeekPosts(prev => prev.filter((_, j) => j !== i)); }}
+                    className="text-muted-foreground hover:text-destructive p-1 rounded shrink-0"
                     title="Remove this post"
                   >
                     <X className="w-3 h-3" />
