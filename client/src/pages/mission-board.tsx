@@ -764,6 +764,7 @@ function TaskModal({ task, open, onClose, onSave, onDelete, projectOptions }: Ta
                     mode="single"
                     selected={reminderDate}
                     onSelect={setReminderDate}
+                    fromDate={new Date()}
                     className="rounded-md border"
                   />
                 </div>
