@@ -1115,8 +1115,12 @@ export default function MissionBoard() {
   const handleSaveTask = async (updates: Partial<Task>) => {
     if (!selectedTask) return;
     const apiData = toApiPayload(updates);
-    await updateMutation.mutateAsync({ id: selectedTask.id, ...apiData, author: "steve" });
-    await qc.refetchQueries({ queryKey: ["/tasks"] });
+    try {
+      await updateMutation.mutateAsync({ id: selectedTask.id, ...apiData, author: "steve" });
+      await qc.refetchQueries({ queryKey: ["/tasks"] });
+    } catch (err) {
+      console.error("Save task failed:", err);
+    }
     setModalOpen(false);
     setSelectedTask(null);
   };
