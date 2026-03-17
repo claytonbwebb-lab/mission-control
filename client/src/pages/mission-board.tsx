@@ -286,13 +286,28 @@ function ActivityItem({ entry, taskId, onEdited }: { entry: ActivityEntry; taskI
             <span className="text-xs font-medium text-foreground">{authorMeta.label}</span>
             <span className="text-xs text-muted-foreground/60">{timeAgo(entry.created_at)}</span>
             {entry.content.includes("(edited)") ? null : !editing && (
-              <button
-                onClick={startEdit}
-                className="opacity-0 group-hover/comment:opacity-100 transition-opacity p-0.5 rounded hover:bg-muted"
-                data-testid={`button-edit-comment-${entry.id}`}
-              >
-                <Pencil className="w-3 h-3 text-muted-foreground" />
-              </button>
+              <>
+                <button
+                  onClick={startEdit}
+                  className="opacity-0 group-hover/comment:opacity-100 transition-opacity p-0.5 rounded hover:bg-muted"
+                  data-testid={`button-edit-comment-${entry.id}`}
+                >
+                  <Pencil className="w-3 h-3 text-muted-foreground" />
+                </button>
+                <button
+                  onClick={async () => {
+                    if (!confirm("Delete this comment?")) return;
+                    try {
+                      await apiRequest("DELETE", `/tasks/${task?.id}/activity/${entry.id}`, {});
+                      qc.invalidateQueries({ queryKey: ["/tasks", searchQuery] });
+                    } catch (err) { console.error("Delete failed:", err); }
+                  }}
+                  className="opacity-0 group-hover/comment:opacity-100 transition-opacity p-0.5 rounded hover:bg-muted"
+                  data-testid={`button-delete-comment-${entry.id}`}
+                >
+                  <Trash2 className="w-3 h-3 text-muted-foreground hover:text-red-500" />
+                </button>
+              </>
             )}
           </div>
           {editing ? (
@@ -903,13 +918,14 @@ function TaskModal({ task, open, onClose, onSave, onDelete, projectOptions }: Ta
               </div>
             )}
             <div className="flex gap-2">
-              <Input
+              <Textarea
                 value={comment}
                 onChange={(e) => setComment(e.target.value)}
-                placeholder="Add a comment..."
-                className="text-sm"
+                placeholder="Add a comment... (Shift+Enter for new line)"
+                className="text-sm min-h-[40px] max-h-[120px] resize-none"
                 data-testid="input-comment"
-                onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSubmitComment()}
+                onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSubmitComment(); } }}
+                rows={1}
               />
               <Button
                 size="icon"
