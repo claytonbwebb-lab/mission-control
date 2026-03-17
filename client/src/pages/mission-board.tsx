@@ -1166,6 +1166,16 @@ export default function MissionBoard() {
             {checkingTasks ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" /> : <span className="mr-1.5">🦞</span>}
             {checkingTasks ? "Checking…" : "Check Tasks"}
           </Button>
+          {notificationPermission !== "granted" && notificationPermission !== "denied" && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 text-xs"
+              onClick={() => Notification.requestPermission().then(p => setNotificationPermission(p))}
+            >
+              <Bell className="w-3 h-3 mr-1" /> Enable Reminders
+            </Button>
+          )}
         </div>
         <div className="relative">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
