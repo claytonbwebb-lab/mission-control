@@ -521,7 +521,7 @@ function TaskModal({ task, open, onClose, onSave, onDelete, projectOptions }: Ta
       title, description, status, priority, label, assignee,
       is_repeatable: isRepeatable ? 1 : 0,
       cadence: isRepeatable ? cadence : undefined,
-      reminder_at: reminderAt,
+      reminder_at: reminderAt ?? null,
     });
   };
 
