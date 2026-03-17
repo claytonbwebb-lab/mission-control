@@ -1054,7 +1054,12 @@ export default function MissionBoard() {
 
     // Reminder notifications
   const [notificationPermission, setNotificationPermission] = useState<NotificationPermission | "checking">("checking");
-  const [reminderHistory, setReminderHistory] = useState<ReminderHistoryEntry[]>(() => getReminderHistory());
+  const [reminderHistory, setReminderHistory] = useState<ReminderHistoryEntry[]>(() => {
+    // purge any entries from the 1970s (caused by localStorage seconds/ms unit bug)
+    const history = getReminderHistory().filter(h => h.firedAt > 1000000000);
+    localStorage.setItem("reminder_history", JSON.stringify(history));
+    return history;
+  });
   const [reminderPanelOpen, setReminderPanelOpen] = useState(false);
   const unreadReminderCount = reminderHistory.filter(h => h.status === "fired").length;
 
@@ -1093,7 +1098,7 @@ export default function MissionBoard() {
       const firedKeys = getFiredReminderKeys();
       const allTasks = tasks || [];
       allTasks.forEach(task => {
-        const reminderTime = (task.reminder_at ? task.reminder_at * 1000 : localReminders[task.id]);
+        const reminderTime = task.reminder_at ? task.reminder_at * 1000 : (localReminders[task.id] ? localReminders[task.id] * 1000 : null);
         if (!reminderTime || reminderTime > now) return; // not yet due
         const key = `${task.id}-${Math.floor(reminderTime / 1000)}`;
         if (firedKeys.has(key)) return; // already fired this session
