@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Mail, Users, CheckCircle2, ArrowLeft, Loader2, Play, Pause, ChevronRight, Send } from "lucide-react";
+import { Mail, Users, CheckCircle2, ArrowLeft, Loader2, Play, Pause, ChevronRight, Send, X } from "lucide-react";
 import { apiRequest } from "@/lib/auth";
 
 interface Campaign {
@@ -21,6 +21,7 @@ interface CampaignEmail {
   step: number;
   subject: string;
   preview: string;
+  body?: string;
 }
 
 interface CampaignDetail extends Campaign {
@@ -30,6 +31,32 @@ interface CampaignDetail extends Campaign {
   daily_limit?: number;
   last_sent?: string;
   error?: string;
+}
+
+function EmailModal({ email, onClose }: { email: CampaignEmail; onClose: () => void }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+      <div className="absolute inset-0 bg-black/60" onClick={onClose} />
+      <div className="relative w-full sm:max-w-lg bg-background border border-border rounded-t-2xl sm:rounded-xl shadow-xl flex flex-col max-h-[85vh]">
+        {/* Header */}
+        <div className="flex items-start justify-between px-4 py-3 border-b border-border shrink-0">
+          <div className="pr-8">
+            <div className="text-xs text-muted-foreground mb-0.5">Email {email.step}</div>
+            <div className="text-sm font-semibold leading-snug">{email.subject}</div>
+          </div>
+          <button onClick={onClose} className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50 shrink-0">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+        {/* Body */}
+        <div className="overflow-y-auto p-4">
+          <pre className="text-sm text-foreground whitespace-pre-wrap font-sans leading-relaxed">
+            {email.body || email.preview}
+          </pre>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function StatCard({ label, value, sub, icon }: { label: string; value: string | number; sub?: string; icon: React.ReactNode }) {
@@ -46,6 +73,8 @@ function StatCard({ label, value, sub, icon }: { label: string; value: string | 
 }
 
 function CampaignDetail({ id, onBack }: { id: string; onBack: () => void }) {
+  const [openEmail, setOpenEmail] = useState<CampaignEmail | null>(null);
+
   const { data, isLoading } = useQuery<CampaignDetail>({
     queryKey: [`/campaigns/${id}`],
     queryFn: () => apiRequest<CampaignDetail>("GET", `/campaigns/${id}`),
@@ -59,10 +88,13 @@ function CampaignDetail({ id, onBack }: { id: string; onBack: () => void }) {
 
   if (!data) return null;
 
+
+
   const pct = data.total_leads > 0 ? Math.round((data.contacted / data.total_leads) * 100) : 0;
 
   return (
     <div className="space-y-5">
+      {openEmail && <EmailModal email={openEmail} onClose={() => setOpenEmail(null)} />}
       {/* Header */}
       <div className="flex items-center gap-3">
         <button onClick={onBack} className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50">
@@ -145,20 +177,26 @@ function CampaignDetail({ id, onBack }: { id: string; onBack: () => void }) {
       <div className="bg-card border border-border rounded-lg">
         <div className="px-4 py-3 border-b border-border">
           <h3 className="text-sm font-semibold">Email Sequence ({data.email_count} emails)</h3>
+          <p className="text-xs text-muted-foreground mt-0.5">Tap any email to read the full template</p>
         </div>
         <div className="divide-y divide-border">
           {(data.emails || []).map((email, i) => (
-            <div key={email.step} className="px-4 py-3">
+            <button
+              key={email.step}
+              onClick={() => setOpenEmail(email)}
+              className="w-full px-4 py-3 text-left hover:bg-muted/30 transition-colors group"
+            >
               <div className="flex items-start gap-3">
                 <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary shrink-0 mt-0.5">
                   {i + 1}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium">{email.subject}</div>
+                  <div className="text-sm font-medium group-hover:text-primary transition-colors">{email.subject}</div>
                   <div className="text-xs text-muted-foreground mt-0.5 truncate">{email.preview}</div>
                 </div>
+                <ChevronRight className="w-3.5 h-3.5 text-muted-foreground shrink-0 mt-1 group-hover:text-foreground" />
               </div>
-            </div>
+            </button>
           ))}
         </div>
       </div>
