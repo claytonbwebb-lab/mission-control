@@ -126,7 +126,7 @@ function TaskCard({ task, index, onClick }: TaskCardProps) {
   const assigneeMeta = ASSIGNEE_META[task.assignee] ?? ASSIGNEE_META.steve;
   
   // Only show bell if backend has a future reminder set
-  const hasReminder = !!task.reminder_at && task.reminder_at * 1000 > Date.now();
+  const hasReminder = !!task.reminder_at;
 
   return (
     <Draggable draggableId={String(task.id)} index={index}>
