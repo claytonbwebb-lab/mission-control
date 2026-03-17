@@ -125,15 +125,8 @@ function TaskCard({ task, index, onClick }: TaskCardProps) {
   const priorityMeta = PRIORITY_META[task.priority] ?? PRIORITY_META.medium;
   const assigneeMeta = ASSIGNEE_META[task.assignee] ?? ASSIGNEE_META.steve;
   
-  // Check localStorage for reminder as fallback
-  const hasReminder = (() => {
-    if (task.reminder_at) return true;
-    try {
-      const stored = localStorage.getItem("task_reminders");
-      const reminders = stored ? JSON.parse(stored) : {};
-      return !!reminders[task.id];
-    } catch { return false; }
-  })();
+  // Only show bell if backend has a future reminder set
+  const hasReminder = !!task.reminder_at && task.reminder_at * 1000 > Date.now();
 
   return (
     <Draggable draggableId={String(task.id)} index={index}>
