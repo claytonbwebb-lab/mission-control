@@ -438,7 +438,7 @@ function PostDetailModal({ post, open, onClose, pages }: PostDetailModalProps) {
               </Button>
             )}
             {(post.status === "draft" || post.status === "approved") && (
-              <Button size="sm" variant="secondary" onClick={() => { if (confirm("Delete this post?")) deleteMutation.mutate(String(post.id)); }} disabled={deleteMutation.isPending} data-testid="button-reject-post">
+              <Button size="sm" variant="secondary" onClick={() => { deleteMutation.mutate(String(post.id)); }} disabled={deleteMutation.isPending} data-testid="button-reject-post">
                 <X className="w-3.5 h-3.5 mr-1" /> Delete
               </Button>
             )}
@@ -876,7 +876,7 @@ function QueueTab({ pages, selectedPageId }: { pages: SocialPage[]; selectedPage
                         <Button
                           size="sm"
                           variant="ghost"
-                          onClick={() => { if (confirm("Delete this post?")) deleteMutation.mutate(post.id); }}
+                          onClick={() => { deleteMutation.mutate(post.id); }}
                           disabled={deleteMutation.isPending}
                           data-testid={`button-reject-post-${post.id}`}
                         >
