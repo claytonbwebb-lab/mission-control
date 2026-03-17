@@ -945,7 +945,7 @@ function GenerateTab({ pages, onSwitchTab, selectedPageId }: { pages: SocialPage
   const [generatedPost, setGeneratedPost] = useState<SocialPost | null>(null);
   const [schedulePost, setSchedulePost] = useState<SocialPost | null>(null);
   const [weekPosts, setWeekPosts] = useState<GeneratedPost[]>([]);
-  const [savingDraft, setSavingDraft] = useState(false);
+
   const [pendingAction, setPendingAction] = useState<"single" | "week" | null>(null);
 
   useEffect(() => {
@@ -1061,29 +1061,7 @@ function GenerateTab({ pages, onSwitchTab, selectedPageId }: { pages: SocialPage
     toast({ title: "Draft discarded" });
   };
 
-  const handleSaveAllDrafts = async () => {
-    setSavingDraft(true);
-    try {
-      const defaultPageId = genPageId || ((selectedPageId && selectedPageId !== "all") ? selectedPageId : (pages.length > 0 ? pages[0].pageId : undefined));
-      await Promise.all(weekPosts.map(p =>
-        apiRequest("POST", "/posts", {
-          content_text: p.content,
-          status: "draft",
-          platform: "facebook",
-          ...(defaultPageId ? { page_id: defaultPageId } : {}),
-          scheduled_at: p.scheduledTime ?? p.scheduled_time ?? undefined,
-          ...((p as Record<string, unknown>).image_url ? { image_url: (p as Record<string, unknown>).image_url } : {}),
-        })
-      ));
-      toast({ title: `${weekPosts.length} posts saved as drafts` });
-      setWeekPosts([]);
-      qc.invalidateQueries({ queryKey: ["/posts"] });
-    } catch (err) {
-      toast({ title: "Failed to save drafts", description: (err as Error).message, variant: "destructive" });
-    } finally {
-      setSavingDraft(false);
-    }
-  };
+  
 
   return (
     <div className="space-y-5 max-w-2xl">
@@ -1272,10 +1250,7 @@ function GenerateTab({ pages, onSwitchTab, selectedPageId }: { pages: SocialPage
               </div>
             );
           })}
-          <Button size="sm" variant="secondary" onClick={handleSaveAllDrafts} disabled={savingDraft} data-testid="button-save-all-drafts">
-            {savingDraft ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> : null}
-            Save All as Drafts
-          </Button>
+
         </div>
       )}
 
