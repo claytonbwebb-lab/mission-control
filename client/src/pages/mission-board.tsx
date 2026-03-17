@@ -486,7 +486,7 @@ function TaskModal({ task, open, onClose, onSave, onDelete, projectOptions }: Ta
       setAssignee(task.assignee ?? "steve");
       setIsRepeatable(!!task.is_repeatable);
       setCadence(task.cadence ?? "weekly");
-      if (task.reminder_at) {
+      if (task.reminder_at && task.reminder_at * 1000 > Date.now()) {
         const d = new Date(task.reminder_at * 1000);
         setReminderDate(d);
         setReminderTime(format(d, "HH:mm"));
@@ -496,7 +496,7 @@ function TaskModal({ task, open, onClose, onSave, onDelete, projectOptions }: Ta
           const stored = localStorage.getItem("task_reminders");
           const reminders = stored ? JSON.parse(stored) : {};
           const localReminder = reminders[task.id];
-          if (localReminder) {
+          if (localReminder && localReminder * 1000 > Date.now()) {
             const d = new Date(localReminder * 1000);
             setReminderDate(d);
             setReminderTime(format(d, "HH:mm"));
