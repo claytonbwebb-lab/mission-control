@@ -140,6 +140,10 @@ export async function registerRoutes(
   // ── Cron jobs ─────────────────────────────────────────────────────────────
   app.get("/api/cron/jobs", (_req, res) => proxy(res, "GET", "/cron/jobs"));
 
+  // ── Trading ───────────────────────────────────────────────────────────────
+  app.get("/api/trading/status",    (_req, res) => proxy(res, "GET",  "/trading/status"));
+  app.post("/api/trading/rebalance", (_req, res) => proxy(res, "POST", "/trading/rebalance"));
+
   // ── Architecture ──────────────────────────────────────────────────────────
   function requireAuth(req: Request, res: Response, next: NextFunction) {
     const token = (req.headers.authorization || "").replace("Bearer ", "");

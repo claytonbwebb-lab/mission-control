@@ -17,6 +17,7 @@ import AiUsagePage from "@/pages/ai-usage";
 import CronJobsPage from "@/pages/cron-jobs";
 import ArchitecturePage from "@/pages/architecture";
 import RecoveryPage from "@/pages/recovery";
+import TradingPage from "@/pages/trading";
 import NotFound from "@/pages/not-found";
 
 function ThemeToggle() {
@@ -65,6 +66,7 @@ function ProtectedLayout() {
               <Route path="/cron" component={CronJobsPage} />
               <Route path="/architecture" component={ArchitecturePage} />
               <Route path="/recovery" component={RecoveryPage} />
+              <Route path="/trading" component={TradingPage} />
               <Route component={NotFound} />
             </Switch>
           </main>
