@@ -1193,7 +1193,12 @@ export default function MissionBoard() {
     const apiData = toApiPayload(updates);
     try {
       await updateMutation.mutateAsync({ id: selectedTask.id, ...apiData, author: "steve" });
-      await qc.refetchQueries({ queryKey: ["/tasks"], exact: false });
+      // Immediately update cache so UI reflects changes without waiting for refetch
+      qc.setQueriesData({ queryKey: ["/tasks"], exact: false }, (old: unknown) => {
+        if (!Array.isArray(old)) return old;
+        return old.map((t: Task) => t.id === selectedTask.id ? { ...t, ...updates } : t);
+      });
+      qc.invalidateQueries({ queryKey: ["/tasks"], exact: false });
     } catch (err) {
       console.error("Save task failed:", err);
     }
