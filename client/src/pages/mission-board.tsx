@@ -89,6 +89,7 @@ function toApiPayload(updates: Partial<Task>): Record<string, unknown> {
   if (updates.assignee !== undefined) payload.assigned_to = updates.assignee;
   if (updates.is_repeatable !== undefined) payload.is_repeatable = updates.is_repeatable;
   if (updates.cadence !== undefined) payload.cadence = updates.cadence;
+  if (updates.reminder_at !== undefined) payload.reminder_at = updates.reminder_at ?? null;
   return payload;
 }
 
