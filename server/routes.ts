@@ -144,6 +144,10 @@ export async function registerRoutes(
   app.get("/api/trading/status",    (_req, res) => proxy(res, "GET",  "/trading/status"));
   app.post("/api/trading/rebalance", (_req, res) => proxy(res, "POST", "/trading/rebalance"));
 
+  // ── Campaigns ─────────────────────────────────────────────────────────────
+  app.get("/api/campaigns",      (_req, res) => proxy(res, "GET", "/campaigns"));
+  app.get("/api/campaigns/:id",  (req, res)  => proxy(res, "GET", `/campaigns/${req.params.id}`));
+
   // ── Architecture ──────────────────────────────────────────────────────────
   function requireAuth(req: Request, res: Response, next: NextFunction) {
     const token = (req.headers.authorization || "").replace("Bearer ", "");
