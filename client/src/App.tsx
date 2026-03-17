@@ -13,7 +13,6 @@ import { isAuthenticated } from "@/lib/auth";
 import LoginPage from "@/pages/login";
 import MissionBoard from "@/pages/mission-board";
 import SocialMediaPage from "@/pages/social-media";
-import AiUsagePage from "@/pages/ai-usage";
 import CronJobsPage from "@/pages/cron-jobs";
 import ArchitecturePage from "@/pages/architecture";
 import RecoveryPage from "@/pages/recovery";
@@ -63,7 +62,6 @@ function ProtectedLayout() {
             <Switch>
               <Route path="/" component={MissionBoard} />
               <Route path="/social" component={SocialMediaPage} />
-              <Route path="/ai-usage" component={AiUsagePage} />
               <Route path="/cron" component={CronJobsPage} />
               <Route path="/architecture" component={ArchitecturePage} />
               <Route path="/recovery" component={RecoveryPage} />

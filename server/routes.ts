@@ -131,13 +131,7 @@ export async function registerRoutes(
     proxy(res, "POST", "/clawbot/check-tasks")
   );
 
-  // ── AI Usage ──────────────────────────────────────────────────────────────
-  app.get("/api/ai/usage", (req, res) => {
-    const qs = new URLSearchParams(req.query as Record<string, string>).toString();
-    return proxy(res, "GET", "/ai/usage", undefined, qs || undefined);
-  });
-
-  // ── Cron jobs ─────────────────────────────────────────────────────────────
+    // ── Cron jobs ─────────────────────────────────────────────────────────────
   app.get("/api/cron/jobs", (_req, res) => proxy(res, "GET", "/cron/jobs"));
 
   // ── Trading ───────────────────────────────────────────────────────────────

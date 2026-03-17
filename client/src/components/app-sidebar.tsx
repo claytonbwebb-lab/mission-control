@@ -14,7 +14,6 @@ import {
 import {
   LayoutDashboard,
   Share2,
-  Cpu,
   LogOut,
   Zap,
   Timer,
@@ -29,7 +28,6 @@ import { Button } from "@/components/ui/button";
 const navItems = [
   { title: "Mission Board", url: "/", icon: LayoutDashboard },
   { title: "Social Media", url: "/social", icon: Share2 },
-  { title: "AI Usage", url: "/ai-usage", icon: Cpu },
   { title: "Cron Jobs", url: "/cron", icon: Timer },
   { title: "Architecture", url: "/architecture", icon: Blocks },
   { title: "Trading", url: "/trading", icon: TrendingUp },
