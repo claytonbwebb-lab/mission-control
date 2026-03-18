@@ -31,6 +31,7 @@ interface CampaignDetail extends Campaign {
   daily_limit?: number;
   last_sent?: string;
   error?: string;
+  daily_stats?: Array<{ date: string; [key: string]: string | number }>;
 }
 
 function EmailModal({ email, onClose }: { email: CampaignEmail; onClose: () => void }) {
@@ -169,6 +170,42 @@ function CampaignDetail({ id, onBack }: { id: string; onBack: () => void }) {
                 <span className="font-medium">{count}</span>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* Daily sends — last 7 days */}
+      {data.daily_stats && data.daily_stats.length > 0 && (
+        <div className="bg-card border border-border rounded-lg p-4">
+          <h3 className="text-sm font-semibold mb-3">Daily Sends — Last 7 Days</h3>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="text-muted-foreground border-b border-border">
+                  <th className="text-left pb-2 pr-4 font-medium">Date</th>
+                  {Array.from({ length: data.email_count }, (_, i) => (
+                    <th key={i+1} className="text-right pb-2 px-2 font-medium">Email {i+1}</th>
+                  ))}
+                  <th className="text-right pb-2 pl-2 font-medium">Total</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border/50">
+                {data.daily_stats.map((row) => {
+                  const total = Array.from({ length: data.email_count }, (_, i) => Number(row[i+1] || 0)).reduce((a,b) => a+b, 0);
+                  return (
+                    <tr key={row.date} className="hover:bg-muted/30">
+                      <td className="py-1.5 pr-4 text-muted-foreground">{row.date}</td>
+                      {Array.from({ length: data.email_count }, (_, i) => (
+                        <td key={i+1} className={`py-1.5 px-2 text-right font-medium ${Number(row[i+1] || 0) > 0 ? 'text-primary' : 'text-muted-foreground'}`}>
+                          {Number(row[i+1] || 0)}
+                        </td>
+                      ))}
+                      <td className="py-1.5 pl-2 text-right font-semibold">{total}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         </div>
       )}
