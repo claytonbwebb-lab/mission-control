@@ -17,15 +17,32 @@ function json(res, status, data) {
 }
 
 function getDailyStats(campaignId) {
-  console.log('[DEBUG getDailyStats] campaignId:', campaignId);
   try {
-    const filePath = path.join(__dirname, `../../daily_stats_${campaignId}.json`);
-    console.log('[DEBUG getDailyStats] filePath:', filePath);
-    console.log('[DEBUG getDailyStats] exists:', fs.existsSync(filePath));
-    if (!fs.existsSync(filePath)) return null;
-    return JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    // Hardcoded for now - will move to DB later
+    if (campaignId === 'easybooked') {
+      return [
+        { "date": "2026-03-18", "1": 0, "2": 15, "3": 0, "4": 0, "5": 0 },
+        { "date": "2026-03-17", "1": 6, "2": 15, "3": 0, "4": 0, "5": 0 },
+        { "date": "2026-03-16", "1": 15, "2": 15, "3": 0, "4": 0, "5": 0 },
+        { "date": "2026-03-15", "1": 15, "2": 15, "3": 0, "4": 0, "5": 0 },
+        { "date": "2026-03-14", "1": 15, "2": 15, "3": 0, "4": 0, "5": 0 },
+        { "date": "2026-03-13", "1": 15, "2": 15, "3": 0, "4": 0, "5": 0 },
+        { "date": "2026-03-12", "1": 15, "2": 15, "3": 0, "4": 0, "5": 0 }
+      ];
+    }
+    if (campaignId === 'campsite') {
+      return [
+        { "date": "2026-03-18", "1": 0, "2": 13, "3": 14 },
+        { "date": "2026-03-17", "1": 2, "2": 0, "3": 20 },
+        { "date": "2026-03-16", "1": 0, "2": 0, "3": 14 },
+        { "date": "2026-03-15", "1": 12, "2": 0, "3": 0 },
+        { "date": "2026-03-14", "1": 13, "2": 0, "3": 0 },
+        { "date": "2026-03-12", "1": 0, "2": 14, "3": 6 },
+        { "date": "2026-03-11", "1": 0, "2": 20, "3": 0 }
+      ];
+    }
+    return null;
   } catch (e) {
-    console.error('[DEBUG getDailyStats] error:', e.message);
     return null;
   }
 }
