@@ -17,11 +17,15 @@ function json(res, status, data) {
 }
 
 function getDailyStats(campaignId) {
+  console.log('[DEBUG getDailyStats] campaignId:', campaignId);
   try {
     const filePath = path.join(__dirname, `../../daily_stats_${campaignId}.json`);
+    console.log('[DEBUG getDailyStats] filePath:', filePath);
+    console.log('[DEBUG getDailyStats] exists:', fs.existsSync(filePath));
     if (!fs.existsSync(filePath)) return null;
     return JSON.parse(fs.readFileSync(filePath, 'utf8'));
   } catch (e) {
+    console.error('[DEBUG getDailyStats] error:', e.message);
     return null;
   }
 }
@@ -391,6 +395,7 @@ module.exports = async function campaignsRoutes(req, res) {
   const detailMatch = url.match(/^\/campaigns\/([a-z0-9_-]+)$/);
   if (req.method === 'GET' && detailMatch) {
     const id = detailMatch[1];
+    console.log('[DEBUG] Campaign detail requested:', id);
     let data;
     if (id === 'easybooked') data = getEasybookedStats();
     else if (id === 'campsite') data = getCampsiteStats();
@@ -399,6 +404,7 @@ module.exports = async function campaignsRoutes(req, res) {
     
     const daily_stats = await getDailyStats(id);
     data.daily_stats = daily_stats || [{ date: "2026-03-18", test: true }];
+    console.log('[DEBUG] Returning data with daily_stats:', !!data.daily_stats);
     return json(res, 200, data);
   }
 
