@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Mail, Users, CheckCircle2, ArrowLeft, Loader2, Play, Pause, ChevronRight, Send, X } from "lucide-react";
+import { Mail, Users, CheckCircle2, ArrowLeft, Loader2, Play, Pause, ChevronRight, Send, X, Eye } from "lucide-react";
 import { apiRequest } from "@/lib/auth";
 
 interface Campaign {
@@ -32,6 +32,39 @@ interface CampaignDetail extends Campaign {
   last_sent?: string;
   error?: string;
   daily_stats?: Array<{ date: string; [key: string]: string | number }>;
+}
+
+function EmailOpensList() {
+  const { data, isLoading } = useQuery<{ opens: Array<{ timestamp: string; email: string }> }>({
+    queryKey: ["/api/email-opens"],
+    queryFn: async () => {
+      const res = await fetch("/api/email-opens");
+      return res.json();
+    },
+    refetchInterval: 30000,
+  });
+
+  if (isLoading) return <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />;
+  
+  const opens = data?.opens || [];
+  const last24h = opens.filter(o => new Date(o.timestamp).getTime() > Date.now() - 24 * 60 * 60 * 1000);
+  
+  if (last24h.length === 0) return <p className="text-xs text-muted-foreground">No opens in the last 24 hours</p>;
+
+  return (
+    <div className="space-y-1">
+      {last24h.slice(0, 10).map((open, i) => (
+        <div key={i} className="flex items-center justify-between text-xs">
+          <span className="text-muted-foreground truncate max-w-[200px]">{open.email}</span>
+          <span className="text-green-500 flex items-center gap-1">
+            <Eye className="w-3 h-3" />
+            {new Date(open.timestamp).toLocaleTimeString()}
+          </span>
+        </div>
+      ))}
+      {last24h.length > 10 && <p className="text-xs text-muted-foreground">+{last24h.length - 10} more</p>}
+    </div>
+  );
 }
 
 function EmailModal({ email, onClose }: { email: CampaignEmail; onClose: () => void }) {
@@ -209,6 +242,12 @@ function CampaignDetail({ id, onBack }: { id: string; onBack: () => void }) {
           </div>
         </div>
       )}
+
+      {/* Email Opens */}
+      <div className="bg-card border border-border rounded-lg p-4">
+        <h3 className="text-sm font-semibold mb-3">Email Opens (Last 24h)</h3>
+        <EmailOpensList />
+      </div>
 
       {/* Email sequence */}
       <div className="bg-card border border-border rounded-lg">
