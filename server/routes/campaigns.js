@@ -403,7 +403,7 @@ module.exports = async function campaignsRoutes(req, res) {
     else return json(res, 404, { error: 'Campaign not found' });
     
     const daily_stats = await getDailyStats(id);
-    data.daily_stats = daily_stats || [{ date: "2026-03-18", test: true }];
+    data.daily_stats = daily_stats || [{ date: "2026-03-18", test: "FORCE_" + Date.now() }];
     console.log('[DEBUG] Returning data with daily_stats:', !!data.daily_stats);
     return json(res, 200, data);
   }
