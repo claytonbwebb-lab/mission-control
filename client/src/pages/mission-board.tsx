@@ -74,6 +74,8 @@ function normalizeTask(raw: Record<string, unknown>): Task {
     position: (raw.position ?? 0) as number,
     is_repeatable: (raw.is_repeatable ?? 0) as number,
     cadence: (raw.cadence ?? undefined) as Task["cadence"],
+    reminder_at: (raw.reminder_at ?? undefined) as number | undefined,
+    reminder_notified: (raw.reminder_notified ?? 0) as number,
     images: (Array.isArray(raw.images) ? raw.images : []) as TaskImage[],
     createdAt: String(raw.created_at ?? raw.createdAt ?? ""),
     updatedAt: (raw.updated_at ?? raw.updatedAt ?? undefined) as string | undefined,
