@@ -1021,6 +1021,7 @@ export default function MissionBoard() {
   const { toast } = useToast();
   const [filterLabel, setFilterLabel] = useState<TaskLabel | "all">("all");
   const [filterAssignee, setFilterAssignee] = useState<string>("all");
+  const [hideWithReminder, setHideWithReminder] = useState(false);
   const [addingColumn, setAddingColumn] = useState<TaskStatus | null>(null);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
@@ -1240,7 +1241,8 @@ export default function MissionBoard() {
 
   const filteredTasks = (tasks ?? []).filter(
     t => (filterLabel === "all" || t.label === filterLabel) &&
-         (filterAssignee === "all" || t.assignee === filterAssignee)
+         (filterAssignee === "all" || t.assignee === filterAssignee) &&
+         (!hideWithReminder || !t.reminder_at)
   );
 
   const tasksByColumn = (status: TaskStatus) =>
@@ -1325,6 +1327,16 @@ export default function MissionBoard() {
               </button>
             ))}
           </div>
+        </div>
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-xs text-muted-foreground">Hide:</span>
+          <button
+            className={`text-xs px-2.5 py-1 rounded-md border transition-colors ${hideWithReminder ? "bg-primary text-primary-foreground border-primary" : "bg-card border-card-border text-muted-foreground"}`}
+            onClick={() => setHideWithReminder(!hideWithReminder)}
+            data-testid="filter-hide-reminder"
+          >
+            With Reminder
+          </button>
         </div>
         <div className="flex items-center gap-1.5">
           {lastUpdated && (
