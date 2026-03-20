@@ -460,6 +460,7 @@ function TaskModal({ task, open, onClose, onSave, onDelete, projectOptions }: Ta
   const [isRepeatable, setIsRepeatable] = useState(false);
   const [cadence, setCadence] = useState<"daily" | "weekly" | "monthly">("weekly");
   const [reminderDate, setReminderDate] = useState<Date | undefined>(undefined);
+  const [reminderChanged, setReminderChanged] = useState(false);
   const defaultReminderTime = () => {
     const d = new Date(Date.now() + 60 * 60 * 1000);
     d.setMinutes(0, 0, 0);
@@ -522,6 +523,7 @@ function TaskModal({ task, open, onClose, onSave, onDelete, projectOptions }: Ta
           setReminderTime(defaultReminderTime());
         }
       }
+      setReminderChanged(false);
       setComment("");
       setCommentImages([]);
     }
@@ -549,7 +551,7 @@ function TaskModal({ task, open, onClose, onSave, onDelete, projectOptions }: Ta
       title, description, status, priority, label, assignee,
       is_repeatable: isRepeatable ? 1 : 0,
       cadence: isRepeatable ? cadence : undefined,
-      reminder_at: reminderAt ?? null,
+      ...(reminderChanged ? { reminder_at: reminderAt ?? null } : {}),
     });
   };
 
@@ -768,7 +770,7 @@ function TaskModal({ task, open, onClose, onSave, onDelete, projectOptions }: Ta
           <div className="space-y-3 pt-1">
             <div className="flex items-center justify-between">
               <Label className="text-xs text-muted-foreground uppercase tracking-wide">Reminder</Label>
-              <Switch checked={!!reminderDate} onCheckedChange={(checked) => setReminderDate(checked ? new Date() : undefined)} />
+              <Switch checked={!!reminderDate} onCheckedChange={(checked) => { setReminderDate(checked ? new Date() : undefined); setReminderChanged(true); }} />
             </div>
             {reminderDate && (
               <div className="flex gap-2">
@@ -776,7 +778,7 @@ function TaskModal({ task, open, onClose, onSave, onDelete, projectOptions }: Ta
                   <Calendar
                     mode="single"
                     selected={reminderDate}
-                    onSelect={setReminderDate}
+                    onSelect={(d) => { setReminderDate(d); setReminderChanged(true); }}
                     fromDate={new Date()}
                     className="rounded-md border"
                   />
@@ -786,7 +788,7 @@ function TaskModal({ task, open, onClose, onSave, onDelete, projectOptions }: Ta
                   <Input
                     type="time"
                     value={reminderTime}
-                    onChange={(e) => setReminderTime(e.target.value)}
+                    onChange={(e) => { setReminderTime(e.target.value); setReminderChanged(true); }}
                     className="w-24"
                   />
                   {reminderDate && (
