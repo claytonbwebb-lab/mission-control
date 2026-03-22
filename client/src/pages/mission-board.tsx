@@ -142,7 +142,10 @@ function TaskCard({ task, index, onClick }: TaskCardProps) {
           data-testid={`card-task-${task.id}`}
         >
           <div className="flex items-start justify-between gap-2 mb-2">
-            <p className="text-sm font-medium text-card-foreground leading-snug flex-1">{task.title}</p>
+            <p className="text-sm font-medium text-card-foreground leading-snug flex-1">
+              <span className="text-[10px] font-mono text-muted-foreground/60 mr-1.5">#{task.id}</span>
+              {task.title}
+            </p>
             <div className="flex items-center gap-1">
               {(task.images?.length ?? 0) > 0 && (
                 <span className="inline-flex items-center gap-0.5 px-1 py-0.5 rounded text-xs bg-sky-500/10 text-sky-500" data-testid={`badge-images-${task.id}`}>
