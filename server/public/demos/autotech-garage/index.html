@@ -1,0 +1,1214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Auto Tech Services | Expert Car Care. Trusted For 25 Years.</title>
+<meta name="description" content="Auto Tech Services — VW/Audi specialists and general vehicle repairs in Ashton-under-Lyne. MOT testing, servicing, diagnostics, tyre bay. Good Garage Scheme accredited.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --black: #0d0d0d;
+    --dark: #1a1a1a;
+    --dark2: #222222;
+    --dark3: #2a2a2a;
+    --red: #e63329;
+    --red-dark: #c02820;
+    --white: #ffffff;
+    --grey: #aaaaaa;
+    --light-grey: #f0f0f0;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--black);
+    color: var(--white);
+    font-family: 'Inter', sans-serif;
+    font-weight: 400;
+    line-height: 1.6;
+    overflow-x: hidden;
+  }
+
+  h1, h2, h3, h4, h5 {
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    line-height: 1.1;
+  }
+
+  a { color: inherit; text-decoration: none; }
+
+  /* ── NAV ── */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 1000;
+    padding: 0 5%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 70px;
+    transition: background 0.3s, box-shadow 0.3s;
+  }
+  nav.scrolled {
+    background: rgba(13,13,13,0.97);
+    box-shadow: 0 2px 30px rgba(0,0,0,0.6);
+  }
+  .nav-logo {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 1.5rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+  }
+  .nav-logo span { color: var(--red); }
+  .nav-links {
+    display: flex;
+    gap: 2rem;
+    list-style: none;
+  }
+  .nav-links a {
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 600;
+    font-size: 0.95rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--grey);
+    transition: color 0.2s;
+  }
+  .nav-links a:hover { color: var(--white); }
+  .nav-cta {
+    background: var(--red);
+    color: var(--white) !important;
+    padding: 0.5rem 1.2rem;
+    border-radius: 3px;
+    transition: background 0.2s !important;
+  }
+  .nav-cta:hover { background: var(--red-dark) !important; color: var(--white) !important; }
+
+  .nav-toggle {
+    display: none;
+    flex-direction: column;
+    gap: 5px;
+    cursor: pointer;
+    padding: 5px;
+  }
+  .nav-toggle span {
+    display: block;
+    width: 25px;
+    height: 2px;
+    background: var(--white);
+    transition: 0.3s;
+  }
+
+  /* ── HERO ── */
+  #hero {
+    position: relative;
+    height: 100vh;
+    min-height: 600px;
+    display: flex;
+    align-items: center;
+    overflow: hidden;
+  }
+  .hero-slides {
+    position: absolute;
+    inset: 0;
+  }
+  .hero-slide {
+    position: absolute;
+    inset: 0;
+    background-size: cover;
+    background-position: center;
+    opacity: 0;
+    transition: opacity 1.2s ease;
+    transform: scale(1.05);
+    transition: opacity 1.2s ease, transform 8s ease;
+  }
+  .hero-slide.active {
+    opacity: 1;
+    transform: scale(1);
+  }
+  .hero-slide::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      to right,
+      rgba(13,13,13,0.85) 0%,
+      rgba(13,13,13,0.55) 50%,
+      rgba(13,13,13,0.3) 100%
+    );
+  }
+  .hero-content {
+    position: relative;
+    z-index: 10;
+    padding: 0 8%;
+    max-width: 750px;
+  }
+  .hero-eyebrow {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 600;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--red);
+    margin-bottom: 1rem;
+    opacity: 0;
+    transform: translateY(20px);
+    animation: fadeUp 0.8s 0.3s forwards;
+  }
+  .hero-title {
+    font-size: clamp(2.8rem, 6vw, 5rem);
+    line-height: 1.0;
+    margin-bottom: 1.5rem;
+    opacity: 0;
+    transform: translateY(20px);
+    animation: fadeUp 0.8s 0.5s forwards;
+  }
+  .hero-title em {
+    font-style: normal;
+    color: var(--red);
+  }
+  .hero-sub {
+    font-size: 1.1rem;
+    font-weight: 300;
+    color: rgba(255,255,255,0.8);
+    margin-bottom: 2.5rem;
+    opacity: 0;
+    transform: translateY(20px);
+    animation: fadeUp 0.8s 0.7s forwards;
+  }
+  .hero-btns {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    opacity: 0;
+    transform: translateY(20px);
+    animation: fadeUp 0.8s 0.9s forwards;
+  }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.85rem 2rem;
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+    font-size: 1rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: 2px solid transparent;
+  }
+  .btn-primary {
+    background: var(--red);
+    color: var(--white);
+  }
+  .btn-primary:hover {
+    background: var(--red-dark);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(230,51,41,0.4);
+  }
+  .btn-outline {
+    background: transparent;
+    color: var(--white);
+    border-color: rgba(255,255,255,0.4);
+  }
+  .btn-outline:hover {
+    border-color: var(--white);
+    background: rgba(255,255,255,0.08);
+    transform: translateY(-2px);
+  }
+  .hero-indicators {
+    position: absolute;
+    bottom: 2rem;
+    left: 8%;
+    display: flex;
+    gap: 0.5rem;
+    z-index: 10;
+  }
+  .hero-dot {
+    width: 30px;
+    height: 3px;
+    background: rgba(255,255,255,0.3);
+    cursor: pointer;
+    transition: background 0.3s, width 0.3s;
+    border-radius: 2px;
+  }
+  .hero-dot.active {
+    background: var(--red);
+    width: 50px;
+  }
+  .hero-scroll {
+    position: absolute;
+    bottom: 2rem;
+    right: 8%;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.4rem;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.75rem;
+    letter-spacing: 0.2em;
+    color: rgba(255,255,255,0.4);
+    text-transform: uppercase;
+  }
+  .scroll-line {
+    width: 1px;
+    height: 40px;
+    background: linear-gradient(to bottom, rgba(255,255,255,0.4), transparent);
+    animation: scrollPulse 2s infinite;
+  }
+
+  /* ── TRUST BAR ── */
+  .trust-bar {
+    background: var(--red);
+    padding: 1rem 5%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 3rem;
+    flex-wrap: wrap;
+  }
+  .trust-item {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 600;
+    font-size: 0.9rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.9);
+  }
+  .trust-item svg { flex-shrink: 0; }
+
+  /* ── SECTIONS ── */
+  section { padding: 6rem 8%; }
+  .section-label {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.35em;
+    text-transform: uppercase;
+    color: var(--red);
+    margin-bottom: 0.75rem;
+  }
+  .section-title {
+    font-size: clamp(2rem, 4vw, 3rem);
+    margin-bottom: 1rem;
+  }
+  .section-title span { color: var(--red); }
+  .section-divider {
+    width: 50px;
+    height: 3px;
+    background: var(--red);
+    margin-bottom: 2rem;
+  }
+  .section-sub {
+    color: var(--grey);
+    max-width: 600px;
+    font-size: 1.05rem;
+    line-height: 1.7;
+    margin-bottom: 3rem;
+  }
+
+  /* ── SERVICES ── */
+  #services { background: var(--dark); }
+  .services-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.06);
+  }
+  .service-card {
+    background: var(--dark);
+    padding: 2.5rem;
+    transition: background 0.3s;
+    position: relative;
+    overflow: hidden;
+  }
+  .service-card::before {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0;
+    width: 0;
+    height: 2px;
+    background: var(--red);
+    transition: width 0.4s;
+  }
+  .service-card:hover::before { width: 100%; }
+  .service-card:hover { background: var(--dark2); }
+  .service-icon {
+    width: 52px;
+    height: 52px;
+    background: rgba(230,51,41,0.1);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1.5rem;
+    transition: background 0.3s;
+  }
+  .service-card:hover .service-icon { background: rgba(230,51,41,0.2); }
+  .service-card h3 {
+    font-size: 1.3rem;
+    margin-bottom: 0.75rem;
+    letter-spacing: 0.03em;
+  }
+  .service-card p { color: var(--grey); font-size: 0.92rem; line-height: 1.7; }
+
+  /* ── STATS ── */
+  #stats {
+    background: var(--black);
+    padding: 5rem 8%;
+  }
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0;
+    border: 1px solid rgba(255,255,255,0.07);
+  }
+  .stat-item {
+    padding: 3rem 2rem;
+    text-align: center;
+    border-right: 1px solid rgba(255,255,255,0.07);
+    position: relative;
+  }
+  .stat-item:last-child { border-right: none; }
+  .stat-num {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 3.5rem;
+    font-weight: 700;
+    color: var(--red);
+    line-height: 1;
+    margin-bottom: 0.5rem;
+  }
+  .stat-label {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--grey);
+  }
+  .stat-badge {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 0.5rem;
+  }
+  .stat-badge img { max-height: 60px; filter: brightness(0.9); }
+
+  /* ── TESTIMONIALS ── */
+  #testimonials { background: var(--dark); }
+  .testimonials-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+  }
+  .testimonial-card {
+    background: var(--dark2);
+    border: 1px solid rgba(255,255,255,0.06);
+    padding: 2rem;
+    border-radius: 4px;
+    position: relative;
+    transition: transform 0.3s, border-color 0.3s;
+  }
+  .testimonial-card:hover {
+    transform: translateY(-4px);
+    border-color: rgba(230,51,41,0.3);
+  }
+  .testimonial-card::before {
+    content: '\201C';
+    position: absolute;
+    top: 1.2rem;
+    right: 1.5rem;
+    font-family: Georgia, serif;
+    font-size: 5rem;
+    line-height: 1;
+    color: rgba(230,51,41,0.15);
+  }
+  .stars {
+    display: flex;
+    gap: 2px;
+    margin-bottom: 1rem;
+  }
+  .star { color: var(--red); font-size: 1rem; }
+  .testimonial-text {
+    color: rgba(255,255,255,0.85);
+    font-size: 0.97rem;
+    line-height: 1.7;
+    margin-bottom: 1.2rem;
+  }
+  .testimonial-author {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--red);
+  }
+
+  /* ── GALLERY ── */
+  #gallery { background: var(--black); padding: 6rem 5%; }
+  .gallery-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: auto;
+    gap: 6px;
+  }
+  .gallery-item {
+    overflow: hidden;
+    position: relative;
+    aspect-ratio: 4/3;
+    cursor: pointer;
+  }
+  .gallery-item:first-child {
+    grid-column: span 2;
+    aspect-ratio: 16/7;
+  }
+  .gallery-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.6s ease;
+    display: block;
+  }
+  .gallery-item:hover img { transform: scale(1.08); }
+  .gallery-item::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(13,13,13,0);
+    transition: background 0.3s;
+  }
+  .gallery-item:hover::after { background: rgba(230,51,41,0.1); }
+
+  /* ── ABOUT ── */
+  #about { background: var(--dark); }
+  .about-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 5rem;
+    align-items: center;
+  }
+  .about-visual {
+    position: relative;
+  }
+  .about-img-wrap {
+    position: relative;
+    display: inline-block;
+  }
+  .about-img-wrap::before {
+    content: '';
+    position: absolute;
+    top: -15px;
+    left: -15px;
+    right: 15px;
+    bottom: 15px;
+    border: 2px solid var(--red);
+    opacity: 0.4;
+    border-radius: 4px;
+  }
+  .about-img-wrap img {
+    width: 100%;
+    max-width: 400px;
+    display: block;
+    border-radius: 4px;
+    filter: grayscale(20%);
+  }
+  .about-badge {
+    position: absolute;
+    bottom: -1.5rem;
+    right: -1.5rem;
+    background: var(--red);
+    padding: 1.2rem 1.5rem;
+    text-align: center;
+    border-radius: 4px;
+  }
+  .about-badge .num {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 2.5rem;
+    font-weight: 700;
+    line-height: 1;
+    display: block;
+  }
+  .about-badge .txt {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.7rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    opacity: 0.9;
+  }
+  .about-text .section-sub { margin-bottom: 1.5rem; }
+  .about-text p { color: var(--grey); margin-bottom: 1rem; line-height: 1.8; }
+  .about-accreditations {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+    margin-top: 2rem;
+    padding-top: 2rem;
+    border-top: 1px solid rgba(255,255,255,0.08);
+  }
+  .about-accreditations img { max-height: 70px; opacity: 0.85; filter: brightness(1.1); }
+  .loyalty-card-wrap img { max-height: 80px; border-radius: 4px; }
+
+  /* ── CONTACT ── */
+  #contact { background: var(--black); }
+  .contact-grid {
+    display: grid;
+    grid-template-columns: 1fr 1.4fr;
+    gap: 4rem;
+  }
+  .contact-info { }
+  .contact-detail {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
+  .contact-detail-icon {
+    width: 44px;
+    height: 44px;
+    background: rgba(230,51,41,0.1);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .contact-detail-text strong {
+    display: block;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.8rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--red);
+    margin-bottom: 0.3rem;
+  }
+  .contact-detail-text span { color: var(--grey); font-size: 0.97rem; }
+  .contact-detail-text a { color: var(--white); }
+  .contact-detail-text a:hover { color: var(--red); }
+  .map-embed {
+    margin-top: 2rem;
+    border-radius: 4px;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.07);
+  }
+  .map-embed iframe {
+    width: 100%;
+    height: 200px;
+    display: block;
+    filter: grayscale(70%) invert(90%) contrast(90%);
+    border: none;
+  }
+  .contact-form { }
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+  .form-group { margin-bottom: 1rem; }
+  .form-group label {
+    display: block;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--grey);
+    margin-bottom: 0.5rem;
+  }
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    width: 100%;
+    background: var(--dark2);
+    border: 1px solid rgba(255,255,255,0.08);
+    color: var(--white);
+    padding: 0.85rem 1rem;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.9rem;
+    border-radius: 3px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .form-group input:focus,
+  .form-group select:focus,
+  .form-group textarea:focus {
+    border-color: var(--red);
+  }
+  .form-group textarea { resize: vertical; min-height: 130px; }
+  .form-group select option { background: var(--dark2); }
+  .form-submit {
+    width: 100%;
+    padding: 1rem;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 1.1rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    background: var(--red);
+    color: var(--white);
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.2s;
+    margin-top: 0.5rem;
+  }
+  .form-submit:hover {
+    background: var(--red-dark);
+    transform: translateY(-2px);
+  }
+
+  /* ── FOOTER ── */
+  footer {
+    background: #0a0a0a;
+    border-top: 1px solid rgba(255,255,255,0.05);
+    padding: 4rem 8% 2rem;
+  }
+  .footer-grid {
+    display: grid;
+    grid-template-columns: 1.5fr 1fr 1fr;
+    gap: 3rem;
+    margin-bottom: 3rem;
+    padding-bottom: 3rem;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+  .footer-logo {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 1.8rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+  }
+  .footer-logo span { color: var(--red); }
+  .footer-tagline {
+    color: var(--grey);
+    font-size: 0.9rem;
+    margin-bottom: 1.5rem;
+    line-height: 1.6;
+  }
+  .footer-h {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--red);
+    margin-bottom: 1.2rem;
+  }
+  .footer-links { list-style: none; }
+  .footer-links li { margin-bottom: 0.6rem; }
+  .footer-links a {
+    color: var(--grey);
+    font-size: 0.92rem;
+    transition: color 0.2s;
+  }
+  .footer-links a:hover { color: var(--white); }
+  .footer-contact-item {
+    display: flex;
+    gap: 0.7rem;
+    margin-bottom: 0.8rem;
+    color: var(--grey);
+    font-size: 0.9rem;
+    line-height: 1.5;
+  }
+  .footer-contact-item svg { flex-shrink: 0; margin-top: 2px; }
+  .footer-bottom {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+  .footer-copy { color: rgba(255,255,255,0.3); font-size: 0.82rem; }
+  .footer-scheme img { max-height: 45px; opacity: 0.6; filter: brightness(1.2); }
+
+  /* ── ANIMATIONS ── */
+  @keyframes fadeUp {
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes scrollPulse {
+    0%, 100% { opacity: 0.4; }
+    50% { opacity: 1; }
+  }
+  .reveal {
+    opacity: 0;
+    transform: translateY(30px);
+    transition: opacity 0.7s ease, transform 0.7s ease;
+  }
+  .reveal.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  .reveal-delay-1 { transition-delay: 0.1s; }
+  .reveal-delay-2 { transition-delay: 0.2s; }
+  .reveal-delay-3 { transition-delay: 0.3s; }
+  .reveal-delay-4 { transition-delay: 0.4s; }
+  .reveal-delay-5 { transition-delay: 0.5s; }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 1024px) {
+    .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    .stat-item:nth-child(2) { border-right: none; }
+    .stat-item:nth-child(3), .stat-item:nth-child(4) {
+      border-top: 1px solid rgba(255,255,255,0.07);
+    }
+    .about-grid { grid-template-columns: 1fr; gap: 3rem; }
+    .contact-grid { grid-template-columns: 1fr; gap: 3rem; }
+    .gallery-grid { grid-template-columns: repeat(2, 1fr); }
+    .gallery-item:first-child { grid-column: span 2; }
+    .footer-grid { grid-template-columns: 1fr 1fr; }
+  }
+  @media (max-width: 768px) {
+    nav { padding: 0 5%; }
+    .nav-links { display: none; flex-direction: column; position: fixed; top: 70px; left: 0; right: 0; background: rgba(13,13,13,0.98); padding: 1.5rem 5%; gap: 0; border-top: 1px solid rgba(255,255,255,0.06); }
+    .nav-links.open { display: flex; }
+    .nav-links li { border-bottom: 1px solid rgba(255,255,255,0.05); }
+    .nav-links a { display: block; padding: 0.85rem 0; color: var(--white); }
+    .nav-toggle { display: flex; }
+    section { padding: 4rem 5%; }
+    .form-row { grid-template-columns: 1fr; }
+    .footer-grid { grid-template-columns: 1fr; }
+    .hero-content { padding: 0 5%; }
+    .trust-bar { gap: 1.5rem; }
+    .gallery-grid { grid-template-columns: 1fr 1fr; }
+    .about-accreditations { flex-direction: column; align-items: flex-start; }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav id="navbar">
+  <div class="nav-logo">AUTO<span>TECH</span></div>
+  <ul class="nav-links" id="navLinks">
+    <li><a href="#services">Services</a></li>
+    <li><a href="#testimonials">Reviews</a></li>
+    <li><a href="#gallery">Gallery</a></li>
+    <li><a href="#about">About</a></li>
+    <li><a href="#contact" class="nav-cta">Book a Service</a></li>
+  </ul>
+  <div class="nav-toggle" id="navToggle" aria-label="Menu">
+    <span></span><span></span><span></span>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section id="hero">
+  <div class="hero-slides" id="heroSlides">
+    <div class="hero-slide active" style="background-image:url('https://i0.wp.com/www.autotech-garage.co.uk/wp-content/uploads/2014/03/16010111_10154159789307374_700934632_o.jpg?resize=1920%2C592&ssl=1')"></div>
+    <div class="hero-slide" style="background-image:url('https://i0.wp.com/www.autotech-garage.co.uk/wp-content/uploads/2014/03/autotech2.jpg?resize=1920%2C592&ssl=1')"></div>
+    <div class="hero-slide" style="background-image:url('https://i0.wp.com/www.autotech-garage.co.uk/wp-content/uploads/2014/03/15967615_10154159788622374_54332961_o-1.jpg?resize=1920%2C592&ssl=1')"></div>
+  </div>
+  <div class="hero-content">
+    <div class="hero-eyebrow">Ashton-under-Lyne &bull; Est. Over 25 Years</div>
+    <h1 class="hero-title">Expert Car Care.<br><em>Trusted</em> For 25 Years.</h1>
+    <p class="hero-sub">Personal mechanics at your service — VW &amp; Audi specialists, MOT testing, full diagnostics &amp; servicing for all makes and models.</p>
+    <div class="hero-btns">
+      <a href="#contact" class="btn btn-primary">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        Book a Service
+      </a>
+      <a href="tel:01613436459" class="btn btn-outline">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 10.8 19.79 19.79 0 01.01 2.18 2 2 0 012 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 14.92z"/></svg>
+        0161 343 6459
+      </a>
+    </div>
+  </div>
+  <div class="hero-indicators" id="heroIndicators">
+    <div class="hero-dot active" data-slide="0"></div>
+    <div class="hero-dot" data-slide="1"></div>
+    <div class="hero-dot" data-slide="2"></div>
+  </div>
+  <div class="hero-scroll">
+    <div class="scroll-line"></div>
+    Scroll
+  </div>
+</section>
+
+<!-- TRUST BAR -->
+<div class="trust-bar">
+  <div class="trust-item">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+    Good Garage Scheme Accredited
+  </div>
+  <div class="trust-item">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+    25+ Years Experience
+  </div>
+  <div class="trust-item">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+    VW &amp; Audi Specialists
+  </div>
+  <div class="trust-item">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="1" y="3" width="15" height="13"/><path d="M16 8h4l3 3v5h-7V8zM5.5 21a1.5 1.5 0 100-3 1.5 1.5 0 000 3zm13 0a1.5 1.5 0 100-3 1.5 1.5 0 000 3z"/></svg>
+    All Makes &amp; Models
+  </div>
+</div>
+
+<!-- SERVICES -->
+<section id="services">
+  <div class="section-label reveal">Our Services</div>
+  <h2 class="section-title reveal">Everything Your Vehicle <span>Needs</span></h2>
+  <div class="section-divider reveal"></div>
+  <p class="section-sub reveal">From routine maintenance to complex diagnostics, we handle it all with the expertise and equipment your vehicle deserves.</p>
+  <div class="services-grid">
+    <div class="service-card reveal">
+      <div class="service-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#e63329" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>
+      </div>
+      <h3>Servicing &amp; Maintenance</h3>
+      <p>Full and interim services including oil changes, filters, brake checks, and all fluid top-ups. Keep your vehicle running at its best.</p>
+    </div>
+    <div class="service-card reveal reveal-delay-1">
+      <div class="service-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#e63329" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      </div>
+      <h3>MOT Testing</h3>
+      <p>Official MOT testing with free text reminders sent directly to your phone so you never miss your renewal date. Swift turnaround.</p>
+    </div>
+    <div class="service-card reveal reveal-delay-2">
+      <div class="service-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#e63329" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+      </div>
+      <h3>Diagnostics</h3>
+      <p>From hand-held code readers to full engine diagnostics using industry-standard tools. We find the problem fast and fix it right.</p>
+    </div>
+    <div class="service-card reveal reveal-delay-3">
+      <div class="service-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#e63329" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>
+      </div>
+      <h3>Tyre Bay</h3>
+      <p>Full tyre fitting and balancing service. Loyalty card members benefit from free puncture repairs whenever they need them.</p>
+    </div>
+    <div class="service-card reveal reveal-delay-4">
+      <div class="service-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#e63329" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+      </div>
+      <h3>VW &amp; Audi Specialists</h3>
+      <p>Specialist knowledge of the VAG group. Whether it's a Golf, Polo, A3, or TT — we know these vehicles inside out.</p>
+    </div>
+    <div class="service-card reveal reveal-delay-5">
+      <div class="service-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#e63329" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"/><path d="M16 8h4l3 3v5h-7V8zM5.5 21a1.5 1.5 0 100-3 1.5 1.5 0 000 3zm13 0a1.5 1.5 0 100-3 1.5 1.5 0 000 3z"/></svg>
+      </div>
+      <h3>General Repairs</h3>
+      <p>Comprehensive repair work for all makes and models. No job too big or small — from exhausts and clutches to brakes and suspension.</p>
+    </div>
+  </div>
+</section>
+
+<!-- STATS -->
+<section id="stats">
+  <div class="stats-grid">
+    <div class="stat-item reveal">
+      <div class="stat-num">25+</div>
+      <div class="stat-label">Years in Business</div>
+    </div>
+    <div class="stat-item reveal reveal-delay-1">
+      <div class="stat-badge">
+        <img src="https://i0.wp.com/autotech-garage.co.uk/wp-content/uploads/2016/03/garage-sheme.jpg" alt="Good Garage Scheme">
+      </div>
+      <div class="stat-label">Accredited Member</div>
+    </div>
+    <div class="stat-item reveal reveal-delay-2">
+      <div class="stat-num">All</div>
+      <div class="stat-label">Makes &amp; Models</div>
+    </div>
+    <div class="stat-item reveal reveal-delay-3">
+      <div class="stat-num">VAG</div>
+      <div class="stat-label">VW &amp; Audi Experts</div>
+    </div>
+  </div>
+</section>
+
+<!-- TESTIMONIALS -->
+<section id="testimonials">
+  <div class="section-label reveal">Customer Reviews</div>
+  <h2 class="section-title reveal">What Our <span>Customers Say</span></h2>
+  <div class="section-divider reveal"></div>
+  <div class="testimonials-grid">
+    <div class="testimonial-card reveal">
+      <div class="stars">★★★★★</div>
+      <p class="testimonial-text">"Great service all round. Liked the text reminder about when MOT due. Speedy service."</p>
+      <div class="testimonial-author">Verified Customer</div>
+    </div>
+    <div class="testimonial-card reveal reveal-delay-1">
+      <div class="stars">★★★★★</div>
+      <p class="testimonial-text">"Great garage, best mechanics ever and totally dependable. A credit to the town."</p>
+      <div class="testimonial-author">Verified Customer</div>
+    </div>
+    <div class="testimonial-card reveal reveal-delay-2">
+      <div class="stars">★★★★★</div>
+      <p class="testimonial-text">"Very helpful and friendly. Job was completed on time and left in a clean state. Have rebooked for another repair already. Very satisfied with work carried out."</p>
+      <div class="testimonial-author">Verified Customer</div>
+    </div>
+    <div class="testimonial-card reveal reveal-delay-3">
+      <div class="stars">★★★★★</div>
+      <p class="testimonial-text">"Very professional and friendly staff."</p>
+      <div class="testimonial-author">Verified Customer</div>
+    </div>
+    <div class="testimonial-card reveal reveal-delay-4">
+      <div class="stars">★★★★★</div>
+      <p class="testimonial-text">"Very good garage and always willing to help you. Very honest and reliable."</p>
+      <div class="testimonial-author">Verified Customer</div>
+    </div>
+    <div class="testimonial-card reveal reveal-delay-5">
+      <div class="stars">★★★★★</div>
+      <p class="testimonial-text">"Approachable staff. Very helpful and excellent service. First class as always."</p>
+      <div class="testimonial-author">Verified Customer</div>
+    </div>
+  </div>
+</section>
+
+<!-- GALLERY -->
+<section id="gallery">
+  <div class="section-label reveal" style="text-align:center">Our Workshop</div>
+  <h2 class="section-title reveal" style="text-align:center;margin-bottom:2.5rem">Inside <span>Autotech Garage</span></h2>
+  <div class="gallery-grid">
+    <div class="gallery-item reveal">
+      <img src="https://i0.wp.com/www.autotech-garage.co.uk/wp-content/uploads/2016/03/3.jpg" alt="Autotech Garage workshop" loading="lazy">
+    </div>
+    <div class="gallery-item reveal reveal-delay-1">
+      <img src="https://i0.wp.com/www.autotech-garage.co.uk/wp-content/uploads/2016/03/5.jpg" alt="Vehicle servicing" loading="lazy">
+    </div>
+    <div class="gallery-item reveal reveal-delay-2">
+      <img src="https://i0.wp.com/www.autotech-garage.co.uk/wp-content/uploads/2016/03/6.jpg" alt="Garage equipment" loading="lazy">
+    </div>
+    <div class="gallery-item reveal reveal-delay-3">
+      <img src="https://i0.wp.com/www.autotech-garage.co.uk/wp-content/uploads/2016/03/7.jpg" alt="Car diagnostics" loading="lazy">
+    </div>
+    <div class="gallery-item reveal reveal-delay-4">
+      <img src="https://i0.wp.com/www.autotech-garage.co.uk/wp-content/uploads/2016/03/8.jpg" alt="Tyre bay" loading="lazy">
+    </div>
+    <div class="gallery-item reveal reveal-delay-5">
+      <img src="https://i0.wp.com/www.autotech-garage.co.uk/wp-content/uploads/2016/03/9.jpg" alt="Professional mechanics" loading="lazy">
+    </div>
+  </div>
+</section>
+
+<!-- ABOUT -->
+<section id="about">
+  <div class="about-grid">
+    <div class="about-visual reveal">
+      <div class="about-img-wrap">
+        <img src="https://i0.wp.com/www.autotech-garage.co.uk/wp-content/uploads/2016/03/paulstew.jpeg?resize=137%2C139&ssl=1" alt="Auto Tech Services team" style="max-width:100%;border-radius:4px;">
+        <div class="about-badge">
+          <span class="num">25+</span>
+          <span class="txt">Years</span>
+        </div>
+      </div>
+    </div>
+    <div class="about-text">
+      <div class="section-label reveal">About Us</div>
+      <h2 class="section-title reveal">Personal Mechanics <span>At Your Service</span></h2>
+      <div class="section-divider reveal"></div>
+      <p class="reveal" style="color:var(--grey);line-height:1.8;margin-bottom:1rem;">Auto Tech Services has been at the heart of Ashton-under-Lyne's motoring community for over 25 years. We're not a faceless chain — we're your local experts who know you, know your car, and take genuine pride in every job we do.</p>
+      <p class="reveal" style="color:var(--grey);line-height:1.8;margin-bottom:1rem;">Specialising in VW and Audi vehicles while welcoming all makes and models, we combine specialist knowledge with the kind of honest, personal service you just don't find at main dealers. Industry-standard diagnostic tools, experienced mechanics, and a reputation built on trust.</p>
+      <p class="reveal" style="color:var(--grey);line-height:1.8;margin-bottom:1rem;">Our loyalty card scheme rewards regular customers with free puncture repairs and exclusive discounts. And our free MOT text reminder service means you'll never accidentally drive on an expired MOT again.</p>
+      <div class="about-accreditations reveal">
+        <img src="https://i0.wp.com/autotech-garage.co.uk/wp-content/uploads/2016/03/garage-sheme.jpg" alt="Good Garage Scheme">
+        <div class="loyalty-card-wrap">
+          <img src="https://i0.wp.com/autotech-garage.co.uk/wp-content/uploads/2016/03/loyality-card.jpg" alt="Autotech Loyalty Card">
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CONTACT -->
+<section id="contact">
+  <div class="section-label reveal">Get In Touch</div>
+  <h2 class="section-title reveal">Book a Service or <span>Get a Quote</span></h2>
+  <div class="section-divider reveal"></div>
+  <div class="contact-grid">
+    <div class="contact-info reveal">
+      <div class="contact-detail">
+        <div class="contact-detail-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#e63329" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+        </div>
+        <div class="contact-detail-text">
+          <strong>Address</strong>
+          <span>49 Dean House, Dean Street<br>Ashton-under-Lyne, OL6 7BZ</span>
+        </div>
+      </div>
+      <div class="contact-detail">
+        <div class="contact-detail-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#e63329" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 10.8 19.79 19.79 0 01.01 2.18 2 2 0 012 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 14.92z"/></svg>
+        </div>
+        <div class="contact-detail-text">
+          <strong>Phone</strong>
+          <a href="tel:01613436459"><span>0161 343 6459</span></a>
+        </div>
+      </div>
+      <div class="contact-detail">
+        <div class="contact-detail-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#e63329" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+        </div>
+        <div class="contact-detail-text">
+          <strong>Opening Hours</strong>
+          <span>Mon–Fri: 8:00am – 5:30pm<br>Saturday: By appointment<br>Sunday: Closed</span>
+        </div>
+      </div>
+      <div class="map-embed">
+        <iframe
+          src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2369.8!2d-2.0978!3d53.4897!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2s49+Dean+House%2C+Dean+Street%2C+Ashton-under-Lyne%2C+OL6+7BZ!5e0!3m2!1sen!2suk!4v1"
+          allowfullscreen=""
+          loading="lazy"
+          referrerpolicy="no-referrer-when-downgrade">
+        </iframe>
+      </div>
+    </div>
+    <div class="contact-form reveal reveal-delay-2">
+      <form>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="fname">First Name</label>
+            <input type="text" id="fname" placeholder="John">
+          </div>
+          <div class="form-group">
+            <label for="lname">Last Name</label>
+            <input type="text" id="lname" placeholder="Smith">
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="email">Email Address</label>
+          <input type="email" id="email" placeholder="john@example.com">
+        </div>
+        <div class="form-group">
+          <label for="phone">Phone Number</label>
+          <input type="tel" id="phone" placeholder="07700 000000">
+        </div>
+        <div class="form-group">
+          <label for="service">Service Required</label>
+          <select id="service">
+            <option value="" disabled selected>Select a service…</option>
+            <option>MOT Test</option>
+            <option>Full Service</option>
+            <option>Interim Service</option>
+            <option>Diagnostics</option>
+            <option>Tyre Fitting</option>
+            <option>VW / Audi Specialist Work</option>
+            <option>General Repair</option>
+            <option>Other</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="message">Message / Vehicle Details</label>
+          <textarea id="message" placeholder="Tell us about your vehicle and what you need…"></textarea>
+        </div>
+        <button type="submit" class="form-submit">Send Enquiry →</button>
+      </form>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-grid">
+    <div>
+      <div class="footer-logo">AUTO<span>TECH</span> Services</div>
+      <p class="footer-tagline">Personal Mechanics At Your Service. Trusted by Ashton-under-Lyne drivers for over 25 years. Good Garage Scheme accredited.</p>
+      <a href="tel:01613436459" class="btn btn-primary" style="display:inline-flex;font-size:0.9rem;padding:0.7rem 1.5rem;">Call: 0161 343 6459</a>
+    </div>
+    <div>
+      <div class="footer-h">Quick Links</div>
+      <ul class="footer-links">
+        <li><a href="#services">Services</a></li>
+        <li><a href="#testimonials">Customer Reviews</a></li>
+        <li><a href="#gallery">Gallery</a></li>
+        <li><a href="#about">About Us</a></li>
+        <li><a href="#contact">Book a Service</a></li>
+      </ul>
+    </div>
+    <div>
+      <div class="footer-h">Contact Us</div>
+      <div class="footer-contact-item">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#e63329" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+        <span>49 Dean House, Dean Street, Ashton-under-Lyne, OL6 7BZ</span>
+      </div>
+      <div class="footer-contact-item">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#e63329" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 10.8 19.79 19.79 0 01.01 2.18 2 2 0 012 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 14.92z"/></svg>
+        <a href="tel:01613436459" style="color:var(--grey)">0161 343 6459</a>
+      </div>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <span class="footer-copy">&copy; 2025 Auto Tech Services. All rights reserved. | 49 Dean House, Dean Street, Ashton-under-Lyne, OL6 7BZ</span>
+    <div class="footer-scheme">
+      <img src="https://i0.wp.com/autotech-garage.co.uk/wp-content/uploads/2016/03/garage-sheme.jpg" alt="Good Garage Scheme">
+    </div>
+  </div>
+</footer>
+
+<script>
+// NAV scroll effect
+const navbar = document.getElementById('navbar');
+window.addEventListener('scroll', () => {
+  navbar.classList.toggle('scrolled', window.scrollY > 50);
+});
+
+// Mobile nav toggle
+const navToggle = document.getElementById('navToggle');
+const navLinks = document.getElementById('navLinks');
+navToggle.addEventListener('click', () => {
+  navLinks.classList.toggle('open');
+});
+navLinks.querySelectorAll('a').forEach(a => {
+  a.addEventListener('click', () => navLinks.classList.remove('open'));
+});
+
+// Hero slideshow
+const slides = document.querySelectorAll('.hero-slide');
+const dots = document.querySelectorAll('.hero-dot');
+let currentSlide = 0;
+function goToSlide(n) {
+  slides[currentSlide].classList.remove('active');
+  dots[currentSlide].classList.remove('active');
+  currentSlide = (n + slides.length) % slides.length;
+  slides[currentSlide].classList.add('active');
+  dots[currentSlide].classList.add('active');
+}
+dots.forEach(dot => {
+  dot.addEventListener('click', () => goToSlide(parseInt(dot.dataset.slide)));
+});
+setInterval(() => goToSlide(currentSlide + 1), 5000);
+
+// Scroll reveal
+const reveals = document.querySelectorAll('.reveal');
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.classList.add('visible');
+      observer.unobserve(entry.target);
+    }
+  });
+}, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+reveals.forEach(el => observer.observe(el));
+
+// Form submit intercept
+document.querySelector('form').addEventListener('submit', e => {
+  e.preventDefault();
+  const btn = e.target.querySelector('.form-submit');
+  btn.textContent = 'Message Sent ✓';
+  btn.style.background = '#2a7a2a';
+  setTimeout(() => {
+    btn.textContent = 'Send Enquiry →';
+    btn.style.background = '';
+    e.target.reset();
+  }, 3000);
+});
+</script>
+</body>
+</html>
