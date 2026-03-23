@@ -199,6 +199,21 @@ function TaskCard({ task, index, onClick }: TaskCardProps) {
   );
 }
 
+function linkify(text: string): React.ReactNode[] {
+  const urlRegex = /(https?:\/\/[^\s]+|(?<![a-zA-Z0-9@])(?:[a-zA-Z0-9-]+\.)+(?:com|co\.uk|org|net|io|app|co|uk|dev|ai)[^\s]*)/g;
+  const parts: React.ReactNode[] = [];
+  let last = 0;
+  let m: RegExpExecArray | null;
+  while ((m = urlRegex.exec(text)) !== null) {
+    if (m.index > last) parts.push(text.slice(last, m.index));
+    const href = m[0].startsWith("http") ? m[0] : `https://${m[0]}`;
+    parts.push(<a key={m.index} href={href} target="_blank" rel="noopener noreferrer" className="text-blue-500 underline hover:text-blue-400 break-all">{m[0]}</a>);
+    last = m.index + m[0].length;
+  }
+  if (last < text.length) parts.push(text.slice(last));
+  return parts;
+}
+
 function CommentContent({ content, entryId, fallbackImageUrl }: { content: string; entryId: number; fallbackImageUrl?: string }) {
   const mdImageRegex = /!\[\]\(([^)]+)\)/g;
   const parts: { type: "text" | "image"; value: string }[] = [];
@@ -223,7 +238,7 @@ function CommentContent({ content, entryId, fallbackImageUrl }: { content: strin
     <>
       {parts.map((p, i) =>
         p.type === "text" ? (
-          p.value.trim() ? <p key={i} className="text-sm text-foreground whitespace-pre-wrap">{p.value.trim()}</p> : null
+          p.value.trim() ? <p key={i} className="text-sm text-foreground whitespace-pre-wrap">{linkify(p.value.trim())}</p> : null
         ) : (
           <a key={i} href={p.value} target="_blank" rel="noopener noreferrer" className="block mt-1.5" data-testid={`comment-image-${entryId}-${i}`}>
             <img src={p.value} alt="Comment attachment" className="max-w-full max-h-48 rounded-md border border-border/50 object-contain cursor-pointer hover:opacity-90 transition-opacity" />
