@@ -30,9 +30,9 @@ const proposals: Proposal[] = [
     business: "Auto Tech Services",
     url: "https://proposals.brightstacklabs.co.uk/client/autotech-garage",
     status: "sent",
-    value: "From £950",
-    notes: "3 options: A (website £950), B (+mgmt £275/mo), C (+AI receptionist)",
-    created: "2026-03-23",
+    value: "£750+",
+    notes: "Website £750, +£275/mo management, +£29/mo AI receptionist",
+    created: "2026-03-24",
   },
 ];
 
