@@ -26,7 +26,7 @@ const proposals: Proposal[] = [
   },
   {
     id: "autotech",
-    client: "Stew",
+    client: "Stewart Oates",
     business: "Auto Tech Services",
     url: "https://proposals.brightstacklabs.co.uk/client/autotech-garage",
     status: "sent",
