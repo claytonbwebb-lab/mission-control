@@ -1407,11 +1407,23 @@ export default function MissionBoard() {
                 {reminderHistory.length === 0 ? (
                   <div className="px-3 py-6 text-center text-xs text-muted-foreground">No reminders yet</div>
                 ) : (
-                  reminderHistory.map(entry => (
-                    <div key={entry.id} className="px-3 py-2 border-b border-border last:border-0 hover:bg-muted/30">
+                  reminderHistory.map(entry => {
+                  const linkedTask = tasks?.find(t => String(t.id) === entry.taskId);
+                  return (
+                    <div 
+                      key={entry.id} 
+                      className={`px-3 py-2 border-b border-border last:border-0 hover:bg-muted/30 ${linkedTask ? 'cursor-pointer' : ''}`}
+                      onClick={() => {
+                        if (linkedTask) {
+                          setSelectedTask(linkedTask);
+                          setModalOpen(true);
+                          setReminderPanelOpen(false);
+                        }
+                      }}
+                    >
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex-1 min-w-0">
-                          <p className="text-xs font-medium truncate">{entry.taskTitle}</p>
+                          <p className={`text-xs font-medium truncate ${linkedTask ? 'text-primary hover:underline' : ''}`}>{entry.taskTitle}</p>
                           <p className="text-[10px] text-muted-foreground mt-0.5">
                             {format(new Date(entry.firedAt * 1000), "d MMM, HH:mm")}
                             {entry.status === "snoozed" && entry.snoozedUntil && (
@@ -1448,8 +1460,8 @@ export default function MissionBoard() {
                         </div>
                       )}
                     </div>
-                  ))
-                )}
+                  );
+                })}
               </div>
               {notificationPermission !== "granted" && (
                 <div className="px-3 py-2 border-t border-border bg-amber-500/5">
