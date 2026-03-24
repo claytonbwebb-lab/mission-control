@@ -261,8 +261,7 @@ function ActivityItem({ entry, taskId, onEdited }: { entry: ActivityEntry; taskI
   const [saving, setSaving] = useState(false);
 
   const startEdit = () => {
-    const textOnly = entry.content.replace(/!\[\]\([^)]+\)
-?/g, "").trim();
+    const textOnly = entry.content.replace(/!\[\]\([^)]+\)\n?/g, "").trim();
     setEditContent(textOnly);
     setEditing(true);
   };
@@ -280,10 +279,7 @@ function ActivityItem({ entry, taskId, onEdited }: { entry: ActivityEntry; taskI
       const imageRefs = entry.content.match(/!\[\]\([^)]+\)/g) || [];
       let newContent = editContent.trim();
       if (imageRefs.length > 0) {
-        newContent = newContent ? `${newContent}
-${imageRefs.join("
-")}` : imageRefs.join("
-");
+        newContent = newContent ? `${newContent}\n${imageRefs.join("\n")}` : imageRefs.join("\n");
       }
       await fetch(`${base}/tasks/${taskId}/activity/${entry.id}`, {
         method: "PATCH",
@@ -593,10 +589,8 @@ function TaskModal({ task, open, onClose, onSave, onDelete, projectOptions }: Ta
       }
       let content = comment.trim();
       if (uploadedUrls.length > 0) {
-        const mdImages = uploadedUrls.map(u => `![](${u})`).join("\
-");
-        content = content ? `${content}\
-${mdImages}` : mdImages;
+        const mdImages = uploadedUrls.map(u => `![](${u})`).join("\n");
+        content = content ? `${content}\n${mdImages}` : mdImages;
       }
       const body: Record<string, string> = {
         author: "steve",
@@ -690,37 +684,37 @@ ${mdImages}` : mdImages;
   return (
     <>
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className=\"max-w-lg max-h-[85vh] flex flex-col\" data-testid=\"modal-task\">
+      <DialogContent className="max-w-lg max-h-[85vh] flex flex-col" data-testid="modal-task">
         <DialogHeader>
-          <DialogTitle className=\"text-base\">Edit Task</DialogTitle>
-          <DialogDescription className=\"sr-only\">View and edit task details, and see activity log</DialogDescription>
+          <DialogTitle className="text-base">Edit Task</DialogTitle>
+          <DialogDescription className="sr-only">View and edit task details, and see activity log</DialogDescription>
         </DialogHeader>
-        <div className=\"flex-1 overflow-y-auto space-y-4 pt-1 pr-1\">
-          <div className=\"space-y-1.5\">
-            <Label className=\"text-xs text-muted-foreground uppercase tracking-wide\">Title</Label>
+        <div className="flex-1 overflow-y-auto space-y-4 pt-1 pr-1">
+          <div className="space-y-1.5">
+            <Label className="text-xs text-muted-foreground uppercase tracking-wide">Title</Label>
             <Input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              data-testid=\"input-task-title\"
-              placeholder=\"Task title\"
+              data-testid="input-task-title"
+              placeholder="Task title"
             />
           </div>
-          <div className=\"space-y-1.5\">
-            <Label className=\"text-xs text-muted-foreground uppercase tracking-wide\">Description</Label>
+          <div className="space-y-1.5">
+            <Label className="text-xs text-muted-foreground uppercase tracking-wide">Description</Label>
             <Textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              data-testid=\"input-task-description\"
-              placeholder=\"Optional description...\"
-              className=\"resize-none\"
+              data-testid="input-task-description"
+              placeholder="Optional description..."
+              className="resize-none"
               rows={3}
             />
           </div>
-          <div className=\"grid grid-cols-2 gap-3\">
-            <div className=\"space-y-1.5\">
-              <Label className=\"text-xs text-muted-foreground uppercase tracking-wide\">Column</Label>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground uppercase tracking-wide">Column</Label>
               <Select value={status} onValueChange={(v) => setStatus(v as TaskStatus)}>
-                <SelectTrigger data-testid=\"select-task-status\">
+                <SelectTrigger data-testid="select-task-status">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -730,10 +724,10 @@ ${mdImages}` : mdImages;
                 </SelectContent>
               </Select>
             </div>
-            <div className=\"space-y-1.5\">
-              <Label className=\"text-xs text-muted-foreground uppercase tracking-wide\">Priority</Label>
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground uppercase tracking-wide">Priority</Label>
               <Select value={priority} onValueChange={(v) => setPriority(v as TaskPriority)}>
-                <SelectTrigger data-testid=\"select-task-priority\">
+                <SelectTrigger data-testid="select-task-priority">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -743,10 +737,10 @@ ${mdImages}` : mdImages;
                 </SelectContent>
               </Select>
             </div>
-            <div className=\"space-y-1.5\">
-              <Label className=\"text-xs text-muted-foreground uppercase tracking-wide\">Project</Label>
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground uppercase tracking-wide">Project</Label>
               <Select value={label} onValueChange={(v) => setLabel(v)}>
-                <SelectTrigger data-testid=\"select-task-label\">
+                <SelectTrigger data-testid="select-task-label">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -756,10 +750,10 @@ ${mdImages}` : mdImages;
                 </SelectContent>
               </Select>
             </div>
-            <div className=\"space-y-1.5\">
-              <Label className=\"text-xs text-muted-foreground uppercase tracking-wide\">Assigned To</Label>
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground uppercase tracking-wide">Assigned To</Label>
               <Select value={assignee} onValueChange={(v) => setAssignee(v)}>
-                <SelectTrigger data-testid=\"select-task-assignee\">
+                <SelectTrigger data-testid="select-task-assignee">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -771,58 +765,58 @@ ${mdImages}` : mdImages;
             </div>
           </div>
 
-          <div className=\"space-y-3 pt-1\">
-            <div className=\"flex items-center justify-between\">
-              <Label className=\"text-xs text-muted-foreground uppercase tracking-wide\">Repeatable</Label>
-              <Switch checked={isRepeatable} onCheckedChange={setIsRepeatable} data-testid=\"switch-repeatable\" />
+          <div className="space-y-3 pt-1">
+            <div className="flex items-center justify-between">
+              <Label className="text-xs text-muted-foreground uppercase tracking-wide">Repeatable</Label>
+              <Switch checked={isRepeatable} onCheckedChange={setIsRepeatable} data-testid="switch-repeatable" />
             </div>
             {isRepeatable && (
-              <div className=\"space-y-1.5\">
-                <Label className=\"text-xs text-muted-foreground uppercase tracking-wide\">Cadence</Label>
-                <Select value={cadence} onValueChange={(v) => setCadence(v as \"daily\" | \"weekly\" | \"monthly\")}>
-                  <SelectTrigger data-testid=\"select-cadence\">
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground uppercase tracking-wide">Cadence</Label>
+                <Select value={cadence} onValueChange={(v) => setCadence(v as "daily" | "weekly" | "monthly")}>
+                  <SelectTrigger data-testid="select-cadence">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value=\"daily\">Daily</SelectItem>
-                    <SelectItem value=\"weekly\">Weekly</SelectItem>
-                    <SelectItem value=\"monthly\">Monthly</SelectItem>
+                    <SelectItem value="daily">Daily</SelectItem>
+                    <SelectItem value="weekly">Weekly</SelectItem>
+                    <SelectItem value="monthly">Monthly</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             )}
           </div>
 
-          <div className=\"space-y-3 pt-1\">
-            <div className=\"flex items-center justify-between\">
-              <Label className=\"text-xs text-muted-foreground uppercase tracking-wide\">Reminder</Label>
+          <div className="space-y-3 pt-1">
+            <div className="flex items-center justify-between">
+              <Label className="text-xs text-muted-foreground uppercase tracking-wide">Reminder</Label>
               <Switch checked={!!reminderDate} onCheckedChange={(checked) => { setReminderDate(checked ? new Date() : undefined); setReminderChanged(true); }} />
             </div>
             {reminderDate && (
-              <div className=\"flex gap-2\">
-                <div className=\"flex-1\">
+              <div className="flex gap-2">
+                <div className="flex-1">
                   <Calendar
-                    mode=\"single\"
+                    mode="single"
                     selected={reminderDate}
                     onSelect={(d) => { setReminderDate(d); setReminderChanged(true); }}
                     fromDate={new Date()}
-                    className=\"rounded-md border\"
+                    className="rounded-md border"
                   />
                 </div>
-                <div className=\"space-y-1.5\">
-                  <Label className=\"text-xs text-muted-foreground\">Time</Label>
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">Time</Label>
                   <Input
-                    type=\"time\"
+                    type="time"
                     value={reminderTime}
                     onChange={(e) => { setReminderTime(e.target.value); setReminderChanged(true); }}
-                    className=\"w-24\"
+                    className="w-24"
                   />
                   {reminderDate && (
                     <Button
-                      variant=\"ghost\"
-                      size=\"sm\"
+                      variant="ghost"
+                      size="sm"
                       onClick={() => setReminderDate(undefined)}
-                      className=\"w-full text-xs text-destructive\"
+                      className="w-full text-xs text-destructive"
                     >
                       Clear
                     </Button>
@@ -832,30 +826,30 @@ ${mdImages}` : mdImages;
             )}
           </div>
 
-          <div className=\"border-t border-border pt-3\">
-            <div className=\"flex items-center gap-2 mb-2\">
-              <ImageIcon className=\"w-3.5 h-3.5 text-muted-foreground\" />
-              <Label className=\"text-xs text-muted-foreground uppercase tracking-wide\">Images</Label>
+          <div className="border-t border-border pt-3">
+            <div className="flex items-center gap-2 mb-2">
+              <ImageIcon className="w-3.5 h-3.5 text-muted-foreground" />
+              <Label className="text-xs text-muted-foreground uppercase tracking-wide">Images</Label>
               {images.length > 0 && (
-                <span className=\"text-xs text-muted-foreground/60\">({images.length})</span>
+                <span className="text-xs text-muted-foreground/60">({images.length})</span>
               )}
             </div>
             {images.length > 0 && (
-              <div className=\"grid grid-cols-4 gap-2 mb-2\">
+              <div className="grid grid-cols-4 gap-2 mb-2">
                 {images.map(img => (
-                  <div key={img.id} className=\"relative group\" data-testid={`image-thumb-${img.id}`}>
+                  <div key={img.id} className="relative group" data-testid={`image-thumb-${img.id}`}>
                     <button
                       onClick={() => setLightboxUrl(img.url)}
-                      className=\"w-full aspect-square rounded-md overflow-hidden border border-border bg-muted\"
+                      className="w-full aspect-square rounded-md overflow-hidden border border-border bg-muted"
                     >
-                      <img src={img.url} alt={img.filename} className=\"w-full h-full object-cover\" />
+                      <img src={img.url} alt={img.filename} className="w-full h-full object-cover" />
                     </button>
                     <button
                       onClick={() => handleDeleteImage(img.id)}
-                      className=\"absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity\"
+                      className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                       data-testid={`button-delete-image-${img.id}`}
                     >
-                      <X className=\"w-3 h-3\" />
+                      <X className="w-3 h-3" />
                     </button>
                   </div>
                 ))}
@@ -867,120 +861,120 @@ ${mdImages}` : mdImages;
               onDrop={handleDrop}
               onClick={() => fileInputRef.current?.click()}
               className={`flex items-center justify-center gap-2 p-3 rounded-md border-2 border-dashed cursor-pointer transition-colors
-                ${dragOver ? \"border-primary bg-primary/5\" : \"border-border hover:border-primary/40\"}`}
-              data-testid=\"dropzone-images\"
+                ${dragOver ? "border-primary bg-primary/5" : "border-border hover:border-primary/40"}`}
+              data-testid="dropzone-images"
             >
               {uploading ? (
-                <Loader2 className=\"w-4 h-4 animate-spin text-muted-foreground\" />
+                <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
               ) : (
-                <Upload className=\"w-4 h-4 text-muted-foreground\" />
+                <Upload className="w-4 h-4 text-muted-foreground" />
               )}
-              <span className=\"text-xs text-muted-foreground\">
-                {uploading ? \"Uploading...\" : \"Drop image or click to browse\"}
+              <span className="text-xs text-muted-foreground">
+                {uploading ? "Uploading..." : "Drop image or click to browse"}
               </span>
               <input
                 ref={fileInputRef}
-                type=\"file\"
-                accept=\"image/*\"
+                type="file"
+                accept="image/*"
                 multiple
-                className=\"hidden\"
+                className="hidden"
                 onChange={(e) => e.target.files && handleFileUpload(e.target.files)}
-                data-testid=\"input-file-images\"
+                data-testid="input-file-images"
               />
             </div>
           </div>
 
-          <div className=\"flex items-center justify-between pt-1\">
+          <div className="flex items-center justify-between pt-1">
             <Button
-              variant=\"destructive\"
-              size=\"sm\"
+              variant="destructive"
+              size="sm"
               onClick={() => onDelete(task.id)}
-              data-testid=\"button-delete-task\"
+              data-testid="button-delete-task"
             >
               Delete
             </Button>
-            <div className=\"flex gap-2\">
-              <Button variant=\"ghost\" size=\"sm\" onClick={onClose} data-testid=\"button-cancel-task\">
+            <div className="flex gap-2">
+              <Button variant="ghost" size="sm" onClick={onClose} data-testid="button-cancel-task">
                 Cancel
               </Button>
-              <Button size=\"sm\" onClick={handleSave} data-testid=\"button-save-task\">
+              <Button size="sm" onClick={handleSave} data-testid="button-save-task">
                 Save Changes
               </Button>
             </div>
           </div>
 
-          <div className=\"border-t border-border pt-3\">
-            <div className=\"flex items-center gap-2 mb-3\">
-              <MessageSquare className=\"w-3.5 h-3.5 text-muted-foreground\" />
-              <Label className=\"text-xs text-muted-foreground uppercase tracking-wide\">Activity</Label>
+          <div className="border-t border-border pt-3">
+            <div className="flex items-center gap-2 mb-3">
+              <MessageSquare className="w-3.5 h-3.5 text-muted-foreground" />
+              <Label className="text-xs text-muted-foreground uppercase tracking-wide">Activity</Label>
             </div>
             {detailLoading ? (
-              <div className=\"space-y-2\">
-                {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className=\"h-8 rounded\" />)}
+              <div className="space-y-2">
+                {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-8 rounded" />)}
               </div>
             ) : activity.length === 0 ? (
-              <p className=\"text-xs text-muted-foreground/60 py-4 text-center\">No activity yet</p>
+              <p className="text-xs text-muted-foreground/60 py-4 text-center">No activity yet</p>
             ) : (
-              <div className=\"space-y-2.5 mb-3\">
+              <div className="space-y-2.5 mb-3">
                 {activity.map(entry => (
-                  <ActivityItem key={entry.id} entry={entry} taskId={task?.id} onEdited={() => qc.invalidateQueries({ queryKey: [\"/tasks\", task?.id] })} />
+                  <ActivityItem key={entry.id} entry={entry} taskId={task?.id} onEdited={() => qc.invalidateQueries({ queryKey: ["/tasks", task?.id] })} />
                 ))}
                 <div ref={activityEndRef} />
               </div>
             )}
 
             {commentImages.length > 0 && (
-              <div className=\"flex gap-2 mb-2 flex-wrap\">
+              <div className="flex gap-2 mb-2 flex-wrap">
                 {commentImages.map((img, i) => (
-                  <div key={i} className=\"relative group\">
-                    <img src={img.data} alt={img.filename} className=\"w-14 h-14 object-cover rounded border border-border\" />
+                  <div key={i} className="relative group">
+                    <img src={img.data} alt={img.filename} className="w-14 h-14 object-cover rounded border border-border" />
                     <button
                       onClick={() => setCommentImages(prev => prev.filter((_, j) => j !== i))}
-                      className=\"absolute -top-1.5 -right-1.5 w-4 h-4 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity\"
+                      className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                       data-testid={`button-remove-comment-image-${i}`}
                     >
-                      <X className=\"w-2.5 h-2.5\" />
+                      <X className="w-2.5 h-2.5" />
                     </button>
                   </div>
                 ))}
               </div>
             )}
-            <div className=\"flex gap-2\">
+            <div className="flex gap-2">
               <Textarea
                 value={comment}
                 onChange={(e) => setComment(e.target.value)}
-                placeholder=\"Add a comment... (Shift+Enter for new line)\"
-                className=\"text-sm min-h-[40px] max-h-[120px] resize-none\"
-                data-testid=\"input-comment\"
-                onKeyDown={(e) => { if (e.key === \"Enter\" && !e.shiftKey) { e.preventDefault(); handleSubmitComment(); } }}
+                placeholder="Add a comment... (Shift+Enter for new line)"
+                className="text-sm min-h-[40px] max-h-[120px] resize-none"
+                data-testid="input-comment"
+                onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSubmitComment(); } }}
                 rows={1}
               />
               <Button
-                size=\"icon\"
-                variant=\"ghost\"
+                size="icon"
+                variant="ghost"
                 onClick={() => commentFileRef.current?.click()}
-                className=\"flex-shrink-0\"
-                data-testid=\"button-attach-comment-image\"
+                className="flex-shrink-0"
+                data-testid="button-attach-comment-image"
               >
-                <ImageIcon className=\"w-3.5 h-3.5\" />
+                <ImageIcon className="w-3.5 h-3.5" />
               </Button>
               <input
                 ref={commentFileRef}
-                type=\"file\"
-                accept=\"image/*\"
+                type="file"
+                accept="image/*"
                 multiple
-                className=\"hidden\"
-                onChange={(e) => { handleCommentImageSelect(e.target.files); e.target.value = \"\"; }}
+                className="hidden"
+                onChange={(e) => { handleCommentImageSelect(e.target.files); e.target.value = ""; }}
               />
               <Button
-                size=\"icon\"
-                variant=\"secondary\"
+                size="icon"
+                variant="secondary"
                 onClick={handleSubmitComment}
                 disabled={(!comment.trim() && commentImages.length === 0) || submittingComment}
-                data-testid=\"button-submit-comment\"
-                className=\"flex-shrink-0\"
+                data-testid="button-submit-comment"
+                className="flex-shrink-0"
               >
-                {submittingComment ? <Loader2 className=\"w-3.5 h-3.5 animate-spin\" /> : <Send className=\"w-3.5 h-3.5\" />}
+                {submittingComment ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
               </Button>
             </div>
           </div>
@@ -990,15 +984,15 @@ ${mdImages}` : mdImages;
 
     {lightboxUrl && (
       <Dialog open onOpenChange={() => setLightboxUrl(null)}>
-        <DialogContent className=\"max-w-3xl p-2 bg-black/90 border-none\" data-testid=\"lightbox\">
-          <DialogHeader className=\"sr-only\">
+        <DialogContent className="max-w-3xl p-2 bg-black/90 border-none" data-testid="lightbox">
+          <DialogHeader className="sr-only">
             <DialogTitle>Image Preview</DialogTitle>
             <DialogDescription>Full size image</DialogDescription>
           </DialogHeader>
           <img
             src={lightboxUrl}
-            alt=\"Full size\"
-            className=\"w-full h-auto max-h-[80vh] object-contain rounded\"
+            alt="Full size"
+            className="w-full h-auto max-h-[80vh] object-contain rounded"
           />
         </DialogContent>
       </Dialog>
@@ -1022,33 +1016,33 @@ function AddCardForm({ columnId, onAdd, onCancel }: AddCardFormProps) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className=\"mt-2\">
+    <form onSubmit={handleSubmit} className="mt-2">
       <Input
         autoFocus
         value={title}
         onChange={(e) => setTitle(e.target.value)}
-        placeholder=\"Card title...\"
-        className=\"mb-2 text-sm\"
+        placeholder="Card title..."
+        className="mb-2 text-sm"
         data-testid={`input-new-card-${columnId}`}
-        onKeyDown={(e) => e.key === \"Escape\" && onCancel()}
+        onKeyDown={(e) => e.key === "Escape" && onCancel()}
       />
-      <div className=\"flex gap-2\">
-        <Button type=\"submit\" size=\"sm\" disabled={!title.trim()} data-testid={`button-add-card-${columnId}`}>
+      <div className="flex gap-2">
+        <Button type="submit" size="sm" disabled={!title.trim()} data-testid={`button-add-card-${columnId}`}>
           Add
         </Button>
-        <Button type=\"button\" variant=\"ghost\" size=\"sm\" onClick={onCancel} data-testid={`button-cancel-add-${columnId}`}>
-          <X className=\"w-3.5 h-3.5\" />
+        <Button type="button" variant="ghost" size="sm" onClick={onCancel} data-testid={`button-cancel-add-${columnId}`}>
+          <X className="w-3.5 h-3.5" />
         </Button>
       </div>
     </form>
-  );\
+  );
 }
 
 export default function MissionBoard() {
   const qc = useQueryClient();
   const { toast } = useToast();
-  const [filterLabel, setFilterLabel] = useState<TaskLabel | \"all\">(\"all\");
-  const [filterAssignee, setFilterAssignee] = useState<string>(\"all\");
+  const [filterLabel, setFilterLabel] = useState<TaskLabel | "all">("all");
+  const [filterAssignee, setFilterAssignee] = useState<string>("all");
   const [hideWithReminder, setHideWithReminder] = useState(false);
   const [addingColumn, setAddingColumn] = useState<TaskStatus | null>(null);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
@@ -1056,8 +1050,8 @@ export default function MissionBoard() {
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [checkingTasks, setCheckingTasks] = useState(false);
-  const [searchInput, setSearchInput] = useState(\"\");
-  const [searchQuery, setSearchQuery] = useState(\"\");
+  const [searchInput, setSearchInput] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     const timer = setTimeout(() => setSearchQuery(searchInput.trim()), 300);
@@ -1069,8 +1063,8 @@ export default function MissionBoard() {
     queryFn: async ({ queryKey }) => {
       const q = queryKey[1] as string;
       const url = q ? `/tasks?q=${encodeURIComponent(q)}` : "/tasks";
-      const raw = await apiRequest<Record<string, unknown>[]>(\"GET\", url);
-      return (Array.isArray(raw) ? raw : []) as Task[];
+      const raw = await apiRequest<Record<string, unknown>[]>("GET", url);
+      return (Array.isArray(raw) ? raw : []).map(normalizeTask);
     },
     staleTime: 30000,
   });
@@ -1081,22 +1075,22 @@ export default function MissionBoard() {
 
   useEffect(() => {
     const poll = () => {
-      if (document.visibilityState === \"visible\") {
+      if (document.visibilityState === "visible") {
         qc.invalidateQueries({ queryKey: ["/tasks"], exact: false });
       }
     };
     const id = setInterval(poll, 30000);
     const onVisChange = () => {
-      if (document.visibilityState === \"visible\") {
+      if (document.visibilityState === "visible") {
         qc.invalidateQueries({ queryKey: ["/tasks"], exact: false });
       }
     };
-    document.addEventListener(\"visibilitychange\", onVisChange);
-    return () => { clearInterval(id); document.removeEventListener(\"visibilitychange\", onVisChange); };
+    document.addEventListener("visibilitychange", onVisChange);
+    return () => { clearInterval(id); document.removeEventListener("visibilitychange", onVisChange); };
   }, [qc]);
 
     // Reminder notifications
-  const [notificationPermission, setNotificationPermission] = useState<NotificationPermission | \"checking\">(\"checking\");
+  const [notificationPermission, setNotificationPermission] = useState<NotificationPermission | "checking">("checking");
   const [reminderHistory, setReminderHistory] = useState<ReminderHistoryEntry[]>(() => {
     // purge any entries from the 1970s (caused by localStorage seconds/ms unit bug)
     const history = getReminderHistory().filter(h => h.firedAt > 1000000000);
@@ -1193,7 +1187,6 @@ export default function MissionBoard() {
         return;
       }
       if (res.ok) {
-
         toast({ title: "🦞 Clawbot is on it!", className: "bg-emerald-600 text-white border-emerald-700" });
       } else {
         toast({ title: "Failed to reach Clawbot", variant: "destructive" });
@@ -1285,48 +1278,48 @@ export default function MissionBoard() {
   };
 
   return (
-    <div className=\"h-full flex flex-col\">
-      <div className=\"flex items-center justify-between px-5 py-3 border-b border-border bg-background flex-wrap gap-2\">
-        <div className=\"flex items-center gap-3\">
-          <h1 className=\"text-base font-semibold text-foreground\">Mission Board</h1>
+    <div className="h-full flex flex-col">
+      <div className="flex items-center justify-between px-5 py-3 border-b border-border bg-background flex-wrap gap-2">
+        <div className="flex items-center gap-3">
+          <h1 className="text-base font-semibold text-foreground">Mission Board</h1>
           <Button
-            size=\"sm\"
+            size="sm"
             onClick={handleCheckTasks}
             disabled={checkingTasks}
-            className=\"h-7 text-xs\"
-            data-testid=\"button-check-tasks\"
+            className="h-7 text-xs"
+            data-testid="button-check-tasks"
           >
-            {checkingTasks ? <Loader2 className=\"w-3.5 h-3.5 animate-spin mr-1.5\" /> : <span className=\"mr-1.5\">🦞</span>}
-            {checkingTasks ? \"Checking…\" : \"Check Tasks\"}
+            {checkingTasks ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" /> : <span className="mr-1.5">🦞</span>}
+            {checkingTasks ? "Checking…" : "Check Tasks"}
           </Button>
 
         </div>
-        <div className=\"relative\">
-          <Search className=\"absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none\" />
+        <div className="relative">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
           <Input
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
-            placeholder=\"Search tasks…\"
-            className=\"h-7 text-xs pl-8 pr-7 w-48\"
-            data-testid=\"input-search-tasks\"
+            placeholder="Search tasks…"
+            className="h-7 text-xs pl-8 pr-7 w-48"
+            data-testid="input-search-tasks"
           />
           {searchInput && (
             <button
-              onClick={() => setSearchInput(\"\")}
-              className=\"absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground\"
-              data-testid=\"button-clear-search\"
+              onClick={() => setSearchInput("")}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              data-testid="button-clear-search"
             >
-              <X className=\"w-3.5 h-3.5\" />
+              <X className="w-3.5 h-3.5" />
             </button>
           )}
         </div>
-        <div className=\"flex items-center gap-2 flex-wrap\">
-          <span className=\"text-xs text-muted-foreground\">Filter:</span>
-          <div className=\"flex gap-1.5 flex-wrap\">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-xs text-muted-foreground">Filter:</span>
+          <div className="flex gap-1.5 flex-wrap">
             <button
               className={`text-xs px-2.5 py-1 rounded-md border transition-colors ${filterLabel === "all" ? "bg-primary text-primary-foreground border-primary" : "bg-card border-card-border text-muted-foreground"}`}
               onClick={() => setFilterLabel("all")}
-              data-testid=\"filter-all\"
+              data-testid="filter-all"
             >
               All
             </button>
@@ -1342,9 +1335,9 @@ export default function MissionBoard() {
             ))}
           </div>
         </div>
-        <div className=\"flex items-center gap-2 flex-wrap\">
-          <span className=\"text-xs text-muted-foreground\">Assignee:</span>
-          <div className=\"flex gap-1.5\">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-xs text-muted-foreground">Assignee:</span>
+          <div className="flex gap-1.5">
             {[{ value: "all", label: "All" }, { value: "steve", label: "Steve" }, { value: "clawbot", label: "Clawbot" }].map(opt => (
               <button
                 key={opt.value}
@@ -1357,27 +1350,27 @@ export default function MissionBoard() {
             ))}
           </div>
         </div>
-        <div className=\"flex items-center gap-2 flex-wrap\">
-          <span className=\"text-xs text-muted-foreground\">Hide:</span>
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-xs text-muted-foreground">Hide:</span>
           <button
             className={`text-xs px-2.5 py-1 rounded-md border transition-colors ${hideWithReminder ? "bg-primary text-primary-foreground border-primary" : "bg-card border-card-border text-muted-foreground"}`}
             onClick={() => setHideWithReminder(!hideWithReminder)}
-            data-testid=\"filter-hide-reminder\"
+            data-testid="filter-hide-reminder"
           >
             With Reminder
           </button>
         </div>
-        <div className=\"flex items-center gap-1.5\">
+        <div className="flex items-center gap-1.5">
           {lastUpdated && (
-            <span className=\"text-xs text-muted-foreground/70\" data-testid=\"text-last-updated\">
+            <span className="text-xs text-muted-foreground/70" data-testid="text-last-updated">
               Last updated: {lastUpdated.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
             </span>
           )}
           <button
             onClick={handleManualRefresh}
             disabled={refreshing}
-            className=\"p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors disabled:opacity-50\"
-            data-testid=\"button-refresh\"
+            className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors disabled:opacity-50"
+            data-testid="button-refresh"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? "animate-spin" : ""}`} />
           </button>
@@ -1386,51 +1379,51 @@ export default function MissionBoard() {
           <Popover open={reminderPanelOpen} onOpenChange={setReminderPanelOpen}>
             <PopoverTrigger asChild>
               <button
-                className=\"relative p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors\"
-                title=\"Reminder history\"
+                className="relative p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+                title="Reminder history"
                 onClick={() => { refreshReminderHistory(); setReminderPanelOpen(v => !v); }}
               >
-                <Bell className=\"w-3.5 h-3.5\" />
+                <Bell className="w-3.5 h-3.5" />
                 {unreadReminderCount > 0 && (
-                  <span className=\"absolute -top-0.5 -right-0.5 w-3.5 h-3.5 flex items-center justify-center rounded-full bg-amber-500 text-white text-[9px] font-bold leading-none\">
+                  <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 flex items-center justify-center rounded-full bg-amber-500 text-white text-[9px] font-bold leading-none">
                     {unreadReminderCount > 9 ? "9+" : unreadReminderCount}
                   </span>
                 )}
               </button>
             </PopoverTrigger>
-            <PopoverContent align=\"end\" className=\"w-80 p-0 max-h-[420px] flex flex-col\">
-              <div className=\"flex items-center justify-between px-3 py-2 border-b border-border\">
-                <span className=\"text-sm font-semibold\">Reminder History</span>
+            <PopoverContent align="end" className="w-80 p-0 max-h-[420px] flex flex-col">
+              <div className="flex items-center justify-between px-3 py-2 border-b border-border">
+                <span className="text-sm font-semibold">Reminder History</span>
                 {reminderHistory.length > 0 && (
                   <button
-                    className=\"text-xs text-muted-foreground hover:text-foreground\"
+                    className="text-xs text-muted-foreground hover:text-foreground"
                     onClick={() => { localStorage.removeItem("reminder_history"); refreshReminderHistory(); }}
                   >
                     Clear all
                   </button>
                 )}
               </div>
-              <div className=\"overflow-y-auto flex-1\">
+              <div className="overflow-y-auto flex-1">
                 {reminderHistory.length === 0 ? (
-                  <div className=\"px-3 py-6 text-center text-xs text-muted-foreground\">No reminders yet</div>
-                ) : (
-                  reminderHistory.map(entry => {
+                  <div className="px-3 py-6 text-center text-xs text-muted-foreground">No reminders yet</div>
+                ) : reminderHistory.map(entry => {
                     const linkedTask = tasks?.find(t => String(t.id) === entry.taskId);
                     return (
-                      <div
-                        key={entry.id}
-                        className={`px-3 py-2 border-b border-border last:border-0 hover:bg-muted/30 ${linkedTask ? 'cursor-pointer' : ''}`}
-                        onClick={() => {
-                          if (linkedTask) {
-                            setSelectedTask(linkedTask);
-                            setModalOpen(true);
-                            setReminderPanelOpen(false);
-                          }
-                        }}>
-                        <div className=\"flex items-start justify-between gap-2\">
-                          <div className=\"flex-1 min-w-0\">
-                            <p className={`text-xs font-medium truncate ${linkedTask ? 'text-primary hover:underline' : ''}`}>{entry.taskTitle}</p>
-                          <p className=\"text-[10px] text-muted-foreground mt-0.5\">
+                    <div 
+                      key={entry.id} 
+                      className={`px-3 py-2 border-b border-border last:border-0 hover:bg-muted/30 ${linkedTask ? 'cursor-pointer' : ''}`}
+                      onClick={() => {
+                        if (linkedTask) {
+                          setSelectedTask(linkedTask);
+                          setModalOpen(true);
+                          setReminderPanelOpen(false);
+                        }
+                      }}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <p className={`text-xs font-medium truncate ${linkedTask ? 'text-primary hover:underline' : ''}`}>{entry.taskTitle}</p>
+                          <p className="text-[10px] text-muted-foreground mt-0.5">
                             {format(new Date(entry.firedAt * 1000), "d MMM, HH:mm")}
                             {entry.status === "snoozed" && entry.snoozedUntil && (
                               <> · Snoozed until {format(new Date(entry.snoozedUntil * 1000), "HH:mm")}</>
@@ -1446,33 +1439,34 @@ export default function MissionBoard() {
                         </span>
                       </div>
                       {entry.status !== "dismissed" && (
-                        <div className=\"flex gap-1 mt-1.5\">
+                        <div className="flex gap-1 mt-1.5">
                           <button
-                            className=\"text-[10px] px-2 py-0.5 rounded border border-border hover:bg-muted/50 text-muted-foreground\"
+                            className="text-[10px] px-2 py-0.5 rounded border border-border hover:bg-muted/50 text-muted-foreground"
                             onClick={() => handleSnooze(entry, 15)}
                           >+15m</button>
                           <button
-                            className=\"text-[10px] px-2 py-0.5 rounded border border-border hover:bg-muted/50 text-muted-foreground\"
+                            className="text-[10px] px-2 py-0.5 rounded border border-border hover:bg-muted/50 text-muted-foreground"
                             onClick={() => handleSnooze(entry, 60)}
                           >+1h</button>
                           <button
-                            className=\"text-[10px] px-2 py-0.5 rounded border border-border hover:bg-muted/50 text-muted-foreground\"
+                            className="text-[10px] px-2 py-0.5 rounded border border-border hover:bg-muted/50 text-muted-foreground"
                             onClick={() => handleSnooze(entry, 1440)}
                           >+1d</button>
                           <button
-                            className=\"text-[10px] px-2 py-0.5 rounded border border-destructive/40 hover:bg-destructive/10 text-destructive ml-auto\"
+                            className="text-[10px] px-2 py-0.5 rounded border border-destructive/40 hover:bg-destructive/10 text-destructive ml-auto"
                             onClick={() => handleDismissReminder(entry)}
                           >Dismiss</button>
                         </div>
                       )}
                     </div>
                   );
-                })}
+                })
+                }
               </div>
               {notificationPermission !== "granted" && (
-                <div className=\"px-3 py-2 border-t border-border bg-amber-500/5\">
+                <div className="px-3 py-2 border-t border-border bg-amber-500/5">
                   <button
-                    className=\"text-xs text-amber-600 hover:underline w-full text-left\"
+                    className="text-xs text-amber-600 hover:underline w-full text-left"
                     onClick={() => Notification.requestPermission().then(p => setNotificationPermission(p))}
                   >
                     ⚠ Enable push notifications to receive alerts
@@ -1485,41 +1479,41 @@ export default function MissionBoard() {
       </div>
 
       {error && (
-        <div className=\"flex items-center gap-2 mx-5 mt-4 p-3 bg-destructive/10 border border-destructive/20 rounded-md text-destructive text-sm\">
-          <AlertCircle className=\"w-4 h-4 flex-shrink-0\" />
+        <div className="flex items-center gap-2 mx-5 mt-4 p-3 bg-destructive/10 border border-destructive/20 rounded-md text-destructive text-sm">
+          <AlertCircle className="w-4 h-4 flex-shrink-0" />
           <span>Could not load tasks. Check your API URL configuration.</span>
         </div>
       )}
 
-      <div className=\"flex-1 overflow-auto\">
-        <div className=\"flex flex-col md:flex-row gap-4 p-5 md:min-w-max\">
+      <div className="flex-1 overflow-auto">
+        <div className="flex flex-col md:flex-row gap-4 p-5 md:min-w-max">
         <DragDropContext onDragEnd={handleDragEnd}>
-          <div className=\"contents\">
+          <div className="contents">
             {COLUMNS.map(col => {
               const colTasks = tasksByColumn(col.id);
               const ColIcon = col.icon;
               return (
                 <div
                   key={col.id}
-                  className=\"flex flex-col w-full md:w-72 md:flex-shrink-0\"
+                  className="flex flex-col w-full md:w-72 md:flex-shrink-0"
                   data-testid={`column-${col.id}`}
                 >
-                  <div className=\"flex items-center justify-between mb-3\">
-                    <div className=\"flex items-center gap-2\">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
                       <ColIcon className={`w-4 h-4 ${columnColors[col.id]}`} />
-                      <span className=\"text-sm font-semibold text-foreground\">{col.label}</span>
-                      <span className=\"text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded-full\">
+                      <span className="text-sm font-semibold text-foreground">{col.label}</span>
+                      <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded-full">
                         {colTasks.length}
                       </span>
                     </div>
                     <Button
-                      size=\"icon\"
-                      variant=\"ghost\"
+                      size="icon"
+                      variant="ghost"
                       onClick={() => setAddingColumn(col.id)}
                       data-testid={`button-add-${col.id}`}
-                      className=\"h-7 w-7\"
+                      className="h-7 w-7"
                     >
-                      <Plus className=\"w-3.5 h-3.5\" />
+                      <Plus className="w-3.5 h-3.5" />
                     </Button>
                   </div>
 
@@ -1532,7 +1526,7 @@ export default function MissionBoard() {
                       >
                         {isLoading ? (
                           Array.from({ length: 2 }).map((_, i) => (
-                            <Skeleton key={i} className=\"h-20 mb-2 rounded-md\" />
+                            <Skeleton key={i} className="h-20 mb-2 rounded-md" />
                           ))
                         ) : (
                           colTasks.map((task, index) => (
@@ -1555,7 +1549,7 @@ export default function MissionBoard() {
                         )}
 
                         {!isLoading && colTasks.length === 0 && addingColumn !== col.id && (
-                          <div className=\"flex items-center justify-center h-16 text-xs text-muted-foreground/60\">
+                          <div className="flex items-center justify-center h-16 text-xs text-muted-foreground/60">
                             Drop cards here
                           </div>
                         )}
@@ -1568,41 +1562,41 @@ export default function MissionBoard() {
           </div>
         </DragDropContext>
 
-        <div className=\"flex flex-col w-full md:w-72 md:flex-shrink-0\" data-testid=\"column-repeatable\">
-          <div className=\"flex items-center gap-2 mb-3\">
-            <Repeat className=\"w-4 h-4 text-violet-500 dark:text-violet-400\" />
-            <span className=\"text-sm font-semibold text-foreground\">Repeatable</span>
-            <span className=\"text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded-full\">
+        <div className="flex flex-col w-full md:w-72 md:flex-shrink-0" data-testid="column-repeatable">
+          <div className="flex items-center gap-2 mb-3">
+            <Repeat className="w-4 h-4 text-violet-500 dark:text-violet-400" />
+            <span className="text-sm font-semibold text-foreground">Repeatable</span>
+            <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded-full">
               {repeatableTasks.length}
             </span>
           </div>
-          <div className=\"md:flex-1 rounded-md min-h-32 p-2 bg-violet-500/5 border border-violet-500/20\">
+          <div className="md:flex-1 rounded-md min-h-32 p-2 bg-violet-500/5 border border-violet-500/20">
             {isLoading ? (
               Array.from({ length: 2 }).map((_, i) => (
-                <Skeleton key={i} className=\"h-20 mb-2 rounded-md\" />
+                <Skeleton key={i} className="h-20 mb-2 rounded-md" />
               ))
             ) : repeatableTasks.length === 0 ? (
-              <div className=\"flex items-center justify-center h-16 text-xs text-muted-foreground/60\">
+              <div className="flex items-center justify-center h-16 text-xs text-muted-foreground/60">
                 No repeatable tasks
               </div>
             ) : (
               repeatableTasks.map(task => (
                 <div
                   key={task.id}
-                  className=\"bg-card border border-card-border rounded-md p-3 mb-2 cursor-pointer select-none hover-elevate\"
+                  className="bg-card border border-card-border rounded-md p-3 mb-2 cursor-pointer select-none hover-elevate"
                   onClick={() => { setSelectedTask(task); setModalOpen(true); }}
                   data-testid={`card-repeatable-${task.id}`}
                 >
-                  <div className=\"flex items-start justify-between gap-2 mb-1.5\">
-                    <p className=\"text-sm font-medium text-card-foreground leading-snug flex-1\">{task.title}</p>
+                  <div className="flex items-start justify-between gap-2 mb-1.5">
+                    <p className="text-sm font-medium text-card-foreground leading-snug flex-1">{task.title}</p>
                     <div className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium whitespace-nowrap ${(PRIORITY_META[task.priority] ?? PRIORITY_META.medium).className}`}>
                       {(PRIORITY_META[task.priority] ?? PRIORITY_META.medium).label}
                     </div>
                   </div>
-                  <div className=\"flex flex-wrap items-center gap-1.5\">
-                    <span className=\"inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium bg-violet-500/15 text-violet-500 dark:text-violet-300\">
-                      <Repeat className=\"w-2.5 h-2.5\" />
-                      {task.cadence ? task.cadence.charAt(0).toUpperCase() + task.cadence.slice(1) : \"Repeating\"}
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium bg-violet-500/15 text-violet-500 dark:text-violet-300">
+                      <Repeat className="w-2.5 h-2.5" />
+                      {task.cadence ? task.cadence.charAt(0).toUpperCase() + task.cadence.slice(1) : "Repeating"}
                     </span>
                     <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium ${(LABEL_META[task.label] ?? LABEL_META.other).className}`}>
                       {(LABEL_META[task.label] ?? LABEL_META.other).label}
@@ -1628,5 +1622,5 @@ export default function MissionBoard() {
         projectOptions={[...ALL_PROJECTS]}
       />
     </div>
-  );\
+  );
 }
