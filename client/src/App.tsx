@@ -18,6 +18,7 @@ import ArchitecturePage from "@/pages/architecture";
 import RecoveryPage from "@/pages/recovery";
 import TradingPage from "@/pages/trading";
 import CampaignsPage from "@/pages/campaigns";
+import ProposalsPage from "@/pages/proposals";
 import NotFound from "@/pages/not-found";
 
 function ThemeToggle() {
@@ -67,6 +68,7 @@ function ProtectedLayout() {
               <Route path="/recovery" component={RecoveryPage} />
               <Route path="/trading" component={TradingPage} />
               <Route path="/campaigns" component={CampaignsPage} />
+              <Route path="/proposals" component={ProposalsPage} />
               <Route component={NotFound} />
             </Switch>
           </main>
