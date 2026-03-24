@@ -1461,7 +1461,7 @@ export default function MissionBoard() {
                       )}
                     </div>
                   );
-                })}
+                })
               </div>
               {notificationPermission !== "granted" && (
                 <div className="px-3 py-2 border-t border-border bg-amber-500/5">
