@@ -261,7 +261,8 @@ function ActivityItem({ entry, taskId, onEdited }: { entry: ActivityEntry; taskI
   const [saving, setSaving] = useState(false);
 
   const startEdit = () => {
-    const textOnly = entry.content.replace(/!\[\]\([^)]+\)\n?/g, "").trim();
+    const textOnly = entry.content.replace(/!\[\]\([^)]+\)
+?/g, "").trim();
     setEditContent(textOnly);
     setEditing(true);
   };
@@ -279,7 +280,10 @@ function ActivityItem({ entry, taskId, onEdited }: { entry: ActivityEntry; taskI
       const imageRefs = entry.content.match(/!\[\]\([^)]+\)/g) || [];
       let newContent = editContent.trim();
       if (imageRefs.length > 0) {
-        newContent = newContent ? `${newContent}\n${imageRefs.join("\n")}` : imageRefs.join("\n");
+        newContent = newContent ? `${newContent}
+${imageRefs.join("
+")}` : imageRefs.join("
+");
       }
       await fetch(`${base}/tasks/${taskId}/activity/${entry.id}`, {
         method: "PATCH",
@@ -498,6 +502,1131 @@ function TaskModal({ task, open, onClose, onSave, onDelete, projectOptions }: Ta
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
 
-  const { data: taskDetail, isLoading: detailLoading } = useQuery<{ activity: ActivityEntry[]; images: TaskImage[] }>({\n    queryKey: ["/tasks", task?.id],\n    queryFn: async () => {\n      const raw = await apiRequest<Record<string, unknown>>("GET", `/tasks/${task!.id}`);\n      const activity = (Array.isArray(raw.activity) ? raw.activity : []) as ActivityEntry[];\n      const images = (Array.isArray(raw.images) ? raw.images : []) as TaskImage[];\n      return { activity, images };\n    },\n    enabled: !!task && open,\n    staleTime: 10_000,\n  });\n\n  useEffect(() => {\n    if (task) {\n      setTitle(task.title ?? "");\n      setDescription(task.description ?? "");\n      setStatus(task.status ?? "ideas");\n      setPriority(task.priority ?? "medium");\n      setLabel(task.label ?? "other");\n      setAssignee(task.assignee ?? "steve");\n      setIsRepeatable(!!task.is_repeatable);\n      setCadence(task.cadence ?? "weekly");\n      if (task.reminder_at && task.reminder_at * 1000 > Date.now()) {\n        const d = new Date(task.reminder_at * 1000);\n        setReminderDate(d);\n        setReminderTime(format(d, "HH:mm"));\n      } else {\n        // Check localStorage as fallback\n        try {\n          const stored = localStorage.getItem("task_reminders");\n          const reminders = stored ? JSON.parse(stored) : {};\n          const localReminder = reminders[task.id];\n          if (localReminder && localReminder * 1000 > Date.now()) {\n            const d = new Date(localReminder * 1000);\n            setReminderDate(d);\n            setReminderTime(format(d, "HH:mm"));\n          } else {\n            setReminderDate(undefined);\n            setReminderTime(defaultReminderTime());\n          }\n        } catch {\n          setReminderDate(undefined);\n          setReminderTime(defaultReminderTime());\n        }\n      }\n      setReminderChanged(false);\n      setComment("");\n      setCommentImages([]);\n    }\n  }, [task]);\n\n  useEffect(() => {\n    if (taskDetail?.activity?.length) {\n      setTimeout(() => activityEndRef.current?.scrollIntoView({ behavior: "smooth" }), 100);\n    }\n  }, [taskDetail?.activity?.length]);\n\n  const handleSave = () => {\n    let reminderAt: number | undefined;\n    if (reminderDate) {\n      const [hours, minutes] = reminderTime.split(":").map(Number);\n      const d = new Date(reminderDate);\n      d.setHours(hours, minutes, 0, 0);\n      reminderAt = Math.floor(d.getTime() / 1000);\n    }\n    // Save to localStorage as fallback (works without backend column)\n    if (task) {\n      setLocalReminder(task.id, reminderAt);\n    }\n    onSave({\n      title, description, status, priority, label, assignee,\n      is_repeatable: isRepeatable ? 1 : 0,\n      cadence: isRepeatable ? cadence : undefined,\n      ...(reminderChanged ? { reminder_at: reminderAt ?? null } : {}),\n    });\n  };\n\n  const handleSubmitComment = async () => {\n    if ((!comment.trim() && commentImages.length === 0) || !task) return;\n    setSubmittingComment(true);\n    try {\n      const uploadedUrls: string[] = [];\n      for (const img of commentImages) {\n        const uploadRes = await apiRequest<{ url: string }>("POST", `/tasks/${task.id}/images`, {\n          data: img.data,\n          filename: img.filename,\n        });\n        uploadedUrls.push(uploadRes.url);\n      }\n      let content = comment.trim();\n      if (uploadedUrls.length > 0) {\n        const mdImages = uploadedUrls.map(u => `![](${u})`).join("\\n");\n        content = content ? `${content}\\n${mdImages}` : mdImages;\n      }\n      const body: Record<string, string> = {\n        author: "steve",\n        type: "comment",\n        content: content || "Attached images",\n      };\n      if (uploadedUrls.length > 0) {\n        body.image_url = uploadedUrls[0];\n      }\n      await apiRequest("POST", `/tasks/${task.id}/activity`, body);\n      setComment("");\n      setCommentImages([]);\n      qc.invalidateQueries({ queryKey: ["/tasks", task.id] });\n      qc.invalidateQueries({ queryKey: ["/tasks"], exact: false });\n    } catch (err) {\n      toast({ title: "Failed to post comment", description: (err as Error).message, variant: "destructive" });\n    } finally {\n      setSubmittingComment(false);\n    }\n  };\n\n  const handleCommentImageSelect = async (files: FileList | null) => {\n    if (!files || files.length === 0) return;\n    const newImages: { data: string; filename: string }[] = [];\n    for (const file of Array.from(files)) {\n      if (!file.type.startsWith("image/")) continue;\n      const dataUri = await new Promise<string>((resolve, reject) => {\n        const reader = new FileReader();\n        reader.onload = () => resolve(reader.result as string);\n        reader.onerror = reject;\n        reader.readAsDataURL(file);\n      });\n      newImages.push({ data: dataUri, filename: file.name });\n    }\n    if (newImages.length > 0) {\n      setCommentImages(prev => [...prev, ...newImages]);\n    }\n  };\n\n  const handleFileUpload = async (files: FileList | File[]) => {\n    if (!task || uploading) return;\n    setUploading(true);\n    try {\n      for (const file of Array.from(files)) {\n        if (!file.type.startsWith("image/")) continue;\n        const dataUri = await new Promise<string>((resolve, reject) => {\n          const reader = new FileReader();\n          reader.onload = () => resolve(reader.result as string);\n          reader.onerror = reject;\n          reader.readAsDataURL(file);\n        });\n        await apiRequest("POST", `/tasks/${task.id}/images`, {\n          data: dataUri,\n          filename: file.name,\n        });\n      }\n      qc.invalidateQueries({ queryKey: ["/tasks", task.id] });\n      qc.invalidateQueries({ queryKey: ["/tasks"], exact: false });\n      toast({ title: "Image uploaded" });\n    } catch (err) {\n      toast({ title: "Upload failed", description: (err as Error).message, variant: "destructive" });\n    } finally {\n      setUploading(false);\n    }\n  };\n\n  const handleDeleteImage = async (imageId: number) => {\n    if (!task) return;\n    if (!window.confirm("Delete this image?")) return;\n    try {\n      await apiRequest("DELETE", `/tasks/${task.id}/images/${imageId}`);\n      qc.invalidateQueries({ queryKey: ["/tasks", task.id] });\n      qc.invalidateQueries({ queryKey: ["/tasks"], exact: false });\n      toast({ title: "Image deleted" });\n    } catch (err) {\n      toast({ title: "Delete failed", description: (err as Error).message, variant: "destructive" });\n    }\n  };\n\n  const handleDrop = (e: React.DragEvent) => {\n    e.preventDefault();\n    setDragOver(false);\n    if (e.dataTransfer.files.length) handleFileUpload(e.dataTransfer.files);\n  };\n\n  if (!task) return null;\n\n  const activity = taskDetail?.activity ?? [];\n  const images = taskDetail?.images ?? task.images ?? [];\n\n  return (\n    <>\n    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>\n      <DialogContent className=\"max-w-lg max-h-[85vh] flex flex-col\" data-testid=\"modal-task\">\n        <DialogHeader>\n          <DialogTitle className=\"text-base\">Edit Task</DialogTitle>\n          <DialogDescription className=\"sr-only\">View and edit task details, and see activity log</DialogDescription>\n        </DialogHeader>\n        <div className=\"flex-1 overflow-y-auto space-y-4 pt-1 pr-1\">\n          <div className=\"space-y-1.5\">\n            <Label className=\"text-xs text-muted-foreground uppercase tracking-wide\">Title</Label>\n            <Input\n              value={title}\n              onChange={(e) => setTitle(e.target.value)}\n              data-testid=\"input-task-title\"\n              placeholder=\"Task title\"\n            />\n          </div>\n          <div className=\"space-y-1.5\">\n            <Label className=\"text-xs text-muted-foreground uppercase tracking-wide\">Description</Label>\n            <Textarea\n              value={description}\n              onChange={(e) => setDescription(e.target.value)}\n              data-testid=\"input-task-description\"\n              placeholder=\"Optional description...\"\n              className=\"resize-none\"\n              rows={3}\n            />\n          </div>\n          <div className=\"grid grid-cols-2 gap-3\">\n            <div className=\"space-y-1.5\">\n              <Label className=\"text-xs text-muted-foreground uppercase tracking-wide\">Column</Label>\n              <Select value={status} onValueChange={(v) => setStatus(v as TaskStatus)}>\n                <SelectTrigger data-testid=\"select-task-status\">\n                  <SelectValue />\n                </SelectTrigger>\n                <SelectContent>\n                  {ALL_STATUSES.map(s => (\n                    <SelectItem key={s} value={s}>{COLUMNS.find(c => c.id === s)?.label ?? s}</SelectItem>\n                  ))}\n                </SelectContent>\n              </Select>\n            </div>\n            <div className=\"space-y-1.5\">\n              <Label className=\"text-xs text-muted-foreground uppercase tracking-wide\">Priority</Label>\n              <Select value={priority} onValueChange={(v) => setPriority(v as TaskPriority)}>\n                <SelectTrigger data-testid=\"select-task-priority\">\n                  <SelectValue />\n                </SelectTrigger>\n                <SelectContent>\n                  {ALL_PRIORITIES.map(p => (\n                    <SelectItem key={p} value={p}>{PRIORITY_META[p].label}</SelectItem>\n                  ))}\n                </SelectContent>\n              </Select>\n            </div>\n            <div className=\"space-y-1.5\">\n              <Label className=\"text-xs text-muted-foreground uppercase tracking-wide\">Project</Label>\n              <Select value={label} onValueChange={(v) => setLabel(v)}>\n                <SelectTrigger data-testid=\"select-task-label\">\n                  <SelectValue />\n                </SelectTrigger>\n                <SelectContent>\n                  {projectOptions.map(l => (\n                    <SelectItem key={l} value={l}>{(LABEL_META[l] ?? { label: l }).label}</SelectItem>\n                  ))}\n                </SelectContent>\n              </Select>\n            </div>\n            <div className=\"space-y-1.5\">\n              <Label className=\"text-xs text-muted-foreground uppercase tracking-wide\">Assigned To</Label>\n              <Select value={assignee} onValueChange={(v) => setAssignee(v)}>\n                <SelectTrigger data-testid=\"select-task-assignee\">\n                  <SelectValue />\n                </SelectTrigger>\n                <SelectContent>\n                  {ALL_ASSIGNEES.map(a => (\n                    <SelectItem key={a} value={a}>{(ASSIGNEE_META[a] ?? { label: a }).label}</SelectItem>\n                  ))}\n                </SelectContent>\n              </Select>\n            </div>\n          </div>\n\n          <div className=\"space-y-3 pt-1\">\n            <div className=\"flex items-center justify-between\">\n              <Label className=\"text-xs text-muted-foreground uppercase tracking-wide\">Repeatable</Label>\n              <Switch checked={isRepeatable} onCheckedChange={setIsRepeatable} data-testid=\"switch-repeatable\" />\n            </div>\n            {isRepeatable && (\n              <div className=\"space-y-1.5\">\n                <Label className=\"text-xs text-muted-foreground uppercase tracking-wide\">Cadence</Label>\n                <Select value={cadence} onValueChange={(v) => setCadence(v as \"daily\" | \"weekly\" | \"monthly\")}>\n                  <SelectTrigger data-testid=\"select-cadence\">\n                    <SelectValue />\n                  </SelectTrigger>\n                  <SelectContent>\n                    <SelectItem value=\"daily\">Daily</SelectItem>\n                    <SelectItem value=\"weekly\">Weekly</SelectItem>\n                    <SelectItem value=\"monthly\">Monthly</SelectItem>\n                  </SelectContent>\n                </Select>\n              </div>\n            )}\n          </div>\n\n          <div className=\"space-y-3 pt-1\">\n            <div className=\"flex items-center justify-between\">\n              <Label className=\"text-xs text-muted-foreground uppercase tracking-wide\">Reminder</Label>\n              <Switch checked={!!reminderDate} onCheckedChange={(checked) => { setReminderDate(checked ? new Date() : undefined); setReminderChanged(true); }} />\n            </div>\n            {reminderDate && (\n              <div className=\"flex gap-2\">\n                <div className=\"flex-1\">\n                  <Calendar\n                    mode=\"single\"\n                    selected={reminderDate}\n                    onSelect={(d) => { setReminderDate(d); setReminderChanged(true); }}\n                    fromDate={new Date()}\n                    className=\"rounded-md border\"\n                  />\n                </div>\n                <div className=\"space-y-1.5\">\n                  <Label className=\"text-xs text-muted-foreground\">Time</Label>\n                  <Input\n                    type=\"time\"\n                    value={reminderTime}\n                    onChange={(e) => { setReminderTime(e.target.value); setReminderChanged(true); }}\n                    className=\"w-24\"\n                  />\n                  {reminderDate && (\n                    <Button\n                      variant=\"ghost\"\n                      size=\"sm\"\n                      onClick={() => setReminderDate(undefined)}\n                      className=\"w-full text-xs text-destructive\"\n                    >\n                      Clear\n                    </Button>\n                  )}\n                </div>\n              </div>\n            )}\n          </div>\n\n          <div className=\"border-t border-border pt-3\">\n            <div className=\"flex items-center gap-2 mb-2\">\n              <ImageIcon className=\"w-3.5 h-3.5 text-muted-foreground\" />\n              <Label className=\"text-xs text-muted-foreground uppercase tracking-wide\">Images</Label>\n              {images.length > 0 && (\n                <span className=\"text-xs text-muted-foreground/60\">({images.length})</span>\n              )}\n            </div>\n            {images.length > 0 && (\n              <div className=\"grid grid-cols-4 gap-2 mb-2\">\n                {images.map(img => (\n                  <div key={img.id} className=\"relative group\" data-testid={`image-thumb-${img.id}`}>\n                    <button\n                      onClick={() => setLightboxUrl(img.url)}\n                      className=\"w-full aspect-square rounded-md overflow-hidden border border-border bg-muted\"\n                    >\n                      <img src={img.url} alt={img.filename} className=\"w-full h-full object-cover\" />\n                    </button>\n                    <button\n                      onClick={() => handleDeleteImage(img.id)}\n                      className=\"absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity\"\n                      data-testid={`button-delete-image-${img.id}`}\n                    >\n                      <X className=\"w-3 h-3\" />\n                    </button>\n                  </div>\n                ))}\n              </div>\n            )}\n            <div\n              onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}\n              onDragLeave={() => setDragOver(false)}\n              onDrop={handleDrop}\n              onClick={() => fileInputRef.current?.click()}\n              className={`flex items-center justify-center gap-2 p-3 rounded-md border-2 border-dashed cursor-pointer transition-colors\n                ${dragOver ? \"border-primary bg-primary/5\" : \"border-border hover:border-primary/40\"}`}\n              data-testid=\"dropzone-images\"\n            >\n              {uploading ? (\n                <Loader2 className=\"w-4 h-4 animate-spin text-muted-foreground\" />\n              ) : (\n                <Upload className=\"w-4 h-4 text-muted-foreground\" />\n              )}\n              <span className=\"text-xs text-muted-foreground\">\n                {uploading ? \"Uploading...\" : \"Drop image or click to browse\"}\n              </span>\n              <input\n                ref={fileInputRef}\n                type=\"file\"\n                accept=\"image/*\"\n                multiple\n                className=\"hidden\"\n                onChange={(e) => e.target.files && handleFileUpload(e.target.files)}\n                data-testid=\"input-file-images\"\n              />\n            </div>\n          </div>\n\n          <div className=\"flex items-center justify-between pt-1\">\n            <Button\n              variant=\"destructive\"\n              size=\"sm\"\n              onClick={() => onDelete(task.id)}\n              data-testid=\"button-delete-task\"\n            >\n              Delete\n            </Button>\n            <div className=\"flex gap-2\">\n              <Button variant=\"ghost\" size=\"sm\" onClick={onClose} data-testid=\"button-cancel-task\">\n                Cancel\n              </Button>\n              <Button size=\"sm\" onClick={handleSave} data-testid=\"button-save-task\">\n                Save Changes\n              </Button>\n            </div>\n          </div>\n\n          <div className=\"border-t border-border pt-3\">\n            <div className=\"flex items-center gap-2 mb-3\">\n              <MessageSquare className=\"w-3.5 h-3.5 text-muted-foreground\" />\n              <Label className=\"text-xs text-muted-foreground uppercase tracking-wide\">Activity</Label>\n            </div>\n            {detailLoading ? (\n              <div className=\"space-y-2\">\n                {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className=\"h-8 rounded\" />)}\n              </div>\n            ) : activity.length === 0 ? (\n              <p className=\"text-xs text-muted-foreground/60 py-4 text-center\">No activity yet</p>\n            ) : (\n              <div className=\"space-y-2.5 mb-3\">\n                {activity.map(entry => (\n                  <ActivityItem key={entry.id} entry={entry} taskId={task?.id} onEdited={() => qc.invalidateQueries({ queryKey: [\"/tasks\", task?.id] })} />\n                ))}\n                <div ref={activityEndRef} />\n              </div>\n            )}\n\n            {commentImages.length > 0 && (\n              <div className=\"flex gap-2 mb-2 flex-wrap\">\n                {commentImages.map((img, i) => (\n                  <div key={i} className=\"relative group\">\n                    <img src={img.data} alt={img.filename} className=\"w-14 h-14 object-cover rounded border border-border\" />\n                    <button\n                      onClick={() => setCommentImages(prev => prev.filter((_, j) => j !== i))}\n                      className=\"absolute -top-1.5 -right-1.5 w-4 h-4 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity\"\n                      data-testid={`button-remove-comment-image-${i}`}\n                    >\n                      <X className=\"w-2.5 h-2.5\" />\n                    </button>\n                  </div>\n                ))}\n              </div>\n            )}\n            <div className=\"flex gap-2\">\n              <Textarea\n                value={comment}\n                onChange={(e) => setComment(e.target.value)}\n                placeholder=\"Add a comment... (Shift+Enter for new line)\"\n                className=\"text-sm min-h-[40px] max-h-[120px] resize-none\"\n                data-testid=\"input-comment\"\n                onKeyDown={(e) => { if (e.key === \"Enter\" && !e.shiftKey) { e.preventDefault(); handleSubmitComment(); } }}\n                rows={1}\n              />\n              <Button\n                size=\"icon\"\n                variant=\"ghost\"\n                onClick={() => commentFileRef.current?.click()}\n                className=\"flex-shrink-0\"\n                data-testid=\"button-attach-comment-image\"\n              >\n                <ImageIcon className=\"w-3.5 h-3.5\" />\n              </Button>\n              <input\n                ref={commentFileRef}\n                type=\"file\"\n                accept=\"image/*\"\n                multiple\n                className=\"hidden\"\n                onChange={(e) => { handleCommentImageSelect(e.target.files); e.target.value = \"\"; }}\n              />\n              <Button\n                size=\"icon\"\n                variant=\"secondary\"\n                onClick={handleSubmitComment}\n                disabled={(!comment.trim() && commentImages.length === 0) || submittingComment}\n                data-testid=\"button-submit-comment\"\n                className=\"flex-shrink-0\"\n              >\n                {submittingComment ? <Loader2 className=\"w-3.5 h-3.5 animate-spin\" /> : <Send className=\"w-3.5 h-3.5\" />}\n              </Button>\n            </div>\n          </div>\n        </div>\n      </DialogContent>\n    </Dialog>\n\n    {lightboxUrl && (\n      <Dialog open onOpenChange={() => setLightboxUrl(null)}>\n        <DialogContent className=\"max-w-3xl p-2 bg-black/90 border-none\" data-testid=\"lightbox\">\n          <DialogHeader className=\"sr-only\">\n            <DialogTitle>Image Preview</DialogTitle>\n            <DialogDescription>Full size image</DialogDescription>\n          </DialogHeader>\n          <img\n            src={lightboxUrl}\n            alt=\"Full size\"\n            className=\"w-full h-auto max-h-[80vh] object-contain rounded\"\n          />\n        </DialogContent>\n      </Dialog>\n    )}\n    </>\n  );\n}\n\ninterface AddCardFormProps {\n  columnId: TaskStatus;\n  onAdd: (title: string, status: TaskStatus) => void;\n  onCancel: () => void;\n}\n\nfunction AddCardForm({ columnId, onAdd, onCancel }: AddCardFormProps) {\n  const [title, setTitle] = useState("");\n\n  const handleSubmit = (e: React.FormEvent) => {\n    e.preventDefault();\n    if (title.trim()) onAdd(title.trim(), columnId);\n  };\n\n  return (\n    <form onSubmit={handleSubmit} className=\"mt-2\">\n      <Input\n        autoFocus\n        value={title}\n        onChange={(e) => setTitle(e.target.value)}\n        placeholder=\"Card title...\"\n        className=\"mb-2 text-sm\"\n        data-testid={`input-new-card-${columnId}`}\n        onKeyDown={(e) => e.key === \"Escape\" && onCancel()}\n      />\n      <div className=\"flex gap-2\">\n        <Button type=\"submit\" size=\"sm\" disabled={!title.trim()} data-testid={`button-add-card-${columnId}`}>\n          Add\n        </Button>\n        <Button type=\"button\" variant=\"ghost\" size=\"sm\" onClick={onCancel} data-testid={`button-cancel-add-${columnId}`}>\n          <X className=\"w-3.5 h-3.5\" />\n        </Button>\n      </div>\n    </form>\n  );\
-}\n\nexport default function MissionBoard() {\n  const qc = useQueryClient();\n  const { toast } = useToast();\n  const [filterLabel, setFilterLabel] = useState<TaskLabel | \"all\">(\"all\");\n  const [filterAssignee, setFilterAssignee] = useState<string>(\"all\");\n  const [hideWithReminder, setHideWithReminder] = useState(false);\n  const [addingColumn, setAddingColumn] = useState<TaskStatus | null>(null);\n  const [selectedTask, setSelectedTask] = useState<Task | null>(null);\n  const [modalOpen, setModalOpen] = useState(false);\n  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);\n  const [refreshing, setRefreshing] = useState(false);\n  const [checkingTasks, setCheckingTasks] = useState(false);\n  const [searchInput, setSearchInput] = useState(\"\");\n  const [searchQuery, setSearchQuery] = useState(\"\");\n\n  useEffect(() => {\n    const timer = setTimeout(() => setSearchQuery(searchInput.trim()), 300);\n    return () => clearTimeout(timer);\n  }, [searchInput]);\n\n  const { data: tasks, isLoading, error, dataUpdatedAt } = useQuery<Task[]>({\n    queryKey: ["/tasks", searchQuery],\n    queryFn: async ({ queryKey }) => {\n      const q = queryKey[1] as string;\n      const url = q ? `/tasks?q=${encodeURIComponent(q)}` : "/tasks";\n      const raw = await apiRequest<Record<string, unknown>[]>(\"GET\", url);\n      return (Array.isArray(raw) ? raw : []) as Task[];\n    },\n    staleTime: 30000,\n  });\n\n  useEffect(() => {\n    if (dataUpdatedAt) setLastUpdated(new Date(dataUpdatedAt));\n  }, [dataUpdatedAt]);\n\n  useEffect(() => {\n    const poll = () => {\n      if (document.visibilityState === \"visible\") {\n        qc.invalidateQueries({ queryKey: ["/tasks"], exact: false });\n      }\n    };\n    const id = setInterval(poll, 30000);\n    const onVisChange = () => {\n      if (document.visibilityState === \"visible\") {\n        qc.invalidateQueries({ queryKey: ["/tasks"], exact: false });\n      }\n    };\n    document.addEventListener(\"visibilitychange\", onVisChange);\n    return () => { clearInterval(id); document.removeEventListener(\"visibilitychange\", onVisChange); };\n  }, [qc]);\n\n    // Reminder notifications\n  const [notificationPermission, setNotificationPermission] = useState<NotificationPermission | \"checking\">(\"checking\");\n  const [reminderHistory, setReminderHistory] = useState<ReminderHistoryEntry[]>(() => {\n    // purge any entries from the 1970s (caused by localStorage seconds/ms unit bug)\n    const history = getReminderHistory().filter(h => h.firedAt > 1000000000);\n    localStorage.setItem("reminder_history", JSON.stringify(history));\n    return history;\n  });\n  const [reminderPanelOpen, setReminderPanelOpen] = useState(false);\n  const unreadReminderCount = reminderHistory.filter(h => h.status === "fired").length;\n\n  const refreshReminderHistory = () => setReminderHistory(getReminderHistory());\n\n  const handleSnooze = (entry: ReminderHistoryEntry, minutes: number) => {\n    const snoozedUntil = Math.floor(Date.now() / 1000) + minutes * 60;\n    updateReminderHistoryStatus(entry.id, "snoozed", snoozedUntil);\n    setLocalReminder(entry.taskId, snoozedUntil);\n    // also patch backend\n    apiRequest("PATCH", `/tasks/${entry.taskId}`, { reminder_at: snoozedUntil }).catch(() => {});\n    refreshReminderHistory();\n  };\n\n  const handleDismissReminder = (entry: ReminderHistoryEntry) => {\n    updateReminderHistoryStatus(entry.id, "dismissed");\n    setLocalReminder(entry.taskId, undefined);\n    apiRequest("PATCH", `/tasks/${entry.taskId}`, { reminder_at: null }).catch(() => {});\n    refreshReminderHistory();\n  };\n\n  useEffect(() => {\n    if (!("Notification" in window)) {\n      setNotificationPermission("denied");\n      return;\n    }\n    if (Notification.permission !== "default") {\n      setNotificationPermission(Notification.permission);\n    }\n  }, []);\n\n  useEffect(() => {\n    const checkReminders = () => {\n      const now = Date.now();\n      const localReminders = getLocalReminders();\n      const firedKeys = getFiredReminderKeys();\n      const allTasks = tasks || [];\n      allTasks.forEach(task => {\n        const reminderTime = task.reminder_at ? task.reminder_at * 1000 : (localReminders[task.id] ? localReminders[task.id] * 1000 : null);\n        if (!reminderTime || reminderTime > now) return; // not yet due\n        const key = `${task.id}-${Math.floor(reminderTime / 1000)}`;\n        if (firedKeys.has(key)) return; // already fired this session\n        markReminderFired(key);\n        const entry: ReminderHistoryEntry = {\n          id: key,\n          taskId: String(task.id),\n          taskTitle: task.title,\n          firedAt: Math.floor(reminderTime / 1000),\n          status: "fired",\n        };\n        addReminderHistory(entry);\n        refreshReminderHistory();\n        if (Notification.permission === "granted") {\n          const notif = new Notification(`Reminder: ${task.title}`, {\n            body: task.description?.slice(0, 100) || "Task reminder",\n            icon: "/favicon.ico",\n            tag: `task-${task.id}`,\n            requireInteraction: true,\n          });\n          notif.onclick = () => { window.focus(); notif.close(); };\n        }\n      });\n    };\n    const id = setInterval(checkReminders, 30000);\n    checkReminders();\n    return () => clearInterval(id);\n  }, [tasks]);\n\n  const handleManualRefresh = async () => {\n    setRefreshing(true);\n    await qc.invalidateQueries({ queryKey: ["/tasks"], exact: false });\n    setRefreshing(false);\n  };\n\n  const handleCheckTasks = async () => {\n    setCheckingTasks(true);\n    try {\n      const base = import.meta.env.VITE_API_URL || "/api";\n      const token = localStorage.getItem("bsl_mc_token");\n      const headers: Record<string, string> = { "Content-Type": "application/json" };\n      if (token) headers["Authorization"] = `Bearer ${token}`;\n      let res: Response;\n      try {\n        res = await fetch(`${base}/clawbot/check-tasks`, { method: "POST", headers });\n      } catch (_networkErr) {\n        toast({ title: "Failed to reach Clawbot", variant: "destructive" });\n        setCheckingTasks(false);\n        return;\n      }\n      if (res.ok) {\n\n        toast({ title: "🦞 Clawbot is on it!", className: "bg-emerald-600 text-white border-emerald-700" });\n      } else {\n        toast({ title: "Failed to reach Clawbot", variant: "destructive" });\n      }\n    } catch (err) {\n      console.error("Check tasks error:", err);\n      toast({ title: "Failed to reach Clawbot", variant: "destructive" });\n    }\n    setCheckingTasks(false);\n  };\n\n  const createMutation = useMutation({\n    mutationFn: (data: Record<string, unknown>) => apiRequest<Task>("POST", "/tasks", data),\n    onSuccess: () => qc.invalidateQueries({ queryKey: ["/tasks"], exact: false }),\n  });\n\n  const updateMutation = useMutation({\n    mutationFn: ({ id, ...data }: Record<string, unknown> & { id: string }) =>\n      apiRequest<Task>("PATCH", `/tasks/${id}`, data),\n    onSuccess: () => qc.invalidateQueries({ queryKey: ["/tasks"], exact: false }),\n  });\n\n  const deleteMutation = useMutation({\n    mutationFn: (id: string) => apiRequest("DELETE", `/tasks/${id}`),\n    onSuccess: () => qc.invalidateQueries({ queryKey: ["/tasks"], exact: false }),\n  });\n\n  const handleDragEnd = useCallback((result: DropResult) => {\n    if (!result.destination) return;\n    const taskId = result.draggableId;\n    const newStatus = result.destination.droppableId as TaskStatus;\n    updateMutation.mutate({ id: taskId, status: newStatus, author: "steve" });\n  }, [updateMutation]);\n\n  const handleAddCard = (title: string, status: TaskStatus) => {\n    createMutation.mutate({\n      title,\n      status,\n      priority: "medium",\n      project: "other",\n      assigned_to: "steve",\n    });\n    setAddingColumn(null);\n  };\n\n  const handleSaveTask = async (updates: Partial<Task>) => {\n    if (!selectedTask) return;\n    const apiData = toApiPayload(updates);\n    try {\n      await updateMutation.mutateAsync({ id: selectedTask.id, ...apiData, author: "steve" });\n      // Directly update the exact query key used by the tasks list\n      qc.setQueryData(["/tasks", searchQuery], (old: unknown) => {\n        if (!Array.isArray(old)) return old;\n        return old.map((t: Task) => t.id === selectedTask.id ? { ...t, ...updates } : t);\n      });\n    } catch (err) {\n      console.error("Save task failed:", err);\n    }\n    setModalOpen(false);\n    setSelectedTask(null);\n  };\n\n  const handleDeleteTask = async (id: string) => {\n    await deleteMutation.mutateAsync(id);\n    await qc.refetchQueries({ queryKey: ["/tasks"], exact: false });\n    setModalOpen(false);\n    setSelectedTask(null);\n  };\n\n  const repeatableTasks = (tasks ?? []).filter(t => !!t.is_repeatable &&\n    (filterLabel === "all" || t.label === filterLabel) &&\n    (filterAssignee === "all" || t.assignee === filterAssignee)\n  );\n\n  const filteredTasks = (tasks ?? []).filter(\n    t => (filterLabel === "all" || t.label === filterLabel) &&\n         (filterAssignee === "all" || t.assignee === filterAssignee) &&\n         (!hideWithReminder || !t.reminder_at)\n  );\n\n  const tasksByColumn = (status: TaskStatus) =>\n    filteredTasks.filter(t => t.status === status && !t.is_repeatable);\n\n  const columnColors: Record<TaskStatus, string> = {\n    ideas: "text-amber-500 dark:text-amber-400",\n    inprogress: "text-blue-500 dark:text-blue-400",\n    review: "text-violet-500 dark:text-violet-400",\n    complete: "text-emerald-500 dark:text-emerald-400",\n  };\n\n  return (\n    <div className=\"h-full flex flex-col\">\n      <div className=\"flex items-center justify-between px-5 py-3 border-b border-border bg-background flex-wrap gap-2\">\n        <div className=\"flex items-center gap-3\">\n          <h1 className=\"text-base font-semibold text-foreground\">Mission Board</h1>\n          <Button\n            size=\"sm\"\n            onClick={handleCheckTasks}\n            disabled={checkingTasks}\n            className=\"h-7 text-xs\"\n            data-testid=\"button-check-tasks\"\n          >\n            {checkingTasks ? <Loader2 className=\"w-3.5 h-3.5 animate-spin mr-1.5\" /> : <span className=\"mr-1.5\">🦞</span>}\n            {checkingTasks ? \"Checking…\" : \"Check Tasks\"}\n          </Button>\n\n        </div>\n        <div className=\"relative\">\n          <Search className=\"absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none\" />\n          <Input\n            value={searchInput}\n            onChange={(e) => setSearchInput(e.target.value)}\n            placeholder=\"Search tasks…\"\n            className=\"h-7 text-xs pl-8 pr-7 w-48\"\n            data-testid=\"input-search-tasks\"\n          />\n          {searchInput && (\n            <button\n              onClick={() => setSearchInput(\"\")}\n              className=\"absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground\"\n              data-testid=\"button-clear-search\"\n            >\n              <X className=\"w-3.5 h-3.5\" />\n            </button>\n          )}\n        </div>\n        <div className=\"flex items-center gap-2 flex-wrap\">\n          <span className=\"text-xs text-muted-foreground\">Filter:</span>\n          <div className=\"flex gap-1.5 flex-wrap\">\n            <button\n              className={`text-xs px-2.5 py-1 rounded-md border transition-colors ${filterLabel === "all" ? "bg-primary text-primary-foreground border-primary" : "bg-card border-card-border text-muted-foreground"}`}\n              onClick={() => setFilterLabel("all")}\n              data-testid=\"filter-all\"\n            >\n              All\n            </button>\n            {ALL_PROJECTS.map(l => (\n              <button\n                key={l}\n                className={`text-xs px-2.5 py-1 rounded-md border transition-colors ${filterLabel === l ? "bg-primary text-primary-foreground border-primary" : "bg-card border-card-border text-muted-foreground"}`}\n                onClick={() => setFilterLabel(l)}\n                data-testid={`filter-${l}`}\n              >\n                {LABEL_META[l].label}\n              </button>\n            ))}\n          </div>\n        </div>\n        <div className=\"flex items-center gap-2 flex-wrap\">\n          <span className=\"text-xs text-muted-foreground\">Assignee:</span>\n          <div className=\"flex gap-1.5\">\n            {[{ value: "all", label: "All" }, { value: "steve", label: "Steve" }, { value: "clawbot", label: "Clawbot" }].map(opt => (\n              <button\n                key={opt.value}\n                className={`text-xs px-2.5 py-1 rounded-md border transition-colors ${filterAssignee === opt.value ? "bg-primary text-primary-foreground border-primary" : "bg-card border-card-border text-muted-foreground"}`}\n                onClick={() => setFilterAssignee(opt.value)}\n                data-testid={`filter-assignee-${opt.value}`}\n              >\n                {opt.label}\n              </button>\n            ))}\n          </div>\n        </div>\n        <div className=\"flex items-center gap-2 flex-wrap\">\n          <span className=\"text-xs text-muted-foreground\">Hide:</span>\n          <button\n            className={`text-xs px-2.5 py-1 rounded-md border transition-colors ${hideWithReminder ? "bg-primary text-primary-foreground border-primary" : "bg-card border-card-border text-muted-foreground"}`}\n            onClick={() => setHideWithReminder(!hideWithReminder)}\n            data-testid=\"filter-hide-reminder\"\n          >\n            With Reminder\n          </button>\n        </div>\n        <div className=\"flex items-center gap-1.5\">\n          {lastUpdated && (\n            <span className=\"text-xs text-muted-foreground/70\" data-testid=\"text-last-updated\">\n              Last updated: {lastUpdated.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })}\n            </span>\n          )}\n          <button\n            onClick={handleManualRefresh}\n            disabled={refreshing}\n            className=\"p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors disabled:opacity-50\"\n            data-testid=\"button-refresh\"\n          >\n            <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? "animate-spin" : ""}`} />\n          </button>\n\n          {/* Reminder history bell */}\n          <Popover open={reminderPanelOpen} onOpenChange={setReminderPanelOpen}>\n            <PopoverTrigger asChild>\n              <button\n                className=\"relative p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors\"\n                title=\"Reminder history\"\n                onClick={() => { refreshReminderHistory(); setReminderPanelOpen(v => !v); }}\n              >\n                <Bell className=\"w-3.5 h-3.5\" />\n                {unreadReminderCount > 0 && (\n                  <span className=\"absolute -top-0.5 -right-0.5 w-3.5 h-3.5 flex items-center justify-center rounded-full bg-amber-500 text-white text-[9px] font-bold leading-none\">\n                    {unreadReminderCount > 9 ? "9+" : unreadReminderCount}\n                  </span>\n                )}\n              </button>\n            </PopoverTrigger>\n            <PopoverContent align=\"end\" className=\"w-80 p-0 max-h-[420px] flex flex-col\">\n              <div className=\"flex items-center justify-between px-3 py-2 border-b border-border\">\n                <span className=\"text-sm font-semibold\">Reminder History</span>\n                {reminderHistory.length > 0 && (\n                  <button\n                    className=\"text-xs text-muted-foreground hover:text-foreground\"\n                    onClick={() => { localStorage.removeItem("reminder_history"); refreshReminderHistory(); }}\n                  >\n                    Clear all\n                  </button>\n                )}\n              </div>\n              <div className=\"overflow-y-auto flex-1\">\n                {reminderHistory.length === 0 ? (\n                  <div className=\"px-3 py-6 text-center text-xs text-muted-foreground\">No reminders yet</div>\n                ) : (\n                  reminderHistory.map(entry => {\n                    const linkedTask = tasks?.find(t => String(t.id) === entry.taskId);\n                    return (\n                      <div\n                        key={entry.id}\n                        className={`px-3 py-2 border-b border-border last:border-0 hover:bg-muted/30 ${linkedTask ? 'cursor-pointer' : ''}`}\n                        onClick={() => {\n                          if (linkedTask) {\n                            setSelectedTask(linkedTask);\n                            setModalOpen(true);\n                            setReminderPanelOpen(false);\n                          }\n                        }}>\n                        <div className=\"flex items-start justify-between gap-2\">\n                          <div className=\"flex-1 min-w-0\">\n                            <p className={`text-xs font-medium truncate ${linkedTask ? 'text-primary hover:underline' : ''}`}>{entry.taskTitle}</p>\n                          <p className=\"text-[10px] text-muted-foreground mt-0.5\">\n                            {format(new Date(entry.firedAt * 1000), "d MMM, HH:mm")}\n                            {entry.status === "snoozed" && entry.snoozedUntil && (\n                              <> · Snoozed until {format(new Date(entry.snoozedUntil * 1000), "HH:mm")}</>\n                            )}\n                          </p>\n                        </div>\n                        <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium shrink-0 ${\n                          entry.status === "fired" ? "bg-amber-500/15 text-amber-600" :\n                          entry.status === "snoozed" ? "bg-blue-500/15 text-blue-600" :\n                          "bg-muted text-muted-foreground"\n                        }`}>\n                          {entry.status}\n                        </span>\n                      </div>\n                      {entry.status !== "dismissed" && (\n                        <div className=\"flex gap-1 mt-1.5\">\n                          <button\n                            className=\"text-[10px] px-2 py-0.5 rounded border border-border hover:bg-muted/50 text-muted-foreground\"\n                            onClick={() => handleSnooze(entry, 15)}\n                          >+15m</button>\n                          <button\n                            className=\"text-[10px] px-2 py-0.5 rounded border border-border hover:bg-muted/50 text-muted-foreground\"\n                            onClick={() => handleSnooze(entry, 60)}\n                          >+1h</button>\n                          <button\n                            className=\"text-[10px] px-2 py-0.5 rounded border border-border hover:bg-muted/50 text-muted-foreground\"\n                            onClick={() => handleSnooze(entry, 1440)}\n                          >+1d</button>\n                          <button\n                            className=\"text-[10px] px-2 py-0.5 rounded border border-destructive/40 hover:bg-destructive/10 text-destructive ml-auto\"\n                            onClick={() => handleDismissReminder(entry)}\n                          >Dismiss</button>\n                        </div>\n                      )}\n                    </div>\n                  );\n                })}\n              </div>\n              {notificationPermission !== "granted" && (\n                <div className=\"px-3 py-2 border-t border-border bg-amber-500/5\">\n                  <button\n                    className=\"text-xs text-amber-600 hover:underline w-full text-left\"\n                    onClick={() => Notification.requestPermission().then(p => setNotificationPermission(p))}\n                  >\n                    ⚠ Enable push notifications to receive alerts\n                  </button>\n                </div>\n              )}\n            </PopoverContent>\n          </Popover>\n        </div>\n      </div>\n\n      {error && (\n        <div className=\"flex items-center gap-2 mx-5 mt-4 p-3 bg-destructive/10 border border-destructive/20 rounded-md text-destructive text-sm\">\n          <AlertCircle className=\"w-4 h-4 flex-shrink-0\" />\n          <span>Could not load tasks. Check your API URL configuration.</span>\n        </div>\n      )}\n\n      <div className=\"flex-1 overflow-auto\">\n        <div className=\"flex flex-col md:flex-row gap-4 p-5 md:min-w-max\">\n        <DragDropContext onDragEnd={handleDragEnd}>\n          <div className=\"contents\">\n            {COLUMNS.map(col => {\n              const colTasks = tasksByColumn(col.id);\n              const ColIcon = col.icon;\n              return (\n                <div\n                  key={col.id}\n                  className=\"flex flex-col w-full md:w-72 md:flex-shrink-0\"\n                  data-testid={`column-${col.id}`}\n                >\n                  <div className=\"flex items-center justify-between mb-3\">\n                    <div className=\"flex items-center gap-2\">\n                      <ColIcon className={`w-4 h-4 ${columnColors[col.id]}`} />\n                      <span className=\"text-sm font-semibold text-foreground\">{col.label}</span>\n                      <span className=\"text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded-full\">\n                        {colTasks.length}\n                      </span>\n                    </div>\n                    <Button\n                      size=\"icon\"\n                      variant=\"ghost\"\n                      onClick={() => setAddingColumn(col.id)}\n                      data-testid={`button-add-${col.id}`}\n                      className=\"h-7 w-7\"\n                    >\n                      <Plus className=\"w-3.5 h-3.5\" />\n                    </Button>\n                  </div>\n\n                  <Droppable droppableId={col.id}>\n                    {(provided, snapshot) => (\n                      <div\n                        ref={provided.innerRef}\n                        {...provided.droppableProps}\n                        className={`md:flex-1 rounded-md min-h-32 p-2 transition-colors ${snapshot.isDraggingOver ? "bg-primary/5 border border-primary/20" : "bg-muted/30 border border-border/50"}`}\n                      >\n                        {isLoading ? (\n                          Array.from({ length: 2 }).map((_, i) => (\n                            <Skeleton key={i} className=\"h-20 mb-2 rounded-md\" />\n                          ))\n                        ) : (\n                          colTasks.map((task, index) => (\n                            <TaskCard\n                              key={task.id}\n                              task={task}\n                              index={index}\n                              onClick={() => { setSelectedTask(task); setModalOpen(true); }}\n                            />\n                          ))\n                        )}\n                        {provided.placeholder}\n\n                        {addingColumn === col.id && (\n                          <AddCardForm\n                            columnId={col.id}\n                            onAdd={handleAddCard}\n                            onCancel={() => setAddingColumn(null)}\n                          />\n                        )}\n\n                        {!isLoading && colTasks.length === 0 && addingColumn !== col.id && (\n                          <div className=\"flex items-center justify-center h-16 text-xs text-muted-foreground/60\">\n                            Drop cards here\n                          </div>\n                        )}\n                      </div>\n                    )}\n                  </Droppable>\n                </div>\n              );\n            })}\n          </div>\n        </DragDropContext>\n\n        <div className=\"flex flex-col w-full md:w-72 md:flex-shrink-0\" data-testid=\"column-repeatable\">\n          <div className=\"flex items-center gap-2 mb-3\">\n            <Repeat className=\"w-4 h-4 text-violet-500 dark:text-violet-400\" />\n            <span className=\"text-sm font-semibold text-foreground\">Repeatable</span>\n            <span className=\"text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded-full\">\n              {repeatableTasks.length}\n            </span>\n          </div>\n          <div className=\"md:flex-1 rounded-md min-h-32 p-2 bg-violet-500/5 border border-violet-500/20\">\n            {isLoading ? (\n              Array.from({ length: 2 }).map((_, i) => (\n                <Skeleton key={i} className=\"h-20 mb-2 rounded-md\" />\n              ))\n            ) : repeatableTasks.length === 0 ? (\n              <div className=\"flex items-center justify-center h-16 text-xs text-muted-foreground/60\">\n                No repeatable tasks\n              </div>\n            ) : (\n              repeatableTasks.map(task => (\n                <div\n                  key={task.id}\n                  className=\"bg-card border border-card-border rounded-md p-3 mb-2 cursor-pointer select-none hover-elevate\"\n                  onClick={() => { setSelectedTask(task); setModalOpen(true); }}\n                  data-testid={`card-repeatable-${task.id}`}\n                >\n                  <div className=\"flex items-start justify-between gap-2 mb-1.5\">\n                    <p className=\"text-sm font-medium text-card-foreground leading-snug flex-1\">{task.title}</p>\n                    <div className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium whitespace-nowrap ${(PRIORITY_META[task.priority] ?? PRIORITY_META.medium).className}`}>\n                      {(PRIORITY_META[task.priority] ?? PRIORITY_META.medium).label}\n                    </div>\n                  </div>\n                  <div className=\"flex flex-wrap items-center gap-1.5\">\n                    <span className=\"inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium bg-violet-500/15 text-violet-500 dark:text-violet-300\">\n                      <Repeat className=\"w-2.5 h-2.5\" />\n                      {task.cadence ? task.cadence.charAt(0).toUpperCase() + task.cadence.slice(1) : \"Repeating\"}\n                    </span>\n                    <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium ${(LABEL_META[task.label] ?? LABEL_META.other).className}`}>\n                      {(LABEL_META[task.label] ?? LABEL_META.other).label}\n                    </span>\n                    <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium ${(ASSIGNEE_META[task.assignee] ?? ASSIGNEE_META.steve).className}`}>\n                      {(ASSIGNEE_META[task.assignee] ?? ASSIGNEE_META.steve).label}\n                    </span>\n                  </div>\n                </div>\n              ))\n            )}\n          </div>\n        </div>\n        </div>\n      </div>\n\n      <TaskModal\n        task={selectedTask}\n        open={modalOpen}\n        onClose={() => { setModalOpen(false); setSelectedTask(null); }}\n        onSave={handleSaveTask}\n        onDelete={handleDeleteTask}\n        projectOptions={[...ALL_PROJECTS]}\n      />\n    </div>\n  );\
-}\n
+  const { data: taskDetail, isLoading: detailLoading } = useQuery<{ activity: ActivityEntry[]; images: TaskImage[] }>({
+    queryKey: ["/tasks", task?.id],
+    queryFn: async () => {
+      const raw = await apiRequest<Record<string, unknown>>("GET", `/tasks/${task!.id}`);
+      const activity = (Array.isArray(raw.activity) ? raw.activity : []) as ActivityEntry[];
+      const images = (Array.isArray(raw.images) ? raw.images : []) as TaskImage[];
+      return { activity, images };
+    },
+    enabled: !!task && open,
+    staleTime: 10_000,
+  });
+
+  useEffect(() => {
+    if (task) {
+      setTitle(task.title ?? "");
+      setDescription(task.description ?? "");
+      setStatus(task.status ?? "ideas");
+      setPriority(task.priority ?? "medium");
+      setLabel(task.label ?? "other");
+      setAssignee(task.assignee ?? "steve");
+      setIsRepeatable(!!task.is_repeatable);
+      setCadence(task.cadence ?? "weekly");
+      if (task.reminder_at && task.reminder_at * 1000 > Date.now()) {
+        const d = new Date(task.reminder_at * 1000);
+        setReminderDate(d);
+        setReminderTime(format(d, "HH:mm"));
+      } else {
+        // Check localStorage as fallback
+        try {
+          const stored = localStorage.getItem("task_reminders");
+          const reminders = stored ? JSON.parse(stored) : {};
+          const localReminder = reminders[task.id];
+          if (localReminder && localReminder * 1000 > Date.now()) {
+            const d = new Date(localReminder * 1000);
+            setReminderDate(d);
+            setReminderTime(format(d, "HH:mm"));
+          } else {
+            setReminderDate(undefined);
+            setReminderTime(defaultReminderTime());
+          }
+        } catch {
+          setReminderDate(undefined);
+          setReminderTime(defaultReminderTime());
+        }
+      }
+      setReminderChanged(false);
+      setComment("");
+      setCommentImages([]);
+    }
+  }, [task]);
+
+  useEffect(() => {
+    if (taskDetail?.activity?.length) {
+      setTimeout(() => activityEndRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
+    }
+  }, [taskDetail?.activity?.length]);
+
+  const handleSave = () => {
+    let reminderAt: number | undefined;
+    if (reminderDate) {
+      const [hours, minutes] = reminderTime.split(":").map(Number);
+      const d = new Date(reminderDate);
+      d.setHours(hours, minutes, 0, 0);
+      reminderAt = Math.floor(d.getTime() / 1000);
+    }
+    // Save to localStorage as fallback (works without backend column)
+    if (task) {
+      setLocalReminder(task.id, reminderAt);
+    }
+    onSave({
+      title, description, status, priority, label, assignee,
+      is_repeatable: isRepeatable ? 1 : 0,
+      cadence: isRepeatable ? cadence : undefined,
+      ...(reminderChanged ? { reminder_at: reminderAt ?? null } : {}),
+    });
+  };
+
+  const handleSubmitComment = async () => {
+    if ((!comment.trim() && commentImages.length === 0) || !task) return;
+    setSubmittingComment(true);
+    try {
+      const uploadedUrls: string[] = [];
+      for (const img of commentImages) {
+        const uploadRes = await apiRequest<{ url: string }>("POST", `/tasks/${task.id}/images`, {
+          data: img.data,
+          filename: img.filename,
+        });
+        uploadedUrls.push(uploadRes.url);
+      }
+      let content = comment.trim();
+      if (uploadedUrls.length > 0) {
+        const mdImages = uploadedUrls.map(u => `![](${u})`).join("\
+");
+        content = content ? `${content}\
+${mdImages}` : mdImages;
+      }
+      const body: Record<string, string> = {
+        author: "steve",
+        type: "comment",
+        content: content || "Attached images",
+      };
+      if (uploadedUrls.length > 0) {
+        body.image_url = uploadedUrls[0];
+      }
+      await apiRequest("POST", `/tasks/${task.id}/activity`, body);
+      setComment("");
+      setCommentImages([]);
+      qc.invalidateQueries({ queryKey: ["/tasks", task.id] });
+      qc.invalidateQueries({ queryKey: ["/tasks"], exact: false });
+    } catch (err) {
+      toast({ title: "Failed to post comment", description: (err as Error).message, variant: "destructive" });
+    } finally {
+      setSubmittingComment(false);
+    }
+  };
+
+  const handleCommentImageSelect = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    const newImages: { data: string; filename: string }[] = [];
+    for (const file of Array.from(files)) {
+      if (!file.type.startsWith("image/")) continue;
+      const dataUri = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+      newImages.push({ data: dataUri, filename: file.name });
+    }
+    if (newImages.length > 0) {
+      setCommentImages(prev => [...prev, ...newImages]);
+    }
+  };
+
+  const handleFileUpload = async (files: FileList | File[]) => {
+    if (!task || uploading) return;
+    setUploading(true);
+    try {
+      for (const file of Array.from(files)) {
+        if (!file.type.startsWith("image/")) continue;
+        const dataUri = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+        await apiRequest("POST", `/tasks/${task.id}/images`, {
+          data: dataUri,
+          filename: file.name,
+        });
+      }
+      qc.invalidateQueries({ queryKey: ["/tasks", task.id] });
+      qc.invalidateQueries({ queryKey: ["/tasks"], exact: false });
+      toast({ title: "Image uploaded" });
+    } catch (err) {
+      toast({ title: "Upload failed", description: (err as Error).message, variant: "destructive" });
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleDeleteImage = async (imageId: number) => {
+    if (!task) return;
+    if (!window.confirm("Delete this image?")) return;
+    try {
+      await apiRequest("DELETE", `/tasks/${task.id}/images/${imageId}`);
+      qc.invalidateQueries({ queryKey: ["/tasks", task.id] });
+      qc.invalidateQueries({ queryKey: ["/tasks"], exact: false });
+      toast({ title: "Image deleted" });
+    } catch (err) {
+      toast({ title: "Delete failed", description: (err as Error).message, variant: "destructive" });
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(false);
+    if (e.dataTransfer.files.length) handleFileUpload(e.dataTransfer.files);
+  };
+
+  if (!task) return null;
+
+  const activity = taskDetail?.activity ?? [];
+  const images = taskDetail?.images ?? task.images ?? [];
+
+  return (
+    <>
+    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent className=\"max-w-lg max-h-[85vh] flex flex-col\" data-testid=\"modal-task\">
+        <DialogHeader>
+          <DialogTitle className=\"text-base\">Edit Task</DialogTitle>
+          <DialogDescription className=\"sr-only\">View and edit task details, and see activity log</DialogDescription>
+        </DialogHeader>
+        <div className=\"flex-1 overflow-y-auto space-y-4 pt-1 pr-1\">
+          <div className=\"space-y-1.5\">
+            <Label className=\"text-xs text-muted-foreground uppercase tracking-wide\">Title</Label>
+            <Input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              data-testid=\"input-task-title\"
+              placeholder=\"Task title\"
+            />
+          </div>
+          <div className=\"space-y-1.5\">
+            <Label className=\"text-xs text-muted-foreground uppercase tracking-wide\">Description</Label>
+            <Textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              data-testid=\"input-task-description\"
+              placeholder=\"Optional description...\"
+              className=\"resize-none\"
+              rows={3}
+            />
+          </div>
+          <div className=\"grid grid-cols-2 gap-3\">
+            <div className=\"space-y-1.5\">
+              <Label className=\"text-xs text-muted-foreground uppercase tracking-wide\">Column</Label>
+              <Select value={status} onValueChange={(v) => setStatus(v as TaskStatus)}>
+                <SelectTrigger data-testid=\"select-task-status\">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {ALL_STATUSES.map(s => (
+                    <SelectItem key={s} value={s}>{COLUMNS.find(c => c.id === s)?.label ?? s}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className=\"space-y-1.5\">
+              <Label className=\"text-xs text-muted-foreground uppercase tracking-wide\">Priority</Label>
+              <Select value={priority} onValueChange={(v) => setPriority(v as TaskPriority)}>
+                <SelectTrigger data-testid=\"select-task-priority\">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {ALL_PRIORITIES.map(p => (
+                    <SelectItem key={p} value={p}>{PRIORITY_META[p].label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className=\"space-y-1.5\">
+              <Label className=\"text-xs text-muted-foreground uppercase tracking-wide\">Project</Label>
+              <Select value={label} onValueChange={(v) => setLabel(v)}>
+                <SelectTrigger data-testid=\"select-task-label\">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {projectOptions.map(l => (
+                    <SelectItem key={l} value={l}>{(LABEL_META[l] ?? { label: l }).label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className=\"space-y-1.5\">
+              <Label className=\"text-xs text-muted-foreground uppercase tracking-wide\">Assigned To</Label>
+              <Select value={assignee} onValueChange={(v) => setAssignee(v)}>
+                <SelectTrigger data-testid=\"select-task-assignee\">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {ALL_ASSIGNEES.map(a => (
+                    <SelectItem key={a} value={a}>{(ASSIGNEE_META[a] ?? { label: a }).label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className=\"space-y-3 pt-1\">
+            <div className=\"flex items-center justify-between\">
+              <Label className=\"text-xs text-muted-foreground uppercase tracking-wide\">Repeatable</Label>
+              <Switch checked={isRepeatable} onCheckedChange={setIsRepeatable} data-testid=\"switch-repeatable\" />
+            </div>
+            {isRepeatable && (
+              <div className=\"space-y-1.5\">
+                <Label className=\"text-xs text-muted-foreground uppercase tracking-wide\">Cadence</Label>
+                <Select value={cadence} onValueChange={(v) => setCadence(v as \"daily\" | \"weekly\" | \"monthly\")}>
+                  <SelectTrigger data-testid=\"select-cadence\">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value=\"daily\">Daily</SelectItem>
+                    <SelectItem value=\"weekly\">Weekly</SelectItem>
+                    <SelectItem value=\"monthly\">Monthly</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+          </div>
+
+          <div className=\"space-y-3 pt-1\">
+            <div className=\"flex items-center justify-between\">
+              <Label className=\"text-xs text-muted-foreground uppercase tracking-wide\">Reminder</Label>
+              <Switch checked={!!reminderDate} onCheckedChange={(checked) => { setReminderDate(checked ? new Date() : undefined); setReminderChanged(true); }} />
+            </div>
+            {reminderDate && (
+              <div className=\"flex gap-2\">
+                <div className=\"flex-1\">
+                  <Calendar
+                    mode=\"single\"
+                    selected={reminderDate}
+                    onSelect={(d) => { setReminderDate(d); setReminderChanged(true); }}
+                    fromDate={new Date()}
+                    className=\"rounded-md border\"
+                  />
+                </div>
+                <div className=\"space-y-1.5\">
+                  <Label className=\"text-xs text-muted-foreground\">Time</Label>
+                  <Input
+                    type=\"time\"
+                    value={reminderTime}
+                    onChange={(e) => { setReminderTime(e.target.value); setReminderChanged(true); }}
+                    className=\"w-24\"
+                  />
+                  {reminderDate && (
+                    <Button
+                      variant=\"ghost\"
+                      size=\"sm\"
+                      onClick={() => setReminderDate(undefined)}
+                      className=\"w-full text-xs text-destructive\"
+                    >
+                      Clear
+                    </Button>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className=\"border-t border-border pt-3\">
+            <div className=\"flex items-center gap-2 mb-2\">
+              <ImageIcon className=\"w-3.5 h-3.5 text-muted-foreground\" />
+              <Label className=\"text-xs text-muted-foreground uppercase tracking-wide\">Images</Label>
+              {images.length > 0 && (
+                <span className=\"text-xs text-muted-foreground/60\">({images.length})</span>
+              )}
+            </div>
+            {images.length > 0 && (
+              <div className=\"grid grid-cols-4 gap-2 mb-2\">
+                {images.map(img => (
+                  <div key={img.id} className=\"relative group\" data-testid={`image-thumb-${img.id}`}>
+                    <button
+                      onClick={() => setLightboxUrl(img.url)}
+                      className=\"w-full aspect-square rounded-md overflow-hidden border border-border bg-muted\"
+                    >
+                      <img src={img.url} alt={img.filename} className=\"w-full h-full object-cover\" />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteImage(img.id)}
+                      className=\"absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity\"
+                      data-testid={`button-delete-image-${img.id}`}
+                    >
+                      <X className=\"w-3 h-3\" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div
+              onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+              onDragLeave={() => setDragOver(false)}
+              onDrop={handleDrop}
+              onClick={() => fileInputRef.current?.click()}
+              className={`flex items-center justify-center gap-2 p-3 rounded-md border-2 border-dashed cursor-pointer transition-colors
+                ${dragOver ? \"border-primary bg-primary/5\" : \"border-border hover:border-primary/40\"}`}
+              data-testid=\"dropzone-images\"
+            >
+              {uploading ? (
+                <Loader2 className=\"w-4 h-4 animate-spin text-muted-foreground\" />
+              ) : (
+                <Upload className=\"w-4 h-4 text-muted-foreground\" />
+              )}
+              <span className=\"text-xs text-muted-foreground\">
+                {uploading ? \"Uploading...\" : \"Drop image or click to browse\"}
+              </span>
+              <input
+                ref={fileInputRef}
+                type=\"file\"
+                accept=\"image/*\"
+                multiple
+                className=\"hidden\"
+                onChange={(e) => e.target.files && handleFileUpload(e.target.files)}
+                data-testid=\"input-file-images\"
+              />
+            </div>
+          </div>
+
+          <div className=\"flex items-center justify-between pt-1\">
+            <Button
+              variant=\"destructive\"
+              size=\"sm\"
+              onClick={() => onDelete(task.id)}
+              data-testid=\"button-delete-task\"
+            >
+              Delete
+            </Button>
+            <div className=\"flex gap-2\">
+              <Button variant=\"ghost\" size=\"sm\" onClick={onClose} data-testid=\"button-cancel-task\">
+                Cancel
+              </Button>
+              <Button size=\"sm\" onClick={handleSave} data-testid=\"button-save-task\">
+                Save Changes
+              </Button>
+            </div>
+          </div>
+
+          <div className=\"border-t border-border pt-3\">
+            <div className=\"flex items-center gap-2 mb-3\">
+              <MessageSquare className=\"w-3.5 h-3.5 text-muted-foreground\" />
+              <Label className=\"text-xs text-muted-foreground uppercase tracking-wide\">Activity</Label>
+            </div>
+            {detailLoading ? (
+              <div className=\"space-y-2\">
+                {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className=\"h-8 rounded\" />)}
+              </div>
+            ) : activity.length === 0 ? (
+              <p className=\"text-xs text-muted-foreground/60 py-4 text-center\">No activity yet</p>
+            ) : (
+              <div className=\"space-y-2.5 mb-3\">
+                {activity.map(entry => (
+                  <ActivityItem key={entry.id} entry={entry} taskId={task?.id} onEdited={() => qc.invalidateQueries({ queryKey: [\"/tasks\", task?.id] })} />
+                ))}
+                <div ref={activityEndRef} />
+              </div>
+            )}
+
+            {commentImages.length > 0 && (
+              <div className=\"flex gap-2 mb-2 flex-wrap\">
+                {commentImages.map((img, i) => (
+                  <div key={i} className=\"relative group\">
+                    <img src={img.data} alt={img.filename} className=\"w-14 h-14 object-cover rounded border border-border\" />
+                    <button
+                      onClick={() => setCommentImages(prev => prev.filter((_, j) => j !== i))}
+                      className=\"absolute -top-1.5 -right-1.5 w-4 h-4 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity\"
+                      data-testid={`button-remove-comment-image-${i}`}
+                    >
+                      <X className=\"w-2.5 h-2.5\" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div className=\"flex gap-2\">
+              <Textarea
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
+                placeholder=\"Add a comment... (Shift+Enter for new line)\"
+                className=\"text-sm min-h-[40px] max-h-[120px] resize-none\"
+                data-testid=\"input-comment\"
+                onKeyDown={(e) => { if (e.key === \"Enter\" && !e.shiftKey) { e.preventDefault(); handleSubmitComment(); } }}
+                rows={1}
+              />
+              <Button
+                size=\"icon\"
+                variant=\"ghost\"
+                onClick={() => commentFileRef.current?.click()}
+                className=\"flex-shrink-0\"
+                data-testid=\"button-attach-comment-image\"
+              >
+                <ImageIcon className=\"w-3.5 h-3.5\" />
+              </Button>
+              <input
+                ref={commentFileRef}
+                type=\"file\"
+                accept=\"image/*\"
+                multiple
+                className=\"hidden\"
+                onChange={(e) => { handleCommentImageSelect(e.target.files); e.target.value = \"\"; }}
+              />
+              <Button
+                size=\"icon\"
+                variant=\"secondary\"
+                onClick={handleSubmitComment}
+                disabled={(!comment.trim() && commentImages.length === 0) || submittingComment}
+                data-testid=\"button-submit-comment\"
+                className=\"flex-shrink-0\"
+              >
+                {submittingComment ? <Loader2 className=\"w-3.5 h-3.5 animate-spin\" /> : <Send className=\"w-3.5 h-3.5\" />}
+              </Button>
+            </div>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+
+    {lightboxUrl && (
+      <Dialog open onOpenChange={() => setLightboxUrl(null)}>
+        <DialogContent className=\"max-w-3xl p-2 bg-black/90 border-none\" data-testid=\"lightbox\">
+          <DialogHeader className=\"sr-only\">
+            <DialogTitle>Image Preview</DialogTitle>
+            <DialogDescription>Full size image</DialogDescription>
+          </DialogHeader>
+          <img
+            src={lightboxUrl}
+            alt=\"Full size\"
+            className=\"w-full h-auto max-h-[80vh] object-contain rounded\"
+          />
+        </DialogContent>
+      </Dialog>
+    )}
+    </>
+  );
+}
+
+interface AddCardFormProps {
+  columnId: TaskStatus;
+  onAdd: (title: string, status: TaskStatus) => void;
+  onCancel: () => void;
+}
+
+function AddCardForm({ columnId, onAdd, onCancel }: AddCardFormProps) {
+  const [title, setTitle] = useState("");
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (title.trim()) onAdd(title.trim(), columnId);
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className=\"mt-2\">
+      <Input
+        autoFocus
+        value={title}
+        onChange={(e) => setTitle(e.target.value)}
+        placeholder=\"Card title...\"
+        className=\"mb-2 text-sm\"
+        data-testid={`input-new-card-${columnId}`}
+        onKeyDown={(e) => e.key === \"Escape\" && onCancel()}
+      />
+      <div className=\"flex gap-2\">
+        <Button type=\"submit\" size=\"sm\" disabled={!title.trim()} data-testid={`button-add-card-${columnId}`}>
+          Add
+        </Button>
+        <Button type=\"button\" variant=\"ghost\" size=\"sm\" onClick={onCancel} data-testid={`button-cancel-add-${columnId}`}>
+          <X className=\"w-3.5 h-3.5\" />
+        </Button>
+      </div>
+    </form>
+  );\
+}
+
+export default function MissionBoard() {
+  const qc = useQueryClient();
+  const { toast } = useToast();
+  const [filterLabel, setFilterLabel] = useState<TaskLabel | \"all\">(\"all\");
+  const [filterAssignee, setFilterAssignee] = useState<string>(\"all\");
+  const [hideWithReminder, setHideWithReminder] = useState(false);
+  const [addingColumn, setAddingColumn] = useState<TaskStatus | null>(null);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const [checkingTasks, setCheckingTasks] = useState(false);
+  const [searchInput, setSearchInput] = useState(\"\");
+  const [searchQuery, setSearchQuery] = useState(\"\");
+
+  useEffect(() => {
+    const timer = setTimeout(() => setSearchQuery(searchInput.trim()), 300);
+    return () => clearTimeout(timer);
+  }, [searchInput]);
+
+  const { data: tasks, isLoading, error, dataUpdatedAt } = useQuery<Task[]>({
+    queryKey: ["/tasks", searchQuery],
+    queryFn: async ({ queryKey }) => {
+      const q = queryKey[1] as string;
+      const url = q ? `/tasks?q=${encodeURIComponent(q)}` : "/tasks";
+      const raw = await apiRequest<Record<string, unknown>[]>(\"GET\", url);
+      return (Array.isArray(raw) ? raw : []) as Task[];
+    },
+    staleTime: 30000,
+  });
+
+  useEffect(() => {
+    if (dataUpdatedAt) setLastUpdated(new Date(dataUpdatedAt));
+  }, [dataUpdatedAt]);
+
+  useEffect(() => {
+    const poll = () => {
+      if (document.visibilityState === \"visible\") {
+        qc.invalidateQueries({ queryKey: ["/tasks"], exact: false });
+      }
+    };
+    const id = setInterval(poll, 30000);
+    const onVisChange = () => {
+      if (document.visibilityState === \"visible\") {
+        qc.invalidateQueries({ queryKey: ["/tasks"], exact: false });
+      }
+    };
+    document.addEventListener(\"visibilitychange\", onVisChange);
+    return () => { clearInterval(id); document.removeEventListener(\"visibilitychange\", onVisChange); };
+  }, [qc]);
+
+    // Reminder notifications
+  const [notificationPermission, setNotificationPermission] = useState<NotificationPermission | \"checking\">(\"checking\");
+  const [reminderHistory, setReminderHistory] = useState<ReminderHistoryEntry[]>(() => {
+    // purge any entries from the 1970s (caused by localStorage seconds/ms unit bug)
+    const history = getReminderHistory().filter(h => h.firedAt > 1000000000);
+    localStorage.setItem("reminder_history", JSON.stringify(history));
+    return history;
+  });
+  const [reminderPanelOpen, setReminderPanelOpen] = useState(false);
+  const unreadReminderCount = reminderHistory.filter(h => h.status === "fired").length;
+
+  const refreshReminderHistory = () => setReminderHistory(getReminderHistory());
+
+  const handleSnooze = (entry: ReminderHistoryEntry, minutes: number) => {
+    const snoozedUntil = Math.floor(Date.now() / 1000) + minutes * 60;
+    updateReminderHistoryStatus(entry.id, "snoozed", snoozedUntil);
+    setLocalReminder(entry.taskId, snoozedUntil);
+    // also patch backend
+    apiRequest("PATCH", `/tasks/${entry.taskId}`, { reminder_at: snoozedUntil }).catch(() => {});
+    refreshReminderHistory();
+  };
+
+  const handleDismissReminder = (entry: ReminderHistoryEntry) => {
+    updateReminderHistoryStatus(entry.id, "dismissed");
+    setLocalReminder(entry.taskId, undefined);
+    apiRequest("PATCH", `/tasks/${entry.taskId}`, { reminder_at: null }).catch(() => {});
+    refreshReminderHistory();
+  };
+
+  useEffect(() => {
+    if (!("Notification" in window)) {
+      setNotificationPermission("denied");
+      return;
+    }
+    if (Notification.permission !== "default") {
+      setNotificationPermission(Notification.permission);
+    }
+  }, []);
+
+  useEffect(() => {
+    const checkReminders = () => {
+      const now = Date.now();
+      const localReminders = getLocalReminders();
+      const firedKeys = getFiredReminderKeys();
+      const allTasks = tasks || [];
+      allTasks.forEach(task => {
+        const reminderTime = task.reminder_at ? task.reminder_at * 1000 : (localReminders[task.id] ? localReminders[task.id] * 1000 : null);
+        if (!reminderTime || reminderTime > now) return; // not yet due
+        const key = `${task.id}-${Math.floor(reminderTime / 1000)}`;
+        if (firedKeys.has(key)) return; // already fired this session
+        markReminderFired(key);
+        const entry: ReminderHistoryEntry = {
+          id: key,
+          taskId: String(task.id),
+          taskTitle: task.title,
+          firedAt: Math.floor(reminderTime / 1000),
+          status: "fired",
+        };
+        addReminderHistory(entry);
+        refreshReminderHistory();
+        if (Notification.permission === "granted") {
+          const notif = new Notification(`Reminder: ${task.title}`, {
+            body: task.description?.slice(0, 100) || "Task reminder",
+            icon: "/favicon.ico",
+            tag: `task-${task.id}`,
+            requireInteraction: true,
+          });
+          notif.onclick = () => { window.focus(); notif.close(); };
+        }
+      });
+    };
+    const id = setInterval(checkReminders, 30000);
+    checkReminders();
+    return () => clearInterval(id);
+  }, [tasks]);
+
+  const handleManualRefresh = async () => {
+    setRefreshing(true);
+    await qc.invalidateQueries({ queryKey: ["/tasks"], exact: false });
+    setRefreshing(false);
+  };
+
+  const handleCheckTasks = async () => {
+    setCheckingTasks(true);
+    try {
+      const base = import.meta.env.VITE_API_URL || "/api";
+      const token = localStorage.getItem("bsl_mc_token");
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+      let res: Response;
+      try {
+        res = await fetch(`${base}/clawbot/check-tasks`, { method: "POST", headers });
+      } catch (_networkErr) {
+        toast({ title: "Failed to reach Clawbot", variant: "destructive" });
+        setCheckingTasks(false);
+        return;
+      }
+      if (res.ok) {
+
+        toast({ title: "🦞 Clawbot is on it!", className: "bg-emerald-600 text-white border-emerald-700" });
+      } else {
+        toast({ title: "Failed to reach Clawbot", variant: "destructive" });
+      }
+    } catch (err) {
+      console.error("Check tasks error:", err);
+      toast({ title: "Failed to reach Clawbot", variant: "destructive" });
+    }
+    setCheckingTasks(false);
+  };
+
+  const createMutation = useMutation({
+    mutationFn: (data: Record<string, unknown>) => apiRequest<Task>("POST", "/tasks", data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["/tasks"], exact: false }),
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, ...data }: Record<string, unknown> & { id: string }) =>
+      apiRequest<Task>("PATCH", `/tasks/${id}`, data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["/tasks"], exact: false }),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => apiRequest("DELETE", `/tasks/${id}`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["/tasks"], exact: false }),
+  });
+
+  const handleDragEnd = useCallback((result: DropResult) => {
+    if (!result.destination) return;
+    const taskId = result.draggableId;
+    const newStatus = result.destination.droppableId as TaskStatus;
+    updateMutation.mutate({ id: taskId, status: newStatus, author: "steve" });
+  }, [updateMutation]);
+
+  const handleAddCard = (title: string, status: TaskStatus) => {
+    createMutation.mutate({
+      title,
+      status,
+      priority: "medium",
+      project: "other",
+      assigned_to: "steve",
+    });
+    setAddingColumn(null);
+  };
+
+  const handleSaveTask = async (updates: Partial<Task>) => {
+    if (!selectedTask) return;
+    const apiData = toApiPayload(updates);
+    try {
+      await updateMutation.mutateAsync({ id: selectedTask.id, ...apiData, author: "steve" });
+      // Directly update the exact query key used by the tasks list
+      qc.setQueryData(["/tasks", searchQuery], (old: unknown) => {
+        if (!Array.isArray(old)) return old;
+        return old.map((t: Task) => t.id === selectedTask.id ? { ...t, ...updates } : t);
+      });
+    } catch (err) {
+      console.error("Save task failed:", err);
+    }
+    setModalOpen(false);
+    setSelectedTask(null);
+  };
+
+  const handleDeleteTask = async (id: string) => {
+    await deleteMutation.mutateAsync(id);
+    await qc.refetchQueries({ queryKey: ["/tasks"], exact: false });
+    setModalOpen(false);
+    setSelectedTask(null);
+  };
+
+  const repeatableTasks = (tasks ?? []).filter(t => !!t.is_repeatable &&
+    (filterLabel === "all" || t.label === filterLabel) &&
+    (filterAssignee === "all" || t.assignee === filterAssignee)
+  );
+
+  const filteredTasks = (tasks ?? []).filter(
+    t => (filterLabel === "all" || t.label === filterLabel) &&
+         (filterAssignee === "all" || t.assignee === filterAssignee) &&
+         (!hideWithReminder || !t.reminder_at)
+  );
+
+  const tasksByColumn = (status: TaskStatus) =>
+    filteredTasks.filter(t => t.status === status && !t.is_repeatable);
+
+  const columnColors: Record<TaskStatus, string> = {
+    ideas: "text-amber-500 dark:text-amber-400",
+    inprogress: "text-blue-500 dark:text-blue-400",
+    review: "text-violet-500 dark:text-violet-400",
+    complete: "text-emerald-500 dark:text-emerald-400",
+  };
+
+  return (
+    <div className=\"h-full flex flex-col\">
+      <div className=\"flex items-center justify-between px-5 py-3 border-b border-border bg-background flex-wrap gap-2\">
+        <div className=\"flex items-center gap-3\">
+          <h1 className=\"text-base font-semibold text-foreground\">Mission Board</h1>
+          <Button
+            size=\"sm\"
+            onClick={handleCheckTasks}
+            disabled={checkingTasks}
+            className=\"h-7 text-xs\"
+            data-testid=\"button-check-tasks\"
+          >
+            {checkingTasks ? <Loader2 className=\"w-3.5 h-3.5 animate-spin mr-1.5\" /> : <span className=\"mr-1.5\">🦞</span>}
+            {checkingTasks ? \"Checking…\" : \"Check Tasks\"}
+          </Button>
+
+        </div>
+        <div className=\"relative\">
+          <Search className=\"absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none\" />
+          <Input
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            placeholder=\"Search tasks…\"
+            className=\"h-7 text-xs pl-8 pr-7 w-48\"
+            data-testid=\"input-search-tasks\"
+          />
+          {searchInput && (
+            <button
+              onClick={() => setSearchInput(\"\")}
+              className=\"absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground\"
+              data-testid=\"button-clear-search\"
+            >
+              <X className=\"w-3.5 h-3.5\" />
+            </button>
+          )}
+        </div>
+        <div className=\"flex items-center gap-2 flex-wrap\">
+          <span className=\"text-xs text-muted-foreground\">Filter:</span>
+          <div className=\"flex gap-1.5 flex-wrap\">
+            <button
+              className={`text-xs px-2.5 py-1 rounded-md border transition-colors ${filterLabel === "all" ? "bg-primary text-primary-foreground border-primary" : "bg-card border-card-border text-muted-foreground"}`}
+              onClick={() => setFilterLabel("all")}
+              data-testid=\"filter-all\"
+            >
+              All
+            </button>
+            {ALL_PROJECTS.map(l => (
+              <button
+                key={l}
+                className={`text-xs px-2.5 py-1 rounded-md border transition-colors ${filterLabel === l ? "bg-primary text-primary-foreground border-primary" : "bg-card border-card-border text-muted-foreground"}`}
+                onClick={() => setFilterLabel(l)}
+                data-testid={`filter-${l}`}
+              >
+                {LABEL_META[l].label}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className=\"flex items-center gap-2 flex-wrap\">
+          <span className=\"text-xs text-muted-foreground\">Assignee:</span>
+          <div className=\"flex gap-1.5\">
+            {[{ value: "all", label: "All" }, { value: "steve", label: "Steve" }, { value: "clawbot", label: "Clawbot" }].map(opt => (
+              <button
+                key={opt.value}
+                className={`text-xs px-2.5 py-1 rounded-md border transition-colors ${filterAssignee === opt.value ? "bg-primary text-primary-foreground border-primary" : "bg-card border-card-border text-muted-foreground"}`}
+                onClick={() => setFilterAssignee(opt.value)}
+                data-testid={`filter-assignee-${opt.value}`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className=\"flex items-center gap-2 flex-wrap\">
+          <span className=\"text-xs text-muted-foreground\">Hide:</span>
+          <button
+            className={`text-xs px-2.5 py-1 rounded-md border transition-colors ${hideWithReminder ? "bg-primary text-primary-foreground border-primary" : "bg-card border-card-border text-muted-foreground"}`}
+            onClick={() => setHideWithReminder(!hideWithReminder)}
+            data-testid=\"filter-hide-reminder\"
+          >
+            With Reminder
+          </button>
+        </div>
+        <div className=\"flex items-center gap-1.5\">
+          {lastUpdated && (
+            <span className=\"text-xs text-muted-foreground/70\" data-testid=\"text-last-updated\">
+              Last updated: {lastUpdated.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+            </span>
+          )}
+          <button
+            onClick={handleManualRefresh}
+            disabled={refreshing}
+            className=\"p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors disabled:opacity-50\"
+            data-testid=\"button-refresh\"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? "animate-spin" : ""}`} />
+          </button>
+
+          {/* Reminder history bell */}
+          <Popover open={reminderPanelOpen} onOpenChange={setReminderPanelOpen}>
+            <PopoverTrigger asChild>
+              <button
+                className=\"relative p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors\"
+                title=\"Reminder history\"
+                onClick={() => { refreshReminderHistory(); setReminderPanelOpen(v => !v); }}
+              >
+                <Bell className=\"w-3.5 h-3.5\" />
+                {unreadReminderCount > 0 && (
+                  <span className=\"absolute -top-0.5 -right-0.5 w-3.5 h-3.5 flex items-center justify-center rounded-full bg-amber-500 text-white text-[9px] font-bold leading-none\">
+                    {unreadReminderCount > 9 ? "9+" : unreadReminderCount}
+                  </span>
+                )}
+              </button>
+            </PopoverTrigger>
+            <PopoverContent align=\"end\" className=\"w-80 p-0 max-h-[420px] flex flex-col\">
+              <div className=\"flex items-center justify-between px-3 py-2 border-b border-border\">
+                <span className=\"text-sm font-semibold\">Reminder History</span>
+                {reminderHistory.length > 0 && (
+                  <button
+                    className=\"text-xs text-muted-foreground hover:text-foreground\"
+                    onClick={() => { localStorage.removeItem("reminder_history"); refreshReminderHistory(); }}
+                  >
+                    Clear all
+                  </button>
+                )}
+              </div>
+              <div className=\"overflow-y-auto flex-1\">
+                {reminderHistory.length === 0 ? (
+                  <div className=\"px-3 py-6 text-center text-xs text-muted-foreground\">No reminders yet</div>
+                ) : (
+                  reminderHistory.map(entry => {
+                    const linkedTask = tasks?.find(t => String(t.id) === entry.taskId);
+                    return (
+                      <div
+                        key={entry.id}
+                        className={`px-3 py-2 border-b border-border last:border-0 hover:bg-muted/30 ${linkedTask ? 'cursor-pointer' : ''}`}
+                        onClick={() => {
+                          if (linkedTask) {
+                            setSelectedTask(linkedTask);
+                            setModalOpen(true);
+                            setReminderPanelOpen(false);
+                          }
+                        }}>
+                        <div className=\"flex items-start justify-between gap-2\">
+                          <div className=\"flex-1 min-w-0\">
+                            <p className={`text-xs font-medium truncate ${linkedTask ? 'text-primary hover:underline' : ''}`}>{entry.taskTitle}</p>
+                          <p className=\"text-[10px] text-muted-foreground mt-0.5\">
+                            {format(new Date(entry.firedAt * 1000), "d MMM, HH:mm")}
+                            {entry.status === "snoozed" && entry.snoozedUntil && (
+                              <> · Snoozed until {format(new Date(entry.snoozedUntil * 1000), "HH:mm")}</>
+                            )}
+                          </p>
+                        </div>
+                        <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium shrink-0 ${
+                          entry.status === "fired" ? "bg-amber-500/15 text-amber-600" :
+                          entry.status === "snoozed" ? "bg-blue-500/15 text-blue-600" :
+                          "bg-muted text-muted-foreground"
+                        }`}>
+                          {entry.status}
+                        </span>
+                      </div>
+                      {entry.status !== "dismissed" && (
+                        <div className=\"flex gap-1 mt-1.5\">
+                          <button
+                            className=\"text-[10px] px-2 py-0.5 rounded border border-border hover:bg-muted/50 text-muted-foreground\"
+                            onClick={() => handleSnooze(entry, 15)}
+                          >+15m</button>
+                          <button
+                            className=\"text-[10px] px-2 py-0.5 rounded border border-border hover:bg-muted/50 text-muted-foreground\"
+                            onClick={() => handleSnooze(entry, 60)}
+                          >+1h</button>
+                          <button
+                            className=\"text-[10px] px-2 py-0.5 rounded border border-border hover:bg-muted/50 text-muted-foreground\"
+                            onClick={() => handleSnooze(entry, 1440)}
+                          >+1d</button>
+                          <button
+                            className=\"text-[10px] px-2 py-0.5 rounded border border-destructive/40 hover:bg-destructive/10 text-destructive ml-auto\"
+                            onClick={() => handleDismissReminder(entry)}
+                          >Dismiss</button>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+              {notificationPermission !== "granted" && (
+                <div className=\"px-3 py-2 border-t border-border bg-amber-500/5\">
+                  <button
+                    className=\"text-xs text-amber-600 hover:underline w-full text-left\"
+                    onClick={() => Notification.requestPermission().then(p => setNotificationPermission(p))}
+                  >
+                    ⚠ Enable push notifications to receive alerts
+                  </button>
+                </div>
+              )}
+            </PopoverContent>
+          </Popover>
+        </div>
+      </div>
+
+      {error && (
+        <div className=\"flex items-center gap-2 mx-5 mt-4 p-3 bg-destructive/10 border border-destructive/20 rounded-md text-destructive text-sm\">
+          <AlertCircle className=\"w-4 h-4 flex-shrink-0\" />
+          <span>Could not load tasks. Check your API URL configuration.</span>
+        </div>
+      )}
+
+      <div className=\"flex-1 overflow-auto\">
+        <div className=\"flex flex-col md:flex-row gap-4 p-5 md:min-w-max\">
+        <DragDropContext onDragEnd={handleDragEnd}>
+          <div className=\"contents\">
+            {COLUMNS.map(col => {
+              const colTasks = tasksByColumn(col.id);
+              const ColIcon = col.icon;
+              return (
+                <div
+                  key={col.id}
+                  className=\"flex flex-col w-full md:w-72 md:flex-shrink-0\"
+                  data-testid={`column-${col.id}`}
+                >
+                  <div className=\"flex items-center justify-between mb-3\">
+                    <div className=\"flex items-center gap-2\">
+                      <ColIcon className={`w-4 h-4 ${columnColors[col.id]}`} />
+                      <span className=\"text-sm font-semibold text-foreground\">{col.label}</span>
+                      <span className=\"text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded-full\">
+                        {colTasks.length}
+                      </span>
+                    </div>
+                    <Button
+                      size=\"icon\"
+                      variant=\"ghost\"
+                      onClick={() => setAddingColumn(col.id)}
+                      data-testid={`button-add-${col.id}`}
+                      className=\"h-7 w-7\"
+                    >
+                      <Plus className=\"w-3.5 h-3.5\" />
+                    </Button>
+                  </div>
+
+                  <Droppable droppableId={col.id}>
+                    {(provided, snapshot) => (
+                      <div
+                        ref={provided.innerRef}
+                        {...provided.droppableProps}
+                        className={`md:flex-1 rounded-md min-h-32 p-2 transition-colors ${snapshot.isDraggingOver ? "bg-primary/5 border border-primary/20" : "bg-muted/30 border border-border/50"}`}
+                      >
+                        {isLoading ? (
+                          Array.from({ length: 2 }).map((_, i) => (
+                            <Skeleton key={i} className=\"h-20 mb-2 rounded-md\" />
+                          ))
+                        ) : (
+                          colTasks.map((task, index) => (
+                            <TaskCard
+                              key={task.id}
+                              task={task}
+                              index={index}
+                              onClick={() => { setSelectedTask(task); setModalOpen(true); }}
+                            />
+                          ))
+                        )}
+                        {provided.placeholder}
+
+                        {addingColumn === col.id && (
+                          <AddCardForm
+                            columnId={col.id}
+                            onAdd={handleAddCard}
+                            onCancel={() => setAddingColumn(null)}
+                          />
+                        )}
+
+                        {!isLoading && colTasks.length === 0 && addingColumn !== col.id && (
+                          <div className=\"flex items-center justify-center h-16 text-xs text-muted-foreground/60\">
+                            Drop cards here
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </Droppable>
+                </div>
+              );
+            })}
+          </div>
+        </DragDropContext>
+
+        <div className=\"flex flex-col w-full md:w-72 md:flex-shrink-0\" data-testid=\"column-repeatable\">
+          <div className=\"flex items-center gap-2 mb-3\">
+            <Repeat className=\"w-4 h-4 text-violet-500 dark:text-violet-400\" />
+            <span className=\"text-sm font-semibold text-foreground\">Repeatable</span>
+            <span className=\"text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded-full\">
+              {repeatableTasks.length}
+            </span>
+          </div>
+          <div className=\"md:flex-1 rounded-md min-h-32 p-2 bg-violet-500/5 border border-violet-500/20\">
+            {isLoading ? (
+              Array.from({ length: 2 }).map((_, i) => (
+                <Skeleton key={i} className=\"h-20 mb-2 rounded-md\" />
+              ))
+            ) : repeatableTasks.length === 0 ? (
+              <div className=\"flex items-center justify-center h-16 text-xs text-muted-foreground/60\">
+                No repeatable tasks
+              </div>
+            ) : (
+              repeatableTasks.map(task => (
+                <div
+                  key={task.id}
+                  className=\"bg-card border border-card-border rounded-md p-3 mb-2 cursor-pointer select-none hover-elevate\"
+                  onClick={() => { setSelectedTask(task); setModalOpen(true); }}
+                  data-testid={`card-repeatable-${task.id}`}
+                >
+                  <div className=\"flex items-start justify-between gap-2 mb-1.5\">
+                    <p className=\"text-sm font-medium text-card-foreground leading-snug flex-1\">{task.title}</p>
+                    <div className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium whitespace-nowrap ${(PRIORITY_META[task.priority] ?? PRIORITY_META.medium).className}`}>
+                      {(PRIORITY_META[task.priority] ?? PRIORITY_META.medium).label}
+                    </div>
+                  </div>
+                  <div className=\"flex flex-wrap items-center gap-1.5\">
+                    <span className=\"inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium bg-violet-500/15 text-violet-500 dark:text-violet-300\">
+                      <Repeat className=\"w-2.5 h-2.5\" />
+                      {task.cadence ? task.cadence.charAt(0).toUpperCase() + task.cadence.slice(1) : \"Repeating\"}
+                    </span>
+                    <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium ${(LABEL_META[task.label] ?? LABEL_META.other).className}`}>
+                      {(LABEL_META[task.label] ?? LABEL_META.other).label}
+                    </span>
+                    <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium ${(ASSIGNEE_META[task.assignee] ?? ASSIGNEE_META.steve).className}`}>
+                      {(ASSIGNEE_META[task.assignee] ?? ASSIGNEE_META.steve).label}
+                    </span>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+        </div>
+      </div>
+
+      <TaskModal
+        task={selectedTask}
+        open={modalOpen}
+        onClose={() => { setModalOpen(false); setSelectedTask(null); }}
+        onSave={handleSaveTask}
+        onDelete={handleDeleteTask}
+        projectOptions={[...ALL_PROJECTS]}
+      />
+    </div>
+  );\
+}
