@@ -160,5 +160,18 @@ export async function registerRoutes(
   // ── Client proposals (no auth) ────────────────────────────────────────────────
   app.use("/client", express.static(path.resolve(process.cwd(), "server", "public", "client")));
 
+  // ── OpenClaw Status ──────────────────────────────────────────────────────
+  app.get("/api/clawbot/status", requireAuth, async (_req, res) => {
+    try {
+      const { execSync } = await import("execSync");
+      const output = execSync("openclaw status --json", { encoding: "utf8", timeout: 30000 });
+      const status = JSON.parse(output);
+      res.json(status);
+    } catch (err) {
+      console.error("[clawbot/status]", (err as Error).message);
+      res.status(502).json({ error: (err as Error).message });
+    }
+  });
+
   return httpServer;
 }

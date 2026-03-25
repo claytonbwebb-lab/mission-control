@@ -22,6 +22,7 @@ import {
   TrendingUp,
   Mail,
   Link2,
+  Bot,
 } from "lucide-react";
 import { clearToken } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
@@ -34,6 +35,7 @@ const navItems = [
   { title: "Trading", url: "/trading", icon: TrendingUp },
   { title: "Campaigns", url: "/campaigns", icon: Mail },
   { title: "Proposals", url: "/proposals", icon: Link2 },
+  { title: "Clawbot", url: "/clawbot", icon: Bot },
   { title: "Recovery", url: "/recovery", icon: ShieldCheck },
 ];
 

@@ -19,6 +19,7 @@ import RecoveryPage from "@/pages/recovery";
 import TradingPage from "@/pages/trading";
 import CampaignsPage from "@/pages/campaigns";
 import ProposalsPage from "@/pages/proposals";
+import ClawbotStatusPage from "@/pages/clawbot-status";
 import NotFound from "@/pages/not-found";
 
 function ThemeToggle() {
@@ -69,6 +70,7 @@ function ProtectedLayout() {
               <Route path="/trading" component={TradingPage} />
               <Route path="/campaigns" component={CampaignsPage} />
               <Route path="/proposals" component={ProposalsPage} />
+              <Route path="/clawbot" component={ClawbotStatusPage} />
               <Route component={NotFound} />
             </Switch>
           </main>
