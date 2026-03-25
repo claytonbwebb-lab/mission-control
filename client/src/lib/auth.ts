@@ -17,8 +17,6 @@ export function isAuthenticated(): boolean {
 }
 
 function getApiBase(): string {
-  const env = import.meta.env.VITE_API_URL;
-  if (env) return env;
   return "/api";
 }
 
@@ -61,8 +59,7 @@ export async function apiRequest<T = unknown>(
 }
 
 export async function login(password: string): Promise<string> {
-  const base = getApiBase();
-  const res = await fetch(`${base}/auth/login`, {
+  const res = await fetch(`/api/auth/login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ password }),
