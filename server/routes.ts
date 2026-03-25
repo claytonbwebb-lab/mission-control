@@ -35,15 +35,24 @@ async function proxy(
   }
 }
 
+function requireAuth(req: Request, res: Response, next: NextFunction) {
+  const token = (req.headers.authorization || "").replace("Bearer ", "");
+  if (!token || token.length < 10) return res.status(401).json({ error: "Unauthorized" });
+  next();
+}
+
 export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
 
-  // Auth — proxy to backend
+  // ── Auth — no auth required ───────────────────────────────────────────────
   app.post("/api/auth/login", async (req, res) => {
     return proxy(res, "POST", "/auth/login", req.body);
   });
+
+  // ── All other /api/* routes require auth ──────────────────────────────────
+  app.use("/api", requireAuth);
 
   // ── Pages ─────────────────────────────────────────────────────────────────
   app.get("/api/pages", (_req, res) => proxy(res, "GET", "/pages"));
@@ -131,7 +140,12 @@ export async function registerRoutes(
     proxy(res, "POST", "/clawbot/check-tasks")
   );
 
-    // ── Cron jobs ─────────────────────────────────────────────────────────────
+  // ── Clawbot status ────────────────────────────────────────────────────────
+  app.get("/api/clawbot/status", (_req, res) =>
+    proxy(res, "GET", "/clawbot/status")
+  );
+
+  // ── Cron jobs ─────────────────────────────────────────────────────────────
   app.get("/api/cron/jobs", (_req, res) => proxy(res, "GET", "/cron/jobs"));
 
   // ── Trading ───────────────────────────────────────────────────────────────
@@ -142,16 +156,9 @@ export async function registerRoutes(
   app.get("/api/campaigns",      (_req, res) => proxy(res, "GET", "/campaigns"));
   app.get("/api/campaigns/:id",  (req, res)  => proxy(res, "GET", `/campaigns/${req.params.id}`));
 
-  // ── Architecture ──────────────────────────────────────────────────────────
-  function requireAuth(req: Request, res: Response, next: NextFunction) {
-    const token = (req.headers.authorization || "").replace("Bearer ", "");
-    if (!token || token.length < 10) return res.status(401).json({ error: "Unauthorized" });
-    next();
-  }
-
-  app.get("/api/architecture", requireAuth, (_req, res) => {
-    const filePath = path.resolve(process.cwd(), "server", "public", "architecture.html");
-    res.sendFile(filePath);
+  // ── Architecture (served via proxy, auth enforced above) ──────────────────
+  app.get("/api/architecture", (_req, res) => {
+    return proxy(res, "GET", "/architecture");
   });
 
   // ── Public demos (no auth) ────────────────────────────────────────────────
@@ -159,19 +166,6 @@ export async function registerRoutes(
 
   // ── Client proposals (no auth) ────────────────────────────────────────────────
   app.use("/client", express.static(path.resolve(process.cwd(), "server", "public", "client")));
-
-  // ── OpenClaw Status ──────────────────────────────────────────────────────
-  app.get("/api/clawbot/status", requireAuth, async (_req, res) => {
-    try {
-      const { execSync } = await import("execSync");
-      const output = execSync("openclaw status --json", { encoding: "utf8", timeout: 30000 });
-      const status = JSON.parse(output);
-      res.json(status);
-    } catch (err) {
-      console.error("[clawbot/status]", (err as Error).message);
-      res.status(502).json({ error: (err as Error).message });
-    }
-  });
 
   return httpServer;
 }
