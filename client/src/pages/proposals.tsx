@@ -42,7 +42,7 @@ const proposals: Proposal[] = [
     business: "Berry Bespoke Joinery",
     url: "https://proposals.brightstacklabs.co.uk/client/berry-bespoke-joinery",
     status: "accepted",
-    value: "750 one-off",
+    value: "£750 one-off",
     notes: "£750 one-off or £39/mo | Agreed via WhatsApp",
     sentDate: "2026-03-22",
     acceptedDate: "2026-03-23",
