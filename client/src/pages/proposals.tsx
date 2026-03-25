@@ -34,6 +34,16 @@ const proposals: Proposal[] = [
     notes: "Website £750, +£275/mo management, +£29/mo AI receptionist",
     created: "2026-03-24",
   },
+  {
+    id: "berry",
+    client: "Craig Berry",
+    business: "Berry Bespoke Joinery",
+    url: "https://mission.brightstacklabs.co.uk/demo/berry-bespoke-joinery/",
+    status: "accepted",
+    value: "£750 one-off",
+    notes: "Agreed via WhatsApp 2026-03-25",
+    created: "2026-03-25",
+  },
 ];
 
 function getStatusColor(status: Proposal["status"]) {
