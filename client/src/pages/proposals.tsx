@@ -10,6 +10,8 @@ interface Proposal {
   status: "draft" | "sent" | "accepted" | "rejected";
   value?: string;
   notes?: string;
+  sentDate?: string;
+  acceptedDate?: string;
   created: string;
 }
 
@@ -40,9 +42,11 @@ const proposals: Proposal[] = [
     business: "Berry Bespoke Joinery",
     url: "https://mission.brightstacklabs.co.uk/demo/berry-bespoke-joinery/",
     status: "accepted",
-    value: "£750 one-off",
-    notes: "Agreed via WhatsApp 2026-03-25",
-    created: "2026-03-25",
+    value: "750 one-off",
+    notes: "£750 one-off or £39/mo | Agreed via WhatsApp",
+    sentDate: "2026-03-22",
+    acceptedDate: "2026-03-23",
+    created: "2026-03-22",
   },
 ];
 
@@ -122,7 +126,7 @@ export default function ProposalsPage() {
               <th className="text-left p-3 font-medium">Business</th>
               <th className="text-left p-3 font-medium">Value</th>
               <th className="text-left p-3 font-medium">Status</th>
-              <th className="text-left p-3 font-medium">Created</th>
+              <th className="text-left p-3 font-medium">Date</th>
               <th className="text-right p-3 font-medium">Link</th>
             </tr>
           </thead>
@@ -148,9 +152,10 @@ export default function ProposalsPage() {
                 </td>
                 <td className="p-3">
                   {proposal.value ? (
-                    <div className="flex items-center gap-1 text-green-400 font-medium">
-                      <PoundSterling className="w-4 h-4" />
-                      {proposal.value}
+                    <div className="text-green-400 font-medium">
+                      {proposal.value.includes("£") ? proposal.value : (
+                        <><PoundSterling className="w-4 h-4 inline" /> {proposal.value}</>
+                      )}
                     </div>
                   ) : (
                     <span className="text-muted-foreground">—</span>
@@ -162,7 +167,9 @@ export default function ProposalsPage() {
                   </span>
                 </td>
                 <td className="p-3 text-muted-foreground text-sm">
-                  {proposal.created}
+                  {proposal.status === "accepted" && proposal.acceptedDate 
+                    ? proposal.acceptedDate 
+                    : proposal.sentDate || proposal.created}
                 </td>
                 <td className="p-3 text-right">
                   <a
