@@ -45,7 +45,7 @@ export default function LoginPage() {
             <span className="text-sm font-medium text-foreground">Restricted Access</span>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4" noValidate>
             <div className="space-y-1.5">
               <Label htmlFor="password" className="text-xs text-muted-foreground uppercase tracking-wide">
                 Password
@@ -58,6 +58,8 @@ export default function LoginPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 data-testid="input-password"
                 autoFocus
+                pattern=".*"
+                autoComplete="current-password"
               />
             </div>
 
