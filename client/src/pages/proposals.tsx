@@ -40,7 +40,7 @@ const proposals: Proposal[] = [
     id: "berry",
     client: "Craig Berry",
     business: "Berry Bespoke Joinery",
-    url: "https://mission.brightstacklabs.co.uk/demo/berry-bespoke-joinery/",
+    url: "https://proposals.brightstacklabs.co.uk/client/berry-bespoke-joinery",
     status: "accepted",
     value: "750 one-off",
     notes: "£750 one-off or £39/mo | Agreed via WhatsApp",
@@ -69,7 +69,7 @@ export default function ProposalsPage() {
   }, 0);
 
   const pendingValue = proposals.filter(p => p.status === "sent").reduce((acc, p) => {
-    const match = p.value?.match(/From £([0-9,]+)/);
+    const match = p.value?.match(/(?:From |£)?([0-9,]+)/);
     return acc + (match ? parseInt(match[1].replace(",", "")) : 0);
   }, 0);
 

@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Digital Presence Proposal — Berry Bespoke Joinery</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; line-height: 1.7; font-size: 16px; }
+        .proposal-container { max-width: 800px; margin: 0 auto; padding: 0; }
+
+        .proposal-header { padding: 4rem 3rem; text-align: center; }
+        .proposal-logo { max-height: 60px; margin-bottom: 2rem; }
+        .proposal-title { font-size: 2.5rem; font-weight: 700; margin-bottom: 0.5rem; line-height: 1.2; }
+        .proposal-subtitle { font-size: 1.25rem; opacity: 0.9; margin-bottom: 2rem; }
+        .proposal-meta { font-size: 0.9rem; opacity: 0.8; }
+        .proposal-meta span { margin: 0 1rem; }
+
+        .proposal-section { padding: 3rem; border-bottom: 1px solid var(--theme-border, #e5e5e5); }
+        .proposal-section:last-child { border-bottom: none; }
+        .proposal-section-title { font-size: 1.5rem; font-weight: 700; margin-bottom: 1.5rem; padding-bottom: 0.75rem; }
+        .proposal-section p { margin-bottom: 1rem; color: var(--theme-text-secondary, #525252); }
+        .proposal-section ul, .proposal-section ol { margin: 1rem 0 1rem 1.5rem; color: var(--theme-text-secondary, #525252); }
+        .proposal-section li { margin-bottom: 0.5rem; }
+
+        .proposal-highlight { padding: 1.5rem; margin: 1.5rem 0; border-radius: 8px; }
+
+        .proposal-table { width: 100%; border-collapse: collapse; margin: 1.5rem 0; }
+        .proposal-table th, .proposal-table td { padding: 1rem; text-align: left; }
+        .proposal-table th { font-weight: 600; font-size: 0.9rem; }
+        .proposal-table td { border-bottom: 1px solid var(--theme-border, #e5e5e5); }
+
+        .proposal-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; margin: 1.5rem 0; }
+        .proposal-card { padding: 2rem; border-radius: 12px; transition: all 0.3s ease; }
+        .proposal-card h4 { font-size: 1.1rem; margin-bottom: 0.5rem; font-weight: 700; }
+        .proposal-card .price { font-size: 2rem; font-weight: 700; margin: 1rem 0 0.25rem; }
+        .proposal-card .price-sub { font-size: 0.85rem; opacity: 0.7; margin-bottom: 1rem; }
+        .proposal-card ul { list-style: none; margin: 0; padding: 0; }
+        .proposal-card li { padding: 0.35rem 0; border-bottom: 1px solid var(--theme-border, #e5e5e5); font-size: 0.9rem; display: flex; gap: 0.5rem; align-items: flex-start; }
+        .proposal-card li:last-child { border-bottom: none; }
+        .proposal-card li::before { content: "✓"; font-weight: 700; flex-shrink: 0; }
+
+        .proposal-price { font-size: 2.5rem; font-weight: 800; }
+        .proposal-price-period { font-size: 1rem; font-weight: 400; opacity: 0.7; }
+
+        .proposal-cta { display: inline-block; padding: 1rem 2.5rem; border-radius: 8px; font-weight: 600; font-size: 1rem; text-decoration: none; transition: all 0.3s ease; border: none; cursor: pointer; }
+        .proposal-cta-container { text-align: center; padding: 2rem 0; }
+
+        .proposal-footer { padding: 2rem 3rem; text-align: center; font-size: 0.9rem; }
+
+        .proposal-consultant .proposal-section-title { font-weight: 600; border-bottom-width: 1px; }
+        .proposal-consultant .proposal-cards { grid-template-columns: 1fr; }
+        .proposal-consultant .proposal-card { display: grid; grid-template-columns: 1fr; gap: 1rem; }
+
+        .step-list { counter-reset: steps; list-style: none; margin: 0; padding: 0; }
+        .step-list li { counter-increment: steps; padding: 0.9rem 0.9rem 0.9rem 3rem; position: relative; border-bottom: 1px solid var(--theme-border, #e5e5e5); color: var(--theme-text-secondary, #525252); }
+        .step-list li:last-child { border-bottom: none; }
+        .step-list li::before { content: counter(steps); position: absolute; left: 0; top: 0.9rem; width: 1.8rem; height: 1.8rem; background: var(--theme-primary, #1e3a5f); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.8rem; }
+
+        .demo-link { display: inline-block; background: var(--theme-accent, #2563eb); color: white; padding: 0.4rem 1rem; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 0.85rem; margin-top: 0.5rem; }
+
+        .total-row td { font-weight: 700; }
+
+        /* Artisan Wood Theme */
+        :root {
+            --theme-primary: #5c4033;
+            --theme-primary-dark: #3d2817;
+            --theme-primary-light: #f5ebe0;
+            --theme-accent: #b8860b;
+            --theme-bg: #ffffff;
+            --theme-bg-alt: #faf8f5;
+            --theme-text: #1a1612;
+            --theme-text-secondary: #4a3f35;
+            --theme-text-muted: #7a6e63;
+            --theme-border: #e0d6cc;
+        }
+
+        body { background: var(--theme-bg); color: var(--theme-text); }
+        .proposal-header { background: linear-gradient(135deg, var(--theme-primary) 0%, var(--theme-primary-dark) 100%); color: white; }
+        .proposal-title { font-family: 'Playfair Display', serif; }
+        .proposal-section-title { color: var(--theme-primary); border-bottom: 3px solid var(--theme-primary); padding-bottom: 0.5rem; }
+        
+        .proposal-card { background: var(--theme-bg-alt); border: 1px solid var(--theme-border); }
+        .proposal-card.featured { background: var(--theme-primary); color: white; }
+        .proposal-card.featured li { border-color: rgba(255,255,255,0.2); }
+        .proposal-card.featured li::before { color: #ffd700; }
+        .proposal-card.featured .price { color: white; }
+        .proposal-card.featured .price-sub { opacity: 0.8; }
+        
+        .proposal-cta { background: var(--theme-accent); color: white; }
+        .proposal-cta:hover { background: #9a7209; transform: translateY(-2px); }
+        
+        .proposal-highlight { background: var(--theme-primary-light); border-left: 4px solid var(--theme-accent); }
+        .proposal-table th { background: var(--theme-bg-alt); }
+        
+        .demo-link { background: var(--theme-accent); }
+
+        @media print { .proposal-section { page-break-inside: avoid; } .proposal-header { page-break-after: avoid; } .proposal-cta { display: none; } }
+        @media (max-width: 768px) { .proposal-header { padding: 2rem 1.5rem; } .proposal-title { font-size: 2rem; } .proposal-section { padding: 2rem 1.5rem; } .proposal-meta span { display: block; margin: 0.25rem 0; } }
+    </style>
+</head>
+<body>
+    <div class="proposal-container">
+        <header class="proposal-header">
+            <h1 class="proposal-title">Digital Presence Proposal</h1>
+            <p class="proposal-subtitle">Berry Bespoke Joinery</p>
+            <div class="proposal-meta">
+                <span>Prepared by Steve Males</span>
+                <span>•</span>
+                <span>22 March 2026</span>
+            </div>
+            <a href="https://mission.brightstacklabs.co.uk/demo/berry-bespoke-joinery/" target="_blank" class="demo-link">View Demo Website →</a>
+        </header>
+
+        <section class="proposal-section">
+            <h2 class="proposal-section-title">Understanding Your Business</h2>
+            <p>Berry Bespoke Joinery is a premium custom joinery company based in Huddersfield, West Yorkshire. Founded by Craig James Berry, the business focuses on high-end, bespoke woodwork for homeowners — with no middlemen, no showroom markups, and no subcontractors.</p>
+            <p>Your unique selling points:</p>
+            <ul>
+                <li>Direct-to-homeowner model — eliminating intermediary costs</li>
+                <li>Craig personally oversees every commission</li>
+                <li>Traditional craftsmanship meets contemporary design</li>
+                <li>Limited commissions per quarter ensuring quality</li>
+            </ul>
+        </section>
+
+        <section class="proposal-section">
+            <h2 class="proposal-section-title">The Opportunity</h2>
+            <p>Your current Instagram presence is strong, but your website link currently points back to Instagram — missing the chance to capture and convert leads directly.</p>
+            <div class="proposal-highlight">
+                <strong>What I've built for you:</strong> A professional, image-led website that showcases your craft, builds trust, and captures enquiries — without the hard sell.
+            </div>
+            <p>Key features:</p>
+            <ul>
+                <li>Beautiful image showcase of your previous work</li>
+                <li>Clear "About" section highlighting your direct-to-homeowner approach</li>
+                <li>Contact form that captures project details upfront</li>
+                <li>Mobile-optimised — most homeowners research on their phones</li>
+                <li>Fast loading, SEO-friendly foundation</li>
+            </ul>
+        </section>
+
+        <section class="proposal-section">
+            <h2 class="proposal-section-title">Investment Options</h2>
+            <div class="proposal-cards">
+                <div class="proposal-card">
+                    <h4>One-Off Build</h4>
+                    <div class="price">£750</div>
+                    <div class="price-sub">paid upfront</div>
+                    <ul>
+                        <li>Custom website design</li>
+                        <li>Mobile responsive</li>
+                        <li>Contact form setup</li>
+                        <li>1 month of minor tweaks</li>
+                        <li>Hosting &amp; domain guidance</li>
+                    </ul>
+                </div>
+                <div class="proposal-card featured">
+                    <h4>Monthly Retainer</h4>
+                    <div class="price">£39<small>/mo</small></div>
+                    <div class="price-sub">no upfront cost</div>
+                    <ul>
+                        <li>Everything in one-off</li>
+                        <li>Ongoing hosting included</li>
+                        <li>Unlimited content updates</li>
+                        <li>New images added as needed</li>
+                        <li>Cancellation anytime</li>
+                    </ul>
+                </div>
+            </div>
+            <p style="text-align: center; margin-top: 1.5rem; color: var(--theme-text-muted);">Both options include a free AI call handler that can answer enquiries out of hours.</p>
+        </section>
+
+        <section class="proposal-section">
+            <h2 class="proposal-section-title">Next Steps</h2>
+            <ol class="step-list">
+                <li>Review the demo site and let me know any changes you'd like</li>
+                <li>We'll finalise the content and images</li>
+                <li>Website goes live on your chosen domain</li>
+                <li>Set up the AI call handler (optional, free for retainer clients)</li>
+            </ol>
+        </section>
+
+        <footer class="proposal-footer">
+            <p><strong>Steve Males</strong> — Bright Stack Labs</p>
+            <p style="margin-top: 0.5rem; color: var(--theme-text-muted);">steven.males@gmail.com</p>
+        </footer>
+    </div>
+</body>
+</html>

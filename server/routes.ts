@@ -157,5 +157,8 @@ export async function registerRoutes(
   // ── Public demos (no auth) ────────────────────────────────────────────────
   app.use("/demos", express.static(path.resolve(process.cwd(), "server", "public", "demos")));
 
+  // ── Client proposals (no auth) ────────────────────────────────────────────────
+  app.use("/client", express.static(path.resolve(process.cwd(), "server", "public", "client")));
+
   return httpServer;
 }
