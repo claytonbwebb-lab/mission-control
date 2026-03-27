@@ -6,7 +6,7 @@ import { DragDropContext, Droppable, Draggable, type DropResult } from "@hello-p
 import {
   Plus, X, ChevronDown, ChevronUp, Lightbulb, Wrench, Eye, CheckCircle2,
   AlertCircle, MessageSquare, ArrowRight, Send, Loader2, User, Repeat,
-  ImageIcon, Upload, Trash2, RefreshCw, Pencil, Check, Search, Bell
+  ImageIcon, Upload, Trash2, RefreshCw, Pencil, Check, Search, Bell, Paperclip, FileText
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -833,8 +833,8 @@ function TaskModal({ task, open, onClose, onSave, onDelete, projectOptions }: Ta
 
           <div className="border-t border-border pt-3">
             <div className="flex items-center gap-2 mb-2">
-              <ImageIcon className="w-3.5 h-3.5 text-muted-foreground" />
-              <Label className="text-xs text-muted-foreground uppercase tracking-wide">Images</Label>
+              <Paperclip className="w-3.5 h-3.5 text-muted-foreground" />
+              <Label className="text-xs text-muted-foreground uppercase tracking-wide">Files</Label>
               {images.length > 0 && (
                 <span className="text-xs text-muted-foreground/60">({images.length})</span>
               )}
@@ -843,12 +843,21 @@ function TaskModal({ task, open, onClose, onSave, onDelete, projectOptions }: Ta
               <div className="grid grid-cols-4 gap-2 mb-2">
                 {images.map(img => (
                   <div key={img.id} className="relative group" data-testid={`image-thumb-${img.id}`}>
-                    <button
-                      onClick={() => setLightboxUrl(img.url)}
-                      className="w-full aspect-square rounded-md overflow-hidden border border-border bg-muted"
+                    <a
+                      href={img.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => { if (/\.(jpe?g|png|gif|webp|svg)$/i.test(img.filename)) { e.preventDefault(); setLightboxUrl(img.url); } }}
+                      className="w-full aspect-square rounded-md overflow-hidden border border-border bg-muted flex items-center justify-center block"
                     >
-                      <img src={img.url} alt={img.filename} className="w-full h-full object-cover" />
-                    </button>
+                      {/\.(jpe?g|png|gif|webp|svg)$/i.test(img.filename)
+                        ? <img src={img.url} alt={img.filename} className="w-full h-full object-cover" />
+                        : <div className="flex flex-col items-center justify-center gap-1 p-1 text-center">
+                            <FileText className="w-6 h-6 text-muted-foreground" />
+                            <span className="text-[10px] text-muted-foreground leading-tight break-all">{img.filename.split('.').pop()?.toUpperCase()}</span>
+                          </div>
+                      }
+                    </a>
                     <button
                       onClick={() => handleDeleteImage(img.id)}
                       className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
