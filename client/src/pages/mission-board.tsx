@@ -242,13 +242,19 @@ function CommentContent({ content, entryId, fallbackImageUrl }: { content: strin
           p.value.trim() ? <p key={i} className="text-sm text-foreground whitespace-pre-wrap">{linkify(p.value.trim())}</p> : null
         ) : (
           <a key={i} href={p.value} target="_blank" rel="noopener noreferrer" className="block mt-1.5" data-testid={`comment-image-${entryId}-${i}`}>
-            <img src={p.value} alt="Comment attachment" className="max-w-full max-h-48 rounded-md border border-border/50 object-contain cursor-pointer hover:opacity-90 transition-opacity" />
+            {/\.(jpe?g|png|gif|webp|svg)(\?|$)/i.test(p.value)
+              ? <img src={p.value} alt="Comment attachment" className="max-w-full max-h-48 rounded-md border border-border/50 object-contain cursor-pointer hover:opacity-90 transition-opacity" />
+              : <span className="inline-flex items-center gap-1.5 text-xs px-2 py-1 rounded bg-muted border border-border/50 text-muted-foreground hover:text-foreground transition-colors">📎 {decodeURIComponent(p.value.split('/').pop() || 'attachment')}</span>
+            }
           </a>
         )
       )}
       {!hasInlineImages && fallbackImageUrl && (
         <a href={fallbackImageUrl} target="_blank" rel="noopener noreferrer" className="block mt-1.5" data-testid={`comment-image-${entryId}`}>
-          <img src={fallbackImageUrl} alt="Comment attachment" className="max-w-full max-h-48 rounded-md border border-border/50 object-contain cursor-pointer hover:opacity-90 transition-opacity" />
+          {/\.(jpe?g|png|gif|webp|svg)(\?|$)/i.test(fallbackImageUrl)
+            ? <img src={fallbackImageUrl} alt="Comment attachment" className="max-w-full max-h-48 rounded-md border border-border/50 object-contain cursor-pointer hover:opacity-90 transition-opacity" />
+            : <span className="inline-flex items-center gap-1.5 text-xs px-2 py-1 rounded bg-muted border border-border/50 text-muted-foreground hover:text-foreground transition-colors">📎 {decodeURIComponent(fallbackImageUrl.split('/').pop() || 'attachment')}</span>
+          }
         </a>
       )}
     </>
@@ -617,7 +623,6 @@ function TaskModal({ task, open, onClose, onSave, onDelete, projectOptions }: Ta
     if (!files || files.length === 0) return;
     const newImages: { data: string; filename: string }[] = [];
     for (const file of Array.from(files)) {
-      if (!file.type.startsWith("image/")) continue;
       const dataUri = await new Promise<string>((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = () => resolve(reader.result as string);
@@ -636,7 +641,6 @@ function TaskModal({ task, open, onClose, onSave, onDelete, projectOptions }: Ta
     setUploading(true);
     try {
       for (const file of Array.from(files)) {
-        if (!file.type.startsWith("image/")) continue;
         const dataUri = await new Promise<string>((resolve, reject) => {
           const reader = new FileReader();
           reader.onload = () => resolve(reader.result as string);
@@ -650,7 +654,7 @@ function TaskModal({ task, open, onClose, onSave, onDelete, projectOptions }: Ta
       }
       qc.invalidateQueries({ queryKey: ["/tasks", task.id] });
       qc.invalidateQueries({ queryKey: ["/tasks"], exact: false });
-      toast({ title: "Image uploaded" });
+      toast({ title: "File uploaded" });
     } catch (err) {
       toast({ title: "Upload failed", description: (err as Error).message, variant: "destructive" });
     } finally {
@@ -871,12 +875,12 @@ function TaskModal({ task, open, onClose, onSave, onDelete, projectOptions }: Ta
                 <Upload className="w-4 h-4 text-muted-foreground" />
               )}
               <span className="text-xs text-muted-foreground">
-                {uploading ? "Uploading..." : "Drop image or click to browse"}
+                {uploading ? "Uploading..." : "Drop file or click to browse (images, Word, PDF, Excel…)"}
               </span>
               <input
                 ref={fileInputRef}
                 type="file"
-                accept="image/*"
+                accept="*/*"
                 multiple
                 className="hidden"
                 onChange={(e) => e.target.files && handleFileUpload(e.target.files)}
@@ -928,7 +932,10 @@ function TaskModal({ task, open, onClose, onSave, onDelete, projectOptions }: Ta
               <div className="flex gap-2 mb-2 flex-wrap">
                 {commentImages.map((img, i) => (
                   <div key={i} className="relative group">
-                    <img src={img.data} alt={img.filename} className="w-14 h-14 object-cover rounded border border-border" />
+                    {img.data.startsWith('data:image/')
+                      ? <img src={img.data} alt={img.filename} className="w-14 h-14 object-cover rounded border border-border" />
+                      : <span className="w-14 h-14 flex items-center justify-center text-xs text-center rounded border border-border bg-muted text-muted-foreground p-1 leading-tight">{img.filename.split('.').pop()?.toUpperCase()}</span>
+                    }
                     <button
                       onClick={() => setCommentImages(prev => prev.filter((_, j) => j !== i))}
                       className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
@@ -962,7 +969,7 @@ function TaskModal({ task, open, onClose, onSave, onDelete, projectOptions }: Ta
               <input
                 ref={commentFileRef}
                 type="file"
-                accept="image/*"
+                accept="*/*"
                 multiple
                 className="hidden"
                 onChange={(e) => { handleCommentImageSelect(e.target.files); e.target.value = ""; }}
