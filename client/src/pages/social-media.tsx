@@ -16,7 +16,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
-import { apiRequest } from "@/lib/auth";
+import { apiRequest, getToken } from "@/lib/auth";
 import type { SocialPage, SocialPost } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 
@@ -985,7 +985,7 @@ function GenerateTab({ pages, onSwitchTab, selectedPageId }: { pages: SocialPage
       if (imageUrl) body.image_url = imageUrl;
       const res = await fetch("/api/generate", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${getToken()}` },
         body: JSON.stringify(body),
       });
       if (!res.ok) {
@@ -1013,7 +1013,7 @@ function GenerateTab({ pages, onSwitchTab, selectedPageId }: { pages: SocialPage
       if (imagePrompt.trim()) body.image_prompt = imagePrompt.trim();
       const res = await fetch("/api/generate/week", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${getToken()}` },
         body: JSON.stringify(body),
       });
       if (!res.ok) {
