@@ -1,358 +1,267 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Mail, Users, CheckCircle2, ArrowLeft, Loader2, Play, Pause, ChevronRight, Send, X, Eye } from "lucide-react";
+import { ExternalLink, Download, Search, Loader2, ChevronLeft, ChevronRight } from "lucide-react";
 import { apiRequest } from "@/lib/auth";
 
-interface Campaign {
-  id: string;
-  name: string;
-  active: boolean;
-  product: string;
-  target: string;
-  total_leads: number;
-  contacted: number;
-  emails_sent: number;
-  completed_sequence: number;
-  email_count: number;
-  paused_reason?: string;
+interface Stats {
+  total: number;
+  new: number;
+  demo_built: number;
+  cancelled: number;
+  unqualified: number;
+  qm_synced: number;
+  not_synced: number;
 }
 
-interface CampaignEmail {
-  step: number;
-  subject: string;
-  preview: string;
-  body?: string;
+interface Lead {
+  id: number;
+  site_name: string;
+  website: string;
+  email: string;
+  region: string;
+  status: string;
+  demo_url: string | null;
+  qm_synced: number;
+  email1_sent_at: number | null;
+  email2_sent_at: number | null;
+  created_at: number;
 }
 
-interface CampaignDetail extends Campaign {
-  emails: CampaignEmail[];
-  by_step?: Record<string, number>;
-  by_status?: Record<string, number>;
-  daily_limit?: number;
-  last_sent?: string;
-  error?: string;
-  daily_stats?: Array<{ date: string; [key: string]: string | number }>;
+interface LeadsResponse {
+  leads: Lead[];
+  total: number;
+  page: number;
+  pages: number;
 }
 
-function EmailOpensList() {
-  const { data, isLoading } = useQuery<{ opens: Array<{ timestamp: string; email: string }> }>({
-    queryKey: ["/api/email-opens"],
-    queryFn: async () => {
-      const res = await fetch("/api/email-opens");
-      return res.json();
-    },
-    refetchInterval: 30000,
-  });
+const STATUS_COLOURS: Record<string, string> = {
+  new:          "bg-blue-500/15 text-blue-600",
+  demo_built:   "bg-green-500/15 text-green-600",
+  cancelled:    "bg-red-500/15 text-red-600",
+  unqualified:  "bg-amber-500/15 text-amber-600",
+};
 
-  if (isLoading) return <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />;
-  
-  const opens = data?.opens || [];
-  const last24h = opens.filter(o => new Date(o.timestamp).getTime() > Date.now() - 24 * 60 * 60 * 1000);
-  
-  if (last24h.length === 0) return <p className="text-xs text-muted-foreground">No opens in the last 24 hours</p>;
-
-  return (
-    <div className="space-y-1">
-      {last24h.slice(0, 10).map((open, i) => (
-        <div key={i} className="flex items-center justify-between text-xs">
-          <span className="text-muted-foreground truncate max-w-[200px]">{open.email}</span>
-          <span className="text-green-500 flex items-center gap-1">
-            <Eye className="w-3 h-3" />
-            {new Date(open.timestamp).toLocaleTimeString()}
-          </span>
-        </div>
-      ))}
-      {last24h.length > 10 && <p className="text-xs text-muted-foreground">+{last24h.length - 10} more</p>}
-    </div>
-  );
-}
-
-function EmailModal({ email, onClose }: { email: CampaignEmail; onClose: () => void }) {
-  return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
-      <div className="absolute inset-0 bg-black/60" onClick={onClose} />
-      <div className="relative w-full sm:max-w-lg bg-background border border-border rounded-t-2xl sm:rounded-xl shadow-xl flex flex-col max-h-[85vh]">
-        {/* Header */}
-        <div className="flex items-start justify-between px-4 py-3 border-b border-border shrink-0">
-          <div className="pr-8">
-            <div className="text-xs text-muted-foreground mb-0.5">Email {email.step}</div>
-            <div className="text-sm font-semibold leading-snug">{email.subject}</div>
-          </div>
-          <button onClick={onClose} className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50 shrink-0">
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-        {/* Body */}
-        <div className="overflow-y-auto p-4">
-          <pre className="text-sm text-foreground whitespace-pre-wrap font-sans leading-relaxed">
-            {email.body || email.preview}
-          </pre>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function StatCard({ label, value, sub, icon }: { label: string; value: string | number; sub?: string; icon: React.ReactNode }) {
+function StatCard({ label, value, sub }: { label: string; value: number; sub?: string }) {
   return (
     <div className="bg-card border border-border rounded-lg p-4">
-      <div className="flex items-center gap-2 mb-1">
-        <span className="text-muted-foreground">{icon}</span>
-        <span className="text-xs text-muted-foreground uppercase tracking-wide">{label}</span>
-      </div>
-      <div className="text-xl font-bold">{value}</div>
+      <div className="text-xs text-muted-foreground uppercase tracking-wide mb-1">{label}</div>
+      <div className="text-2xl font-bold">{value.toLocaleString()}</div>
       {sub && <div className="text-xs text-muted-foreground mt-0.5">{sub}</div>}
     </div>
   );
 }
 
-function CampaignDetail({ id, onBack }: { id: string; onBack: () => void }) {
-  const [openEmail, setOpenEmail] = useState<CampaignEmail | null>(null);
-
-  const { data, isLoading } = useQuery<CampaignDetail>({
-    queryKey: [`/campaigns/${id}`],
-    queryFn: () => apiRequest<CampaignDetail>("GET", `/campaigns/${id}`),
-  });
-
-  if (isLoading) return (
-    <div className="flex items-center justify-center py-20 text-muted-foreground gap-2">
-      <Loader2 className="w-5 h-5 animate-spin" /> Loading...
-    </div>
-  );
-
-  if (!data) return null;
-
-
-
-  const pct = data.total_leads > 0 ? Math.round((data.contacted / data.total_leads) * 100) : 0;
-
-  return (
-    <div className="space-y-5">
-      {openEmail && <EmailModal email={openEmail} onClose={() => setOpenEmail(null)} />}
-      {/* Header */}
-      <div className="flex items-center gap-3">
-        <button onClick={onBack} className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50">
-          <ArrowLeft className="w-4 h-4" />
-        </button>
-        <div>
-          <h2 className="text-base font-semibold">{data.name}</h2>
-          <p className="text-xs text-muted-foreground">{data.target}</p>
-        </div>
-        <span className={`ml-auto text-xs px-2 py-0.5 rounded-full font-medium ${data.active ? "bg-green-500/15 text-green-600" : "bg-amber-500/15 text-amber-600"}`}>
-          {data.active ? "● Active" : "⏸ Paused"}
-        </span>
-      </div>
-
-      {data.paused_reason && (
-        <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-md text-xs text-amber-700">{data.paused_reason}</div>
-      )}
-
-      {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <StatCard label="Total Leads" value={data.total_leads} icon={<Users className="w-3.5 h-3.5" />} />
-        <StatCard label="Contacted" value={data.contacted} sub={`${pct}% of list`} icon={<Send className="w-3.5 h-3.5" />} />
-        <StatCard label="Emails Sent" value={data.emails_sent} sub={data.daily_limit ? `${data.daily_limit}/day limit` : undefined} icon={<Mail className="w-3.5 h-3.5" />} />
-        <StatCard label="Completed" value={data.completed_sequence ?? 0} sub="Full sequence" icon={<CheckCircle2 className="w-3.5 h-3.5" />} />
-      </div>
-
-      {/* Progress bar */}
-      <div className="bg-card border border-border rounded-lg p-4">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-xs font-medium">List Progress</span>
-          <span className="text-xs text-muted-foreground">{data.contacted} / {data.total_leads} leads contacted</span>
-        </div>
-        <div className="h-2 bg-muted rounded-full overflow-hidden">
-          <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${pct}%` }} />
-        </div>
-        <div className="flex justify-between text-xs text-muted-foreground mt-1">
-          <span>{pct}% contacted</span>
-          <span>{data.total_leads - data.contacted} remaining</span>
-        </div>
-      </div>
-
-      {/* By step breakdown */}
-      {data.by_step && (
-        <div className="bg-card border border-border rounded-lg p-4">
-          <h3 className="text-sm font-semibold mb-3">Sends by Email Step</h3>
-          <div className="space-y-1.5">
-            {Object.entries(data.by_step).sort((a,b) => Number(a[0])-Number(b[0])).map(([step, count]) => {
-              const email = data.emails?.find(e => e.step === Number(step));
-              return (
-                <div key={step} className="flex items-center gap-3 text-xs">
-                  <span className="w-16 shrink-0 text-muted-foreground">Email {step}</span>
-                  <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
-                    <div className="h-full bg-primary/60 rounded-full" style={{ width: `${Math.min(100, (count / data.emails_sent) * 100)}%` }} />
-                  </div>
-                  <span className="w-8 text-right font-medium">{count}</span>
-                  {email && <span className="text-muted-foreground truncate max-w-[200px]">{email.subject}</span>}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* By status (campsite) */}
-      {data.by_status && (
-        <div className="bg-card border border-border rounded-lg p-4">
-          <h3 className="text-sm font-semibold mb-3">Leads by Status</h3>
-          <div className="space-y-1.5">
-            {Object.entries(data.by_status).sort((a,b) => b[1]-a[1]).map(([status, count]) => (
-              <div key={status} className="flex items-center justify-between text-xs">
-                <span className="capitalize text-muted-foreground">{status.replace(/_/g, ' ')}</span>
-                <span className="font-medium">{count}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Daily sends — last 7 days */}
-      {data.daily_stats && data.daily_stats.length > 0 && (
-        <div className="bg-card border border-border rounded-lg p-4">
-          <h3 className="text-sm font-semibold mb-3">Daily Sends — Last 7 Days</h3>
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs">
-              <thead>
-                <tr className="text-muted-foreground border-b border-border">
-                  <th className="text-left pb-2 pr-4 font-medium">Date</th>
-                  {Array.from({ length: data.email_count }, (_, i) => (
-                    <th key={i+1} className="text-right pb-2 px-2 font-medium">Email {i+1}</th>
-                  ))}
-                  <th className="text-right pb-2 pl-2 font-medium">Total</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border/50">
-                {data.daily_stats.map((row) => {
-                  const total = Array.from({ length: data.email_count }, (_, i) => Number(row[i+1] || 0)).reduce((a,b) => a+b, 0);
-                  return (
-                    <tr key={row.date} className="hover:bg-muted/30">
-                      <td className="py-1.5 pr-4 text-muted-foreground">{row.date}</td>
-                      {Array.from({ length: data.email_count }, (_, i) => (
-                        <td key={i+1} className={`py-1.5 px-2 text-right font-medium ${Number(row[i+1] || 0) > 0 ? 'text-primary' : 'text-muted-foreground'}`}>
-                          {Number(row[i+1] || 0)}
-                        </td>
-                      ))}
-                      <td className="py-1.5 pl-2 text-right font-semibold">{total}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-
-      {/* Email Opens */}
-      <div className="bg-card border border-border rounded-lg p-4">
-        <h3 className="text-sm font-semibold mb-3">Email Opens (Last 24h)</h3>
-        <EmailOpensList />
-      </div>
-
-      {/* Email sequence */}
-      <div className="bg-card border border-border rounded-lg">
-        <div className="px-4 py-3 border-b border-border">
-          <h3 className="text-sm font-semibold">Email Sequence ({data.email_count} emails)</h3>
-          <p className="text-xs text-muted-foreground mt-0.5">Tap any email to read the full template</p>
-        </div>
-        <div className="divide-y divide-border">
-          {(data.emails || []).map((email, i) => (
-            <button
-              key={email.step}
-              onClick={() => setOpenEmail(email)}
-              className="w-full px-4 py-3 text-left hover:bg-muted/30 transition-colors group"
-            >
-              <div className="flex items-start gap-3">
-                <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary shrink-0 mt-0.5">
-                  {i + 1}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium group-hover:text-primary transition-colors">{email.subject}</div>
-                  <div className="text-xs text-muted-foreground mt-0.5 truncate">{email.preview}</div>
-                </div>
-                <ChevronRight className="w-3.5 h-3.5 text-muted-foreground shrink-0 mt-1 group-hover:text-foreground" />
-              </div>
-            </button>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
 export default function CampaignsPage() {
-  const [selected, setSelected] = useState<string | null>(null);
+  const [status, setStatus]     = useState("");
+  const [synced, setSynced]     = useState("");
+  const [search, setSearch]     = useState("");
+  const [page, setPage]         = useState(1);
 
-  const { data: campaigns, isLoading } = useQuery<Campaign[]>({
-    queryKey: ["/campaigns"],
-    queryFn: () => apiRequest<Campaign[]>("GET", "/campaigns"),
+  const { data: stats } = useQuery<Stats>({
+    queryKey: ["/api/campsite/stats"],
+    queryFn: () => apiRequest<Stats>("GET", "/campsite/stats"),
   });
+
+  const { data: leads, isLoading } = useQuery<LeadsResponse>({
+    queryKey: ["/api/campsite/leads", status, synced, search, page],
+    queryFn: () => {
+      const params = new URLSearchParams();
+      if (status) params.set("status", status);
+      if (synced) params.set("qm_synced", synced);
+      if (search) params.set("search", search);
+      params.set("page", String(page));
+      params.set("limit", "50");
+      return apiRequest<LeadsResponse>("GET", `/campsite/leads?${params}`);
+    },
+  });
+
+  function handleExport() {
+    const params = new URLSearchParams();
+    if (status) params.set("status", status);
+    if (synced) params.set("qm_synced", synced);
+    if (search) params.set("search", search);
+    const token = localStorage.getItem("mc_token") || sessionStorage.getItem("mc_token") || "";
+    const url = `/api/campsite/leads/export?${params}`;
+    fetch(url, { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.blob())
+      .then(blob => {
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = "campsite-leads.csv";
+        a.click();
+      });
+  }
+
+  function resetFilters() {
+    setStatus(""); setSynced(""); setSearch(""); setPage(1);
+  }
+
+  const from = leads ? (leads.page - 1) * 50 + 1 : 0;
+  const to   = leads ? Math.min(leads.page * 50, leads.total) : 0;
 
   return (
     <div className="h-full flex flex-col overflow-auto">
-      <div className="flex items-center justify-between px-5 py-3 border-b border-border bg-background">
-        <h1 className="text-base font-semibold text-foreground">Outreach Campaigns</h1>
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-muted-foreground">
-            {campaigns ? `${campaigns.filter(c => c.active).length} active` : ""}
-          </span>
+      {/* Header */}
+      <div className="flex items-center justify-between px-5 py-3 border-b border-border bg-background shrink-0">
+        <div>
+          <h1 className="text-base font-semibold text-foreground">Campsite Campaign</h1>
+          <p className="text-xs text-muted-foreground">CampBook outreach — UK campsites</p>
         </div>
+        <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-green-500/15 text-green-600">● Active</span>
       </div>
 
-      <div className="p-5">
-        {isLoading && (
-          <div className="flex items-center justify-center py-20 text-muted-foreground gap-2">
-            <Loader2 className="w-5 h-5 animate-spin" /> Loading campaigns...
+      <div className="p-5 space-y-5">
+        {/* Stats */}
+        {stats ? (
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+            <StatCard label="Total Scraped" value={stats.total} />
+            <StatCard label="Demo Built"    value={stats.demo_built} sub={`${Math.round(stats.demo_built / stats.total * 100)}% of total`} />
+            <StatCard label="QM Synced"     value={stats.qm_synced} sub={`${stats.not_synced} not uploaded`} />
+            <StatCard label="Remaining"     value={stats.new} sub="No demo yet" />
+            <StatCard label="Cancelled"     value={stats.cancelled} />
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+            {[...Array(5)].map((_, i) => <div key={i} className="bg-card border border-border rounded-lg p-4 h-20 animate-pulse" />)}
           </div>
         )}
 
-        {selected ? (
-          <CampaignDetail id={selected} onBack={() => setSelected(null)} />
-        ) : (
-          <div className="space-y-3">
-            {(campaigns || []).map(c => {
-              const pct = c.total_leads > 0 ? Math.round((c.contacted / c.total_leads) * 100) : 0;
-              return (
-                <button
-                  key={c.id}
-                  onClick={() => setSelected(c.id)}
-                  className="w-full bg-card border border-border rounded-lg p-4 text-left hover:bg-muted/30 transition-colors group"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-sm font-semibold truncate">{c.name}</span>
-                        <span className={`shrink-0 text-xs px-1.5 py-0.5 rounded-full font-medium ${c.active ? "bg-green-500/15 text-green-600" : "bg-amber-500/15 text-amber-600"}`}>
-                          {c.active ? <><Play className="w-2.5 h-2.5 inline mr-0.5" />Active</> : <><Pause className="w-2.5 h-2.5 inline mr-0.5" />Paused</>}
-                        </span>
-                      </div>
-                      <p className="text-xs text-muted-foreground mb-3">{c.target}</p>
-                      <div className="grid grid-cols-3 gap-4 mb-3">
-                        <div>
-                          <div className="text-lg font-bold">{c.total_leads}</div>
-                          <div className="text-xs text-muted-foreground">Total leads</div>
-                        </div>
-                        <div>
-                          <div className="text-lg font-bold">{c.emails_sent}</div>
-                          <div className="text-xs text-muted-foreground">Emails sent</div>
-                        </div>
-                        <div>
-                          <div className="text-lg font-bold">{c.email_count}</div>
-                          <div className="text-xs text-muted-foreground">Step sequence</div>
-                        </div>
-                      </div>
-                      <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                        <div className="h-full bg-primary rounded-full" style={{ width: `${pct}%` }} />
-                      </div>
-                      <div className="text-xs text-muted-foreground mt-1">{pct}% of list contacted</div>
-                    </div>
-                    <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0 mt-1 group-hover:text-foreground transition-colors" />
-                  </div>
-                </button>
-              );
-            })}
+        {/* Filter bar */}
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="relative">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+            <input
+              type="text"
+              placeholder="Search site or email..."
+              value={search}
+              onChange={e => { setSearch(e.target.value); setPage(1); }}
+              className="pl-8 pr-3 py-1.5 text-sm bg-background border border-border rounded-md w-52 focus:outline-none focus:ring-1 focus:ring-primary"
+            />
           </div>
-        )}
+          <select
+            value={status}
+            onChange={e => { setStatus(e.target.value); setPage(1); }}
+            className="py-1.5 px-2.5 text-sm bg-background border border-border rounded-md focus:outline-none focus:ring-1 focus:ring-primary"
+          >
+            <option value="">All Statuses</option>
+            <option value="new">New</option>
+            <option value="demo_built">Demo Built</option>
+            <option value="cancelled">Cancelled</option>
+            <option value="unqualified">Unqualified</option>
+          </select>
+          <select
+            value={synced}
+            onChange={e => { setSynced(e.target.value); setPage(1); }}
+            className="py-1.5 px-2.5 text-sm bg-background border border-border rounded-md focus:outline-none focus:ring-1 focus:ring-primary"
+          >
+            <option value="">All QM Status</option>
+            <option value="1">Synced to QM</option>
+            <option value="0">Not Synced</option>
+          </select>
+          {(status || synced || search) && (
+            <button onClick={resetFilters} className="text-xs text-muted-foreground hover:text-foreground underline">Clear</button>
+          )}
+          <div className="ml-auto">
+            <button
+              onClick={handleExport}
+              className="flex items-center gap-1.5 text-xs px-3 py-1.5 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
+            >
+              <Download className="w-3.5 h-3.5" /> Export CSV
+            </button>
+          </div>
+        </div>
+
+        {/* Table */}
+        <div className="bg-card border border-border rounded-lg overflow-hidden">
+          {isLoading ? (
+            <div className="flex items-center justify-center py-16 text-muted-foreground gap-2">
+              <Loader2 className="w-5 h-5 animate-spin" /> Loading leads...
+            </div>
+          ) : (
+            <>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-border bg-muted/30 text-xs text-muted-foreground">
+                      <th className="text-left px-4 py-2.5 font-medium">Site Name</th>
+                      <th className="text-left px-4 py-2.5 font-medium">Email</th>
+                      <th className="text-left px-4 py-2.5 font-medium">Region</th>
+                      <th className="text-left px-4 py-2.5 font-medium">Status</th>
+                      <th className="text-center px-4 py-2.5 font-medium">QM</th>
+                      <th className="text-center px-4 py-2.5 font-medium">Demo</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border/50">
+                    {(leads?.leads || []).map(lead => (
+                      <tr key={lead.id} className="hover:bg-muted/20 transition-colors">
+                        <td className="px-4 py-2.5">
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-medium text-foreground truncate max-w-[200px]">{lead.site_name}</span>
+                            {lead.website && (
+                              <a href={lead.website} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground shrink-0">
+                                <ExternalLink className="w-3 h-3" />
+                              </a>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-4 py-2.5 text-muted-foreground text-xs">{lead.email}</td>
+                        <td className="px-4 py-2.5 text-muted-foreground text-xs">{lead.region}</td>
+                        <td className="px-4 py-2.5">
+                          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_COLOURS[lead.status] || "bg-muted text-muted-foreground"}`}>
+                            {lead.status.replace(/_/g, " ")}
+                          </span>
+                        </td>
+                        <td className="px-4 py-2.5 text-center">
+                          {lead.qm_synced ? (
+                            <span className="text-green-500 font-bold">✓</span>
+                          ) : (
+                            <span className="text-muted-foreground">–</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-2.5 text-center">
+                          {lead.demo_url ? (
+                            <a href={lead.demo_url} target="_blank" rel="noopener noreferrer" className="text-primary hover:text-primary/80">
+                              <ExternalLink className="w-3.5 h-3.5 inline" />
+                            </a>
+                          ) : (
+                            <span className="text-muted-foreground text-xs">–</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                    {leads?.leads.length === 0 && (
+                      <tr><td colSpan={6} className="px-4 py-12 text-center text-muted-foreground text-sm">No leads match your filters</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Pagination */}
+              {leads && leads.pages > 1 && (
+                <div className="flex items-center justify-between px-4 py-3 border-t border-border bg-muted/20 text-xs text-muted-foreground">
+                  <span>Showing {from}–{to} of {leads.total.toLocaleString()}</span>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => setPage(p => Math.max(1, p - 1))}
+                      disabled={page === 1}
+                      className="p-1 rounded hover:bg-muted disabled:opacity-30"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                    </button>
+                    <span className="px-2">Page {page} of {leads.pages}</span>
+                    <button
+                      onClick={() => setPage(p => Math.min(leads.pages, p + 1))}
+                      disabled={page === leads.pages}
+                      className="p-1 rounded hover:bg-muted disabled:opacity-30"
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </div>
       </div>
     </div>
   );
