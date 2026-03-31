@@ -1,9 +1,7 @@
 import express, { type Express, type Request, type Response, type NextFunction } from "express";
 import { createServer, type Server } from "http";
 import path from "path";
-import Database from "better-sqlite3";
 
-const campsiteDb = new Database('/home/ubuntu/.openclaw/workspace/outreach/campsite-campaign/leads.db', { readonly: true });
 
 const BACKEND = "https://mission.brightstacklabs.co.uk";
 const BACKEND_TOKEN = "BrightStack2026!";
@@ -57,115 +55,15 @@ export async function registerRoutes(
   // ── All other /api/* routes require auth ──────────────────────────────────
   app.use("/api", requireAuth);
 
-  // ── Campsite Campaign ────────────────────────────────────────────────────
-  app.get("/api/campsite/stats", (_req, res) => {
-    try {
-      const total = campsiteDb.prepare("SELECT COUNT(*) as count FROM leads").get() as { count: number };
-      const byStatus = campsiteDb.prepare("SELECT status, COUNT(*) as count FROM leads GROUP BY status").all() as Array<{ status: string; count: number }>;
-      const qmSynced = campsiteDb.prepare("SELECT SUM(CASE WHEN qm_synced = 1 THEN 1 ELSE 0 END) as synced, SUM(CASE WHEN qm_synced = 0 THEN 1 ELSE 0 END) as not_synced FROM leads").get() as { synced: number; not_synced: number };
-
-      const stats: Record<string, number> = { total: total.count, new: 0, demo_built: 0, cancelled: 0, unqualified: 0, qm_synced: qmSynced.synced, not_synced: qmSynced.not_synced };
-      byStatus.forEach(s => { stats[s.status] = s.count; });
-
-      res.json(stats);
-    } catch (err) {
-      console.error("[campsite/stats]", (err as Error).message);
-      res.status(500).json({ error: (err as Error).message });
-    }
-  });
-
-  app.get("/api/campsite/leads", (req, res) => {
-    try {
-      const page = Math.max(1, parseInt(req.query.page as string) || 1);
-      const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string) || 50));
-      const status = req.query.status as string;
-      const qmSynced = req.query.qm_synced;
-      const search = req.query.search as string;
-
-      let where = "1=1";
-      const params: unknown[] = [];
-
-      if (status && status !== "all") {
-        where += " AND status = ?";
-        params.push(status);
-      }
-      if (qmSynced !== undefined && qmSynced !== "") {
-        where += " AND qm_synced = ?";
-        params.push(parseInt(qmSynced as string));
-      }
-      if (search) {
-        where += " AND (site_name LIKE ? OR email LIKE ? OR website LIKE ?)";
-        const searchPattern = `%${search}%`;
-        params.push(searchPattern, searchPattern, searchPattern);
-      }
-
-      const countStmt = campsiteDb.prepare(`SELECT COUNT(*) as total FROM leads WHERE ${where}`);
-      const total = (countStmt.get(...params) as { total: number }).total;
-      const pages = Math.ceil(total / limit);
-      const offset = (page - 1) * limit;
-
-      const stmt = campsiteDb.prepare(`
-        SELECT id, site_name, website, email, region, status, demo_url, qm_synced, email1_sent_at, email2_sent_at, created_at
-        FROM leads WHERE ${where}
-        ORDER BY id DESC
-        LIMIT ? OFFSET ?
-      `);
-      const leads = stmt.all(...params, limit, offset);
-
-      res.json({ leads, total, page, pages });
-    } catch (err) {
-      console.error("[campsite/leads]", (err as Error).message);
-      res.status(500).json({ error: (err as Error).message });
-    }
-  });
-
+  // ── Campsite Campaign — proxy to VPS backend ─────────────────────────────
+  app.get("/api/campsite/stats", (_req, res) => proxy(res, "GET", "/campsite/stats"));
   app.get("/api/campsite/leads/export", (req, res) => {
-    try {
-      const status = req.query.status as string;
-      const qmSynced = req.query.qm_synced;
-      const search = req.query.search as string;
-
-      let where = "1=1";
-      const params: unknown[] = [];
-
-      if (status && status !== "all") {
-        where += " AND status = ?";
-        params.push(status);
-      }
-      if (qmSynced !== undefined && qmSynced !== "") {
-        where += " AND qm_synced = ?";
-        params.push(parseInt(qmSynced as string));
-      }
-      if (search) {
-        where += " AND (site_name LIKE ? OR email LIKE ? OR website LIKE ?)";
-        const searchPattern = `%${search}%`;
-        params.push(searchPattern, searchPattern, searchPattern);
-      }
-
-      const stmt = campsiteDb.prepare(`
-        SELECT id, site_name, website, email, region, status, demo_url, qm_synced, email1_sent_at, email2_sent_at, created_at
-        FROM leads WHERE ${where} ORDER BY id DESC
-      `);
-      const leads = stmt.all(...params) as Array<Record<string, unknown>>;
-
-      const headers = ["id", "site_name", "website", "email", "region", "status", "demo_url", "qm_synced", "email1_sent_at", "email2_sent_at", "created_at"];
-      const csv = [
-        headers.join(","),
-        ...leads.map(row => headers.map(h => {
-          const val = row[h];
-          if (val === null || val === undefined) return "";
-          const str = String(val);
-          return str.includes(",") || str.includes('"') || str.includes("\n") ? `"${str.replace(/"/g, '""')}"` : str;
-        }).join(","))
-      ].join("\n");
-
-      res.setHeader("Content-Type", "text/csv");
-      res.setHeader("Content-Disposition", "attachment; filename=campsite-leads.csv");
-      res.send(csv);
-    } catch (err) {
-      console.error("[campsite/leads/export]", (err as Error).message);
-      res.status(500).json({ error: (err as Error).message });
-    }
+    const qs = new URLSearchParams(req.query as Record<string, string>).toString();
+    return proxy(res, "GET", "/campsite/leads/export", undefined, qs || undefined);
+  });
+  app.get("/api/campsite/leads", (req, res) => {
+    const qs = new URLSearchParams(req.query as Record<string, string>).toString();
+    return proxy(res, "GET", "/campsite/leads", undefined, qs || undefined);
   });
 
   // ── Pages ─────────────────────────────────────────────────────────────────
