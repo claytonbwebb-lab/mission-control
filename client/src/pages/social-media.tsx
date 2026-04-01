@@ -4,7 +4,7 @@ import { format, startOfWeek, startOfMonth, endOfMonth, addDays, addMonths, pars
 import {
   ChevronLeft, ChevronRight, Plus, Edit2, Check, X, Clock,
   Send, Trash2, AlertCircle, Loader2, Sparkles, Calendar,
-  List, Users, Zap, ImageIcon, Upload, Wand2, ExternalLink
+  List, Users, Zap, ImageIcon, Upload, Wand2, ExternalLink, CheckCircle
 } from "lucide-react";
 import { SiFacebook, SiInstagram, SiX } from "react-icons/si";
 import { Button } from "@/components/ui/button";
@@ -1243,39 +1243,21 @@ function GenerateTab({ pages, onSwitchTab, selectedPageId }: { pages: SocialPage
       )}
 
       {weekPosts.length > 0 && (
-        <div className="space-y-3">
-          <Label className="text-xs text-muted-foreground uppercase tracking-wide">Generated Week ({weekPosts.length} posts)</Label>
-          {weekPosts.map((p, i) => {
-            const wpImg = (p as Record<string, unknown>).image_url as string | undefined;
-            return (
-              <div key={p.id ?? i} className="space-y-1 relative group pt-2">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-xs text-muted-foreground font-medium">
-                    {p.day ? `${p.day}${p.theme ? ` — ${p.theme}` : ''}` : ((p.scheduledTime ?? p.scheduled_time) ? (() => { try { return format(new Date(p.scheduledTime ?? p.scheduled_time!), "EEE d MMM, HH:mm"); } catch { return `Post ${i + 1}`; } })() : `Post ${i + 1}`)}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={(e) => { e.stopPropagation(); e.preventDefault(); setWeekPosts(prev => prev.filter((_, j) => j !== i)); }}
-                    className="absolute top-0 right-0 text-muted-foreground hover:text-red-500 p-1.5 rounded bg-background/80 opacity-0 group-hover:opacity-100 transition-opacity"
-                    title="Remove this post"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-                <Textarea
-                  value={p.content}
-                  onChange={(e) => setWeekPosts(prev => prev.map((pp, j) => j === i ? { ...pp, content: e.target.value } : pp))}
-                  rows={3}
-                  className="resize-none"
-                  data-testid={`textarea-week-post-${i}`}
-                />
-                {wpImg && (
-                  <img src={wpImg} alt="" className="h-16 w-auto rounded border border-border object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
-                )}
-              </div>
-            );
-          })}
-
+        <div className="border border-emerald-500/30 bg-emerald-500/10 rounded-md p-4 flex items-start gap-3" data-testid="week-success-banner">
+          <CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" />
+          <div className="space-y-1">
+            <p className="text-sm font-medium text-foreground">{weekPosts.length} posts added to your queue</p>
+            <p className="text-xs text-muted-foreground">
+              Scheduled every {daysInterval} day{parseInt(daysInterval) !== 1 ? "s" : ""} from {weekStartDate ? format(new Date(weekStartDate), "d MMM, HH:mm") : "start date"}.
+              {autoImage ? " Images are generating and will appear shortly." : ""}
+            </p>
+            <button
+              className="text-xs text-primary hover:underline mt-1"
+              onClick={() => { onSwitchTab("queue"); setWeekPosts([]); }}
+            >
+              View in Queue →
+            </button>
+          </div>
         </div>
       )}
 
