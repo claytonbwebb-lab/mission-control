@@ -948,6 +948,7 @@ function GenerateTab({ pages, onSwitchTab, selectedPageId }: { pages: SocialPage
   const [weekStartDate, setWeekStartDate] = useState(() => {
     const d = new Date(); d.setHours(9, 0, 0, 0); return d.toISOString().slice(0, 16);
   });
+  const [daysInterval, setDaysInterval] = useState("2");
 
   const [pendingAction, setPendingAction] = useState<"single" | "week" | null>(null);
 
@@ -1015,6 +1016,7 @@ function GenerateTab({ pages, onSwitchTab, selectedPageId }: { pages: SocialPage
       if (genPageId) body.page_id = genPageId;
       if (imagePrompt.trim()) body.image_prompt = imagePrompt.trim();
       if (weekStartDate) body.schedule_from = Math.floor(new Date(weekStartDate).getTime() / 1000);
+      body.days_interval = parseInt(daysInterval) || 2;
       const res = await fetch("/api/generate/week", {
         method: "POST",
         headers: { "Content-Type": "application/json", "Authorization": `Bearer ${getToken()}` },
@@ -1143,7 +1145,7 @@ function GenerateTab({ pages, onSwitchTab, selectedPageId }: { pages: SocialPage
         <ImageUploadSection imageUrl={imageUrl} onChange={setImageUrl} testIdPrefix="gen" />
       </div>
 
-      <div className="flex gap-2 flex-wrap">
+      <div className="flex gap-2 flex-wrap items-end">
         <Button
           onClick={() => confirmAndRun("single", doGenerate)}
           disabled={generating || !project}
@@ -1152,27 +1154,34 @@ function GenerateTab({ pages, onSwitchTab, selectedPageId }: { pages: SocialPage
           {generating ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5 mr-1.5" />}
           Generate
         </Button>
-        <div className="flex items-center gap-2">
-          <div className="space-y-1">
-            <Label className="text-xs text-muted-foreground uppercase tracking-wide">Start Date</Label>
-            <Input
-              type="datetime-local"
-              value={weekStartDate}
-              onChange={(e) => setWeekStartDate(e.target.value)}
-              className="text-xs h-8 w-48"
-            />
-          </div>
-          <Button
-            variant="secondary"
-            onClick={() => confirmAndRun("week", doGenerateWeek)}
-            disabled={weekGenerating || !project}
-            data-testid="button-generate-week"
-            className="self-end"
-          >
-            {weekGenerating ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : <Zap className="w-3.5 h-3.5 mr-1.5" />}
-            Generate 5 Posts (every 2 days)
-          </Button>
+        <div className="space-y-1">
+          <Label className="text-xs text-muted-foreground uppercase tracking-wide">Start Date</Label>
+          <Input
+            type="datetime-local"
+            value={weekStartDate}
+            onChange={(e) => setWeekStartDate(e.target.value)}
+            className="text-xs h-9 w-48"
+          />
         </div>
+        <div className="space-y-1">
+          <Label className="text-xs text-muted-foreground uppercase tracking-wide">Days Between</Label>
+          <Input
+            type="number"
+            min="1"
+            max="30"
+            value={daysInterval}
+            onChange={(e) => setDaysInterval(e.target.value)}
+            className="text-xs h-9 w-20"
+          />
+        </div>
+        <Button
+          onClick={() => confirmAndRun("week", doGenerateWeek)}
+          disabled={weekGenerating || !project}
+          data-testid="button-generate-week"
+        >
+          {weekGenerating ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : <Zap className="w-3.5 h-3.5 mr-1.5" />}
+          Generate 5 Posts
+        </Button>
       </div>
 
       {pendingAction && (
