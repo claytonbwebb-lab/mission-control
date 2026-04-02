@@ -221,9 +221,9 @@ export default function ClawbotStatusPage() {
           Memory
         </h2>
         <div className="flex gap-6 text-sm">
-          <div><span className="text-muted-foreground">Backend: </span>{data?.memory.backend}</div>
-          <div><span className="text-muted-foreground">Files: </span>{data?.memory.files}</div>
-          <div><span className="text-muted-foreground">Chunks: </span>{data?.memory.chunks}</div>
+          <div><span className="text-muted-foreground">Backend: </span>{data?.memory?.backend ?? '—'}</div>
+          <div><span className="text-muted-foreground">Files: </span>{data?.memory?.files ?? '—'}</div>
+          <div><span className="text-muted-foreground">Chunks: </span>{data?.memory?.chunks ?? '—'}</div>
         </div>
       </div>
 
@@ -235,7 +235,7 @@ export default function ClawbotStatusPage() {
             Recent Sessions
           </h2>
           <div className="space-y-1">
-            {data.sessions.recent.slice(0, 6).map((s, i) => (
+            {data?.sessions?.recent?.slice(0, 6).map((s, i) => (
               <div key={i} className="flex items-center justify-between text-xs py-1 border-b border-border last:border-0">
                 <span className="font-mono text-muted-foreground truncate max-w-[50%]">{s.key.replace("agent:main:", "")}</span>
                 <div className="flex gap-3 shrink-0">
