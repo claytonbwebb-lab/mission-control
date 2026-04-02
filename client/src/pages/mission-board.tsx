@@ -500,6 +500,7 @@ function TaskModal({ task, open, onClose, onSave, onDelete, projectOptions }: Ta
   const activityEndRef = useRef<HTMLDivElement>(null);
   const commentFileRef = useRef<HTMLInputElement>(null);
 
+  const [descEditMode, setDescEditMode] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -705,15 +706,58 @@ function TaskModal({ task, open, onClose, onSave, onDelete, projectOptions }: Ta
             />
           </div>
           <div className="space-y-1.5">
-            <Label className="text-xs text-muted-foreground uppercase tracking-wide">Description</Label>
-            <Textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              data-testid="input-task-description"
-              placeholder="Optional description..."
-              className="resize-none"
-              rows={3}
-            />
+            <div className="flex items-center justify-between">
+              <Label className="text-xs text-muted-foreground uppercase tracking-wide">Description</Label>
+              {!descEditMode && (
+                <button
+                  type="button"
+                  onClick={() => setDescEditMode(true)}
+                  className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
+                  data-testid="btn-edit-description"
+                >
+                  <Pencil className="w-3 h-3" /> Edit
+                </button>
+              )}
+            </div>
+            {descEditMode ? (
+              <div className="space-y-2">
+                <Textarea
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  data-testid="input-task-description"
+                  placeholder="Optional description..."
+                  className="resize-none"
+                  rows={3}
+                  autoFocus
+                />
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setDescEditMode(false)}
+                    className="text-xs bg-primary text-primary-foreground px-3 py-1 rounded-md hover:bg-primary/90"
+                  >Save</button>
+                  <button
+                    type="button"
+                    onClick={() => { setDescription(task?.description ?? ""); setDescEditMode(false); }}
+                    className="text-xs text-muted-foreground hover:text-foreground px-2 py-1"
+                  >Cancel</button>
+                </div>
+              </div>
+            ) : description ? (
+              <div className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap break-words" data-testid="desc-display">
+                {description.split(/(\bhttps?:\/\/[^\s]+)/g).map((part, i) =>
+                  /^https?:\/\//.test(part)
+                    ? <a key={i} href={part} target="_blank" rel="noopener noreferrer" className="text-blue-500 underline break-all">{part}</a>
+                    : <span key={i}>{part}</span>
+                )}
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setDescEditMode(true)}
+                className="text-xs text-muted-foreground hover:text-foreground italic"
+              >Add a description…</button>
+            )}
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
