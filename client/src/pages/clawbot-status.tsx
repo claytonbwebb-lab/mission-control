@@ -125,13 +125,14 @@ export default function ClawbotStatusPage() {
           <Shield className="w-4 h-4" />
           Security Audit
           <span className="ml-auto flex gap-3 text-sm">
-            <span className="text-red-500">{data?.securityAudit.summary.critical} critical</span>
-            <span className="text-yellow-500">{data?.securityAudit.summary.warn} warn</span>
-            <span className="text-blue-500">{data?.securityAudit.summary.info} info</span>
+            <span className="text-red-500">{data?.securityAudit?.summary?.critical ?? '—'} critical</span>
+            <span className="text-yellow-500">{data?.securityAudit?.summary?.warn ?? '—'} warn</span>
+            <span className="text-blue-500">{data?.securityAudit?.summary?.info ?? '—'} info</span>
           </span>
         </h2>
         <div className="space-y-2">
-          {data?.securityAudit.findings.map((f) => (
+          {!data?.securityAudit && <p className="text-xs text-muted-foreground">Security audit not available in this runtime version.</p>}
+          {data?.securityAudit?.findings?.map((f) => (
             <div key={f.checkId} className={`border rounded p-3 ${severityBg(f.severity)}`}>
               <button
                 className="w-full text-left flex items-start justify-between gap-2"
