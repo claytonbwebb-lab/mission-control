@@ -52,7 +52,7 @@ const proposals: Proposal[] = [
     id: "mark-powell",
     client: "Mark Powell",
     business: "Mark Powell Fireplace Installations",
-    url: "https://mission.brightstacklabs.co.uk/demos/mark-powell-fireplaces/",
+    url: "https://proposals.brightstacklabs.co.uk/client/mark-powell/",
     status: "sent",
     value: "£750 one-off or £49/mo",
     notes: "£750 one-off | Or £0 upfront + £49/mo | Hosting & care: £15/mo add-on",
