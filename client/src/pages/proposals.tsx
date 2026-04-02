@@ -48,6 +48,17 @@ const proposals: Proposal[] = [
     acceptedDate: "2026-03-23",
     created: "2026-03-22",
   },
+  {
+    id: "mark-powell",
+    client: "Mark Powell",
+    business: "Mark Powell Fireplace Installations",
+    url: "https://mission.brightstacklabs.co.uk/demos/mark-powell-fireplaces/",
+    status: "sent",
+    value: "£750 one-off or £49/mo",
+    notes: "£750 one-off | Or £0 upfront + £49/mo | Hosting & care: £15/mo add-on",
+    sentDate: "2026-04-02",
+    created: "2026-04-02",
+  },
 ];
 
 function getStatusColor(status: Proposal["status"]) {
