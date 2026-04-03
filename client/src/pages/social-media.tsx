@@ -933,6 +933,7 @@ interface GeneratedPost {
 function GenerateTab({ pages, onSwitchTab, selectedPageId }: { pages: SocialPage[]; onSwitchTab: (tab: string) => void; selectedPageId: string }) {
   const qc = useQueryClient();
   const { toast } = useToast();
+  const [genPlatform, setGenPlatform] = useState<string>("facebook");
   const [genPageId, setGenPageId] = useState("");
   const [theme, setTheme] = useState("");
   const [formatOpt, setFormatOpt] = useState("");
@@ -957,6 +958,14 @@ function GenerateTab({ pages, onSwitchTab, selectedPageId }: { pages: SocialPage
       setGenPageId(selectedPageId);
     }
   }, [selectedPageId]);
+
+  // Filter pages by selected platform
+  const filteredPages = pages.filter(p => p.platform === genPlatform);
+
+  // Reset page selection when platform changes
+  useEffect(() => {
+    setGenPageId(filteredPages.length === 1 ? filteredPages[0].pageId : "");
+  }, [genPlatform]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const confirmAndRun = (action: "single" | "week", fn: () => void) => {
     if (generatedPost) {
@@ -983,7 +992,7 @@ function GenerateTab({ pages, onSwitchTab, selectedPageId }: { pages: SocialPage
     setGenerating(true);
     setGeneratedPost(null);
     try {
-      const body: Record<string, unknown> = { project, theme, format: formatOpt, guidance, auto_image: autoImage };
+      const body: Record<string, unknown> = { project, theme, format: formatOpt, guidance, auto_image: autoImage, platform: genPlatform };
       if (genPageId) body.page_id = genPageId;
       if (imagePrompt.trim()) body.image_prompt = imagePrompt.trim();
       if (imageUrl) body.image_url = imageUrl;
@@ -1012,7 +1021,7 @@ function GenerateTab({ pages, onSwitchTab, selectedPageId }: { pages: SocialPage
     setWeekPosts([]);
     setGeneratedPost(null);
     try {
-      const body: Record<string, unknown> = { project, theme, format: formatOpt, guidance, auto_image: autoImage };
+      const body: Record<string, unknown> = { project, theme, format: formatOpt, guidance, auto_image: autoImage, platform: genPlatform };
       if (genPageId) body.page_id = genPageId;
       if (imagePrompt.trim()) body.image_prompt = imagePrompt.trim();
       if (weekStartDate) body.schedule_from = Math.floor(new Date(weekStartDate).getTime() / 1000);
@@ -1073,13 +1082,29 @@ function GenerateTab({ pages, onSwitchTab, selectedPageId }: { pages: SocialPage
     <div className="space-y-5 max-w-2xl">
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1.5">
+          <Label className="text-xs text-muted-foreground uppercase tracking-wide">Platform</Label>
+          <Select value={genPlatform} onValueChange={setGenPlatform}>
+            <SelectTrigger data-testid="select-gen-platform">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="facebook">Facebook</SelectItem>
+              <SelectItem value="instagram">Instagram</SelectItem>
+              <SelectItem value="twitter">X / Twitter</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-1.5">
           <Label className="text-xs text-muted-foreground uppercase tracking-wide">Project / Brand</Label>
           <Select value={genPageId} onValueChange={setGenPageId}>
             <SelectTrigger data-testid="select-gen-project">
-              <SelectValue placeholder="Select project" />
+              <SelectValue placeholder={filteredPages.length === 0 ? `No ${genPlatform} accounts` : "Select project"} />
             </SelectTrigger>
             <SelectContent>
-              {pages.map(p => <SelectItem key={p.pageId} value={p.pageId}>{p.name}</SelectItem>)}
+              {filteredPages.length === 0
+                ? <SelectItem value="__none__" disabled>No accounts for this platform</SelectItem>
+                : filteredPages.map(p => <SelectItem key={p.pageId} value={p.pageId}>{p.name}</SelectItem>)
+              }
             </SelectContent>
           </Select>
         </div>
