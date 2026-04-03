@@ -913,34 +913,19 @@ function QueueTab({ pages, selectedPageId }: { pages: SocialPage[]; selectedPage
                 {groupPosts.map(post => (
                   <div
                     key={post.id}
-                    className="bg-card border border-card-border rounded-md px-4 py-3 flex items-center gap-3"
+                    className="bg-card border border-card-border rounded-md px-3 py-3"
                     data-testid={`row-post-${post.id}`}
                   >
-                    <div className={`inline-flex items-center justify-center w-7 h-7 rounded ${PLATFORM_COLORS[post.platform] ?? "bg-muted"}`}>
-                      <PlatformIcon platform={post.platform} />
-                    </div>
-                    {post.imageUrl && (
-                      <img
-                        src={post.imageUrl}
-                        alt=""
-                        className="w-10 h-10 rounded border border-border object-cover flex-shrink-0"
-                        data-testid={`thumb-image-${post.id}`}
-                        onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
-                      />
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm text-foreground truncate">{(post.content ?? "").substring(0, 60)}{(post.content ?? "").length > 60 ? "..." : ""}</p>
-                      <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                        <span className="text-xs text-muted-foreground">{post.pageName}</span>
+                    {/* Top row: platform icon + meta + actions */}
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className={`inline-flex items-center justify-center w-6 h-6 rounded flex-shrink-0 ${PLATFORM_COLORS[post.platform] ?? "bg-muted"}`}>
+                        <PlatformIcon platform={post.platform} className="w-3 h-3" />
+                      </div>
+                      <div className="flex items-center gap-1.5 flex-1 min-w-0 flex-wrap">
                         {post.scheduledAt && (
-                          <span className="text-xs text-muted-foreground flex items-center gap-1">
+                          <span className="text-xs text-muted-foreground flex items-center gap-0.5">
                             <Clock className="w-2.5 h-2.5" />
                             {formatSchedule(post.scheduledAt)}
-                          </span>
-                        )}
-                        {post.imageUrl && (
-                          <span className="text-xs text-muted-foreground flex items-center gap-1" data-testid={`icon-image-${post.id}`}>
-                            <ImageIcon className="w-2.5 h-2.5" />
                           </span>
                         )}
                         {post.status && (
@@ -949,44 +934,64 @@ function QueueTab({ pages, selectedPageId }: { pages: SocialPage[]; selectedPage
                           </span>
                         )}
                       </div>
+                      {/* Action buttons — icon-only to save space */}
+                      <div className="flex items-center gap-1 flex-shrink-0">
+                        <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => setSelectedPost(post)} data-testid={`button-edit-post-${post.id}`}>
+                          <Edit2 className="w-3.5 h-3.5" />
+                        </Button>
+                        {post.status === "draft" && (
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            className="h-7 w-7 p-0"
+                            onClick={() => statusMutation.mutate({ id: post.id, status: "approved", page_id: post.pageId, image_url: post.imageUrl })}
+                            disabled={statusMutation.isPending}
+                            title="Approve"
+                            data-testid={`button-approve-post-${post.id}`}
+                          >
+                            <Check className="w-3.5 h-3.5" />
+                          </Button>
+                        )}
+                        {post.status === "draft" && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-7 w-7 p-0"
+                            onClick={() => { deleteMutation.mutate(post.id); }}
+                            disabled={deleteMutation.isPending}
+                            title="Delete"
+                            data-testid={`button-reject-post-${post.id}`}
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </Button>
+                        )}
+                        {post.status === "approved" && (
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            className="h-7 w-7 p-0"
+                            onClick={() => statusMutation.mutate({ id: post.id, status: "published", page_id: post.pageId, image_url: post.imageUrl })}
+                            disabled={statusMutation.isPending}
+                            title="Publish"
+                            data-testid={`button-publish-post-${post.id}`}
+                          >
+                            <Send className="w-3.5 h-3.5" />
+                          </Button>
+                        )}
+                      </div>
                     </div>
-                    <div className="flex items-center gap-1.5 flex-shrink-0">
-                      <Button size="sm" variant="ghost" onClick={() => setSelectedPost(post)} data-testid={`button-edit-post-${post.id}`}>
-                        <Edit2 className="w-3 h-3" />
-                      </Button>
-                      {post.status === "draft" && (
-                        <Button
-                          size="sm"
-                          variant="secondary"
-                          onClick={() => statusMutation.mutate({ id: post.id, status: "approved", page_id: post.pageId, image_url: post.imageUrl })}
-                          disabled={statusMutation.isPending}
-                          data-testid={`button-approve-post-${post.id}`}
-                        >
-                          <Check className="w-3 h-3 mr-1" /> Approve
-                        </Button>
+                    {/* Content row: thumbnail + post text */}
+                    <div className="flex gap-2.5">
+                      {post.imageUrl && (
+                        <img
+                          src={post.imageUrl}
+                          alt=""
+                          className="w-16 h-16 rounded border border-border object-cover flex-shrink-0"
+                          data-testid={`thumb-image-${post.id}`}
+                          onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                        />
                       )}
-                      {post.status === "draft" && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => { deleteMutation.mutate(post.id); }}
-                          disabled={deleteMutation.isPending}
-                          data-testid={`button-reject-post-${post.id}`}
-                        >
-                          <X className="w-3 h-3" />
-                        </Button>
-                      )}
-                      {post.status === "approved" && (
-                        <Button
-                          size="sm"
-                          variant="secondary"
-                          onClick={() => statusMutation.mutate({ id: post.id, status: "published", page_id: post.pageId, image_url: post.imageUrl })}
-                          disabled={statusMutation.isPending}
-                          data-testid={`button-publish-post-${post.id}`}
-                        >
-                          <Send className="w-3 h-3 mr-1" /> Publish
-                        </Button>
-                      )}
+                      <p className="text-sm text-foreground line-clamp-4 flex-1">{post.content ?? ""}</p>
                     </div>
                   </div>
                 ))}
