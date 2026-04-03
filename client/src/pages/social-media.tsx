@@ -4,7 +4,7 @@ import { format, startOfWeek, startOfMonth, endOfMonth, addDays, addMonths, pars
 import {
   ChevronLeft, ChevronRight, Plus, Edit2, Check, X, Clock,
   Send, Trash2, AlertCircle, Loader2, Sparkles, Calendar,
-  List, Users, Zap, ImageIcon, Upload, Wand2, ExternalLink, CheckCircle
+  List, Users, Zap, ImageIcon, Upload, Wand2, ExternalLink, CheckCircle, ChevronDown, ChevronUp, Settings2
 } from "lucide-react";
 import { SiFacebook, SiInstagram, SiX } from "react-icons/si";
 import { Button } from "@/components/ui/button";
@@ -81,6 +81,8 @@ function normalizePage(raw: Record<string, unknown>): SocialPage & { instagramBu
     pageId: (raw.page_id ?? raw.pageId ?? "") as string,
     status: (raw.status ?? "connected") as SocialPage["status"],
     instagramBusinessAccountId: (raw.instagram_business_account_id ?? null) as string | null,
+    aiContext: (raw.ai_context ?? null) as string | null,
+    instagramAiContext: (raw.instagram_ai_context ?? null) as string | null,
   };
 }
 
@@ -465,6 +467,84 @@ function PostDetailModal({ post, open, onClose, pages }: PostDetailModalProps) {
   );
 }
 
+function AccountContextEditor({ page }: { page: SocialPage }) {
+  const qc = useQueryClient();
+  const { toast } = useToast();
+  const [open, setOpen] = useState(false);
+  const [fbCtx, setFbCtx] = useState(page.aiContext ?? "");
+  const [igCtx, setIgCtx] = useState(page.instagramAiContext ?? "");
+  const [saving, setSaving] = useState(false);
+
+  const hasInstagram = !!page.instagramBusinessAccountId;
+
+  const save = async () => {
+    setSaving(true);
+    try {
+      const body: Record<string, string | null> = { ai_context: fbCtx || null };
+      if (hasInstagram) body.instagram_ai_context = igCtx || null;
+      await apiRequest("PATCH", `/pages/${page.pageId}/context`, body);
+      qc.invalidateQueries({ queryKey: ["/pages"] });
+      toast({ title: "Context saved" });
+      setOpen(false);
+    } catch (err) {
+      toast({ title: "Failed to save", description: (err as Error).message, variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <>
+      <Button size="sm" variant="ghost" className="h-7 px-2 text-muted-foreground hover:text-foreground" onClick={() => setOpen(true)}>
+        <Settings2 className="w-3.5 h-3.5 mr-1" /> Context
+      </Button>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Settings2 className="w-4 h-4" /> AI Context — {page.name}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
+                <SiFacebook className="w-3 h-3 text-blue-500" /> Facebook Context
+              </Label>
+              <Textarea
+                className="text-sm min-h-[100px]"
+                placeholder="Describe the brand voice, tone, audience, and any specific instructions for Facebook posts…"
+                value={fbCtx}
+                onChange={e => setFbCtx(e.target.value)}
+              />
+            </div>
+            {hasInstagram && (
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
+                  <SiInstagram className="w-3 h-3 text-pink-500" /> Instagram Context
+                  <span className="text-[10px] text-muted-foreground font-normal normal-case">(leave blank to use Facebook context)</span>
+                </Label>
+                <Textarea
+                  className="text-sm min-h-[100px]"
+                  placeholder="Override for Instagram — different tone, hashtag style, caption length preferences…"
+                  value={igCtx}
+                  onChange={e => setIgCtx(e.target.value)}
+                />
+              </div>
+            )}
+            <div className="flex justify-end gap-2">
+              <Button variant="ghost" size="sm" onClick={() => setOpen(false)}>Cancel</Button>
+              <Button size="sm" onClick={save} disabled={saving}>
+                {saving ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> : <Check className="w-3.5 h-3.5 mr-1" />}
+                Save
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
+
 function AccountsTab() {
   const { toast } = useToast();
   const { data: pages, isLoading, error } = useQuery<SocialPage[]>({
@@ -507,15 +587,24 @@ function AccountsTab() {
                 <th className="text-left px-4 py-2.5 text-xs text-muted-foreground font-medium">Page Name</th>
                 <th className="text-left px-4 py-2.5 text-xs text-muted-foreground font-medium">Page ID</th>
                 <th className="text-left px-4 py-2.5 text-xs text-muted-foreground font-medium">Status</th>
+                <th className="text-left px-4 py-2.5 text-xs text-muted-foreground font-medium">AI Context</th>
               </tr>
             </thead>
             <tbody>
               {pages.map((page, i) => (
                 <tr key={page.id} className={`border-b border-border last:border-0 ${i % 2 === 0 ? "" : "bg-muted/20"}`} data-testid={`row-account-${page.id}`}>
                   <td className="px-4 py-3">
-                    <div className={`inline-flex items-center gap-1.5 px-2 py-1 rounded ${PLATFORM_COLORS[page.platform] ?? "bg-muted text-muted-foreground"}`}>
-                      <PlatformIcon platform={page.platform} />
-                      <span className="text-xs font-medium capitalize">{page.platform}</span>
+                    <div className="flex flex-col gap-1">
+                      <div className={`inline-flex items-center gap-1.5 px-2 py-1 rounded w-fit ${PLATFORM_COLORS[page.platform] ?? "bg-muted text-muted-foreground"}`}>
+                        <PlatformIcon platform={page.platform} />
+                        <span className="text-xs font-medium capitalize">{page.platform}</span>
+                      </div>
+                      {page.instagramBusinessAccountId && (
+                        <div className={`inline-flex items-center gap-1.5 px-2 py-1 rounded w-fit ${PLATFORM_COLORS["instagram"] ?? "bg-muted text-muted-foreground"}`}>
+                          <SiInstagram className="w-3 h-3" />
+                          <span className="text-xs font-medium">instagram</span>
+                        </div>
+                      )}
                     </div>
                   </td>
                   <td className="px-4 py-3 font-medium text-foreground">{page.name}</td>
@@ -524,6 +613,9 @@ function AccountsTab() {
                     <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${page.status === "connected" ? "bg-emerald-500/15 text-emerald-500 dark:text-emerald-300" : "bg-destructive/15 text-destructive"}`}>
                       {page.status === "connected" ? "Connected" : "Token Expired"}
                     </span>
+                  </td>
+                  <td className="px-4 py-3">
+                    <AccountContextEditor page={page} />
                   </td>
                 </tr>
               ))}
@@ -961,9 +1053,11 @@ function GenerateTab({ pages, onSwitchTab, selectedPageId }: { pages: SocialPage
   }, [selectedPageId]);
 
   // Filter pages by selected platform
-  // Instagram posts are published via Facebook Pages (which have a linked Instagram account)
-  // so for Instagram, only show Facebook pages that have an Instagram account linked
+  // Instagram posts are published via Facebook Pages (linked Instagram account)
+  // "both" requires a page with Instagram linked
   const filteredPages = genPlatform === "instagram"
+    ? pages.filter(p => p.platform === "facebook" && p.instagramBusinessAccountId)
+    : genPlatform === "both"
     ? pages.filter(p => p.platform === "facebook" && p.instagramBusinessAccountId)
     : pages.filter(p => p.platform === genPlatform);
 
@@ -1095,6 +1189,7 @@ function GenerateTab({ pages, onSwitchTab, selectedPageId }: { pages: SocialPage
             <SelectContent>
               <SelectItem value="facebook">Facebook</SelectItem>
               <SelectItem value="instagram">Instagram</SelectItem>
+              <SelectItem value="both">Facebook + Instagram</SelectItem>
               <SelectItem value="twitter">X / Twitter</SelectItem>
             </SelectContent>
           </Select>

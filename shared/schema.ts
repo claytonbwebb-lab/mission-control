@@ -80,6 +80,8 @@ export interface SocialPage {
   pageId: string;
   status: "connected" | "expired";
   instagramBusinessAccountId?: string | null;
+  aiContext?: string | null;
+  instagramAiContext?: string | null;
 }
 
 export interface SocialPost {
