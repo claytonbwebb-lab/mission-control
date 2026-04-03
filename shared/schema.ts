@@ -79,6 +79,7 @@ export interface SocialPage {
   name: string;
   pageId: string;
   status: "connected" | "expired";
+  instagramBusinessAccountId?: string | null;
 }
 
 export interface SocialPost {

@@ -31,6 +31,29 @@ interface ClawbotStatus {
   };
 }
 
+const DISCORD_CHANNEL_NAMES: Record<string, string> = {
+  "1489529875818745959": "mission-control",
+  "1489530391818670160": "campsite-outreach",
+  "1489549880656658452": "openclaw",
+  "1489346950699421716": "world-cup-predictor",
+};
+
+function formatSessionKey(key: string): string {
+  // discord:channel:<id> → #channel-name
+  const discordMatch = key.match(/^discord:channel:(\d+)$/);
+  if (discordMatch) {
+    const name = DISCORD_CHANNEL_NAMES[discordMatch[1]];
+    return name ? `#${name}` : `#${discordMatch[1]}`;
+  }
+  // telegram:<id> → telegram
+  if (key.startsWith("telegram:")) return "telegram";
+  // cron:<guid> → cron
+  if (key.startsWith("cron:")) return "cron";
+  // main
+  if (key === "main") return "main";
+  return key;
+}
+
 function severityColor(s: string) {
   if (s === "critical") return "text-red-500";
   if (s === "warn") return "text-yellow-500";
@@ -237,7 +260,7 @@ export default function ClawbotStatusPage() {
           <div className="space-y-1">
             {data?.sessions?.recent?.slice(0, 6).map((s, i) => (
               <div key={i} className="flex items-center justify-between text-xs py-1 border-b border-border last:border-0">
-                <span className="font-mono text-muted-foreground truncate max-w-[50%]">{s.key.replace("agent:main:", "")}</span>
+                <span className="font-mono text-muted-foreground truncate max-w-[50%]">{formatSessionKey(s.key.replace("agent:main:", ""))}</span>
                 <div className="flex gap-3 shrink-0">
                   <span className="text-muted-foreground">{s.model?.split("/").pop()}</span>
                   {s.percentUsed !== null && (

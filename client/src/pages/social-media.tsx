@@ -73,13 +73,14 @@ function normalizePost(raw: Record<string, unknown>): SocialPost {
   } as SocialPost;
 }
 
-function normalizePage(raw: Record<string, unknown>): SocialPage {
+function normalizePage(raw: Record<string, unknown>): SocialPage & { instagramBusinessAccountId?: string | null } {
   return {
     id: (raw.id ?? raw._id ?? "") as string,
     platform: (raw.platform ?? "facebook") as SocialPage["platform"],
     name: (raw.page_name ?? raw.pageName ?? raw.name ?? "") as string,
     pageId: (raw.page_id ?? raw.pageId ?? "") as string,
     status: (raw.status ?? "connected") as SocialPage["status"],
+    instagramBusinessAccountId: (raw.instagram_business_account_id ?? null) as string | null,
   };
 }
 
@@ -961,9 +962,9 @@ function GenerateTab({ pages, onSwitchTab, selectedPageId }: { pages: SocialPage
 
   // Filter pages by selected platform
   // Instagram posts are published via Facebook Pages (which have a linked Instagram account)
-  // so for Instagram, show all facebook pages
+  // so for Instagram, only show Facebook pages that have an Instagram account linked
   const filteredPages = genPlatform === "instagram"
-    ? pages.filter(p => p.platform === "facebook")
+    ? pages.filter(p => p.platform === "facebook" && p.instagramBusinessAccountId)
     : pages.filter(p => p.platform === genPlatform);
 
   // Reset page selection when platform changes
