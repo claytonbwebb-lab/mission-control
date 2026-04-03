@@ -960,7 +960,11 @@ function GenerateTab({ pages, onSwitchTab, selectedPageId }: { pages: SocialPage
   }, [selectedPageId]);
 
   // Filter pages by selected platform
-  const filteredPages = pages.filter(p => p.platform === genPlatform);
+  // Instagram posts are published via Facebook Pages (which have a linked Instagram account)
+  // so for Instagram, show all facebook pages
+  const filteredPages = genPlatform === "instagram"
+    ? pages.filter(p => p.platform === "facebook")
+    : pages.filter(p => p.platform === genPlatform);
 
   // Reset page selection when platform changes
   useEffect(() => {
