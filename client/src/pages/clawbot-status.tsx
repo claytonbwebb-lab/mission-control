@@ -79,7 +79,7 @@ export default function ClawbotStatusPage() {
   const { data, isLoading, error, refetch, dataUpdatedAt } = useQuery<ClawbotStatus>({
     queryKey: ["/clawbot/status"],
     queryFn: () => apiRequest<ClawbotStatus>("GET", "/clawbot/status"),
-    refetchInterval: 30000,
+    refetchInterval: 10000,
   });
 
   if (isLoading) {
@@ -258,15 +258,17 @@ export default function ClawbotStatusPage() {
             Recent Sessions
           </h2>
           <div className="space-y-1">
-            {data?.sessions?.recent?.slice(0, 6).map((s, i) => (
-              <div key={i} className="flex items-center justify-between text-xs py-1 border-b border-border last:border-0">
-                <span className="font-mono text-muted-foreground truncate max-w-[50%]">{formatSessionKey(s.key.replace("agent:main:", ""))}</span>
-                <div className="flex gap-3 shrink-0">
-                  <span className="text-muted-foreground">{s.model?.split("/").pop()}</span>
-                  {s.percentUsed !== null && (
-                    <span className={s.percentUsed > 80 ? "text-red-500" : "text-muted-foreground"}>{s.percentUsed}%</span>
-                  )}
-                  <span className="text-muted-foreground">{msToRelative(s.updatedAt ? Date.now() - s.updatedAt : 0)}</span>
+            {data?.sessions?.recent?.slice(0, 10).map((s, i) => (
+              <div key={i} className="flex items-start justify-between text-xs py-1.5 border-b border-border last:border-0 gap-2">
+                <span className="font-mono text-muted-foreground shrink-0">{formatSessionKey(s.key.replace("agent:main:", ""))}</span>
+                <div className="flex flex-col items-end gap-0.5 shrink-0">
+                  <span className="font-mono text-foreground text-right">{s.model ?? "—"}</span>
+                  <div className="flex gap-2 text-muted-foreground">
+                    {s.percentUsed !== null && (
+                      <span className={s.percentUsed > 80 ? "text-red-500" : ""}>{s.percentUsed}%</span>
+                    )}
+                    <span>{msToRelative(s.updatedAt ? Date.now() - s.updatedAt : 0)}</span>
+                  </div>
                 </div>
               </div>
             ))}
