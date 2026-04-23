@@ -219,13 +219,20 @@ export default function CampaignsPage() {
                           )}
                         </td>
                         <td className="px-4 py-2.5 text-center">
-                          {lead.demo_url ? (
-                            <a href={lead.demo_url} target="_blank" rel="noopener noreferrer" className="text-primary hover:text-primary/80">
-                              <ExternalLink className="w-3.5 h-3.5 inline" />
-                            </a>
-                          ) : (
-                            <span className="text-muted-foreground text-xs">–</span>
-                          )}
+                          <div className="flex items-center justify-center gap-2">
+                            {lead.demo_url ? (
+                              <a href={lead.demo_url} target="_blank" rel="noopener noreferrer" className="text-primary hover:text-primary/80" title="View demo">
+                                <ExternalLink className="w-3.5 h-3.5" />
+                              </a>
+                            ) : (
+                              <span className="text-muted-foreground text-xs">–</span>
+                            )}
+                            {lead.website && (
+                              <a href={lead.website} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground" title="Visit website">
+                                <ExternalLink className="w-3 h-3" />
+                              </a>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     ))}
