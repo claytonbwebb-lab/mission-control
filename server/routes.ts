@@ -1,6 +1,10 @@
 import express, { type Express, type Request, type Response, type NextFunction } from "express";
 import { createServer, type Server } from "http";
 import path from "path";
+import { execFile } from "child_process";
+import { promisify } from "util";
+
+const execFileAsync = promisify(execFile);
 
 
 const BACKEND = "https://mission.brightstacklabs.co.uk";
@@ -106,9 +110,59 @@ export async function registerRoutes(
     proxy(res, "POST", `/posts/${req.params.id}/reject`)
   );
 
-  app.post("/api/posts/:id/publish", (req, res) =>
-    proxy(res, "POST", `/posts/${req.params.id}/publish`)
-  );
+  app.post("/api/posts/:id/publish", async (req, res) => {
+    // Fetch the post to check if it's a Twitter post
+    try {
+      const postRes = await fetch(`${BACKEND}/posts/${req.params.id}`, { headers: backendHeaders });
+      const post = await postRes.json() as Record<string, unknown>;
+
+      if (post.platform === "twitter") {
+        // Handle Twitter publishing via twitter-post.js
+        const scriptPath = path.resolve(process.cwd(), "scripts", "twitter-post.js");
+        const text = (post.content_text ?? post.content ?? "") as string;
+        const imageUrl = (post.image_url ?? post.imageUrl ?? "") as string;
+
+        // Download image if URL provided
+        let imagePath = "";
+        if (imageUrl) {
+          try {
+            const imgRes = await fetch(imageUrl);
+            const buf = Buffer.from(await imgRes.arrayBuffer());
+            const tmpPath = `/tmp/tweet-img-${req.params.id}.jpg`;
+            require("fs").writeFileSync(tmpPath, buf);
+            imagePath = tmpPath;
+          } catch (e) {
+            console.error("[twitter] Image download failed:", (e as Error).message);
+          }
+        }
+
+        try {
+          const args = imagePath ? [text, imagePath] : [text];
+          const { stdout, stderr } = await execFileAsync("node", [scriptPath, ...args], { timeout: 30000 });
+          console.log("[twitter] stdout:", stdout);
+          if (stderr) console.error("[twitter] stderr:", stderr);
+
+          // Mark post as published in backend
+          await fetch(`${BACKEND}/posts/${req.params.id}`, {
+            method: "PATCH",
+            headers: backendHeaders,
+            body: JSON.stringify({ status: "published" }),
+          });
+
+          return res.json({ ok: true, platform: "twitter", message: stdout.trim() });
+        } catch (e) {
+          const errMsg = (e as Error).message;
+          console.error("[twitter] Post failed:", errMsg);
+          return res.status(500).json({ error: errMsg });
+        }
+      }
+    } catch (e) {
+      console.error("[twitter] Fetch post failed:", (e as Error).message);
+    }
+
+    // Non-Twitter: proxy to backend as normal
+    return proxy(res, "POST", `/posts/${req.params.id}/publish`);
+  });
 
   // ── Generate ──────────────────────────────────────────────────────────────
   app.post("/api/generate", (req, res) =>
