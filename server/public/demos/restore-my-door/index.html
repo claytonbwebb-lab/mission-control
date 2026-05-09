@@ -1,0 +1,1658 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Restore My Door | Transform Your Space for a Fraction of the Cost</title>
+<meta name="description" content="Restore My Door — Vinyl wrapping, spray painting, UPVC painting & new fitted kitchens — serving Manchester and the North West.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --black: #0d0d0d;
+    --dark: #1a1a1a;
+    --dark2: #222222;
+    --dark3: #2a2a2a;
+    --red: #e63329;
+    --red-dark: #c02820;
+    --white: #ffffff;
+    --grey: #aaaaaa;
+    --light-grey: #f0f0f0;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--black);
+    color: var(--white);
+    font-family: 'Inter', sans-serif;
+    font-weight: 400;
+    line-height: 1.6;
+    overflow-x: hidden;
+  }
+
+  h1, h2, h3, h4, h5 {
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    line-height: 1.1;
+  }
+
+  a { color: inherit; text-decoration: none; }
+
+  /* ── NAV ── */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 1000;
+    padding: 0 5%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 70px;
+    transition: background 0.3s, box-shadow 0.3s;
+  }
+  nav.scrolled {
+    background: rgba(13,13,13,0.97);
+    box-shadow: 0 2px 30px rgba(0,0,0,0.6);
+  }
+  .nav-logo {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 1.5rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+  }
+  .nav-logo span { color: var(--red); }
+  .nav-links {
+    display: flex;
+    gap: 2rem;
+    list-style: none;
+  }
+  .nav-links a {
+    font-family: 'Inter', sans-serif;
+    font-weight: 500;
+    font-size: 0.95rem;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    color: var(--grey);
+    transition: color 0.2s;
+  }
+  .nav-links a:hover { color: var(--white); }
+  .nav-cta {
+    background: var(--red);
+    color: var(--white) !important;
+    padding: 0.5rem 1.2rem;
+    border-radius: 3px;
+    transition: background 0.2s !important;
+  }
+  .nav-cta:hover { background: var(--red-dark) !important; color: var(--white) !important; }
+
+  .nav-toggle {
+    display: none;
+    flex-direction: column;
+    gap: 5px;
+    cursor: pointer;
+    padding: 5px;
+  }
+  .nav-toggle span {
+    display: block;
+    width: 25px;
+    height: 2px;
+    background: var(--white);
+    transition: 0.3s;
+  }
+
+  /* ── HERO ── */
+  #hero {
+    position: relative;
+    height: 100vh;
+    min-height: 600px;
+    display: flex;
+    align-items: center;
+    overflow: hidden;
+  }
+  .hero-slides {
+    position: absolute;
+    inset: 0;
+  }
+  .hero-slide {
+    position: absolute;
+    inset: 0;
+    background-size: cover;
+    background-position: center;
+    opacity: 0;
+    transition: opacity 1.2s ease;
+    transform: scale(1.05);
+    transition: opacity 1.2s ease, transform 8s ease;
+  }
+  .hero-slide.active {
+    opacity: 1;
+    transform: scale(1);
+  }
+  .hero-slide::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      to right,
+      rgba(13,13,13,0.85) 0%,
+      rgba(13,13,13,0.55) 50%,
+      rgba(13,13,13,0.3) 100%
+    );
+  }
+  .hero-content {
+    position: relative;
+    z-index: 10;
+    padding: 0 8%;
+    max-width: 850px;
+  }
+  .hero-title {
+    font-size: clamp(2.8rem, 6vw, 5rem);
+    line-height: 1.0;
+    margin-bottom: 1.5rem;
+    opacity: 0;
+    transform: translateY(20px);
+    animation: fadeUp 0.8s 0.5s forwards;
+  }
+  .hero-title em {
+    font-style: normal;
+    color: var(--red);
+  }
+  .hero-sub {
+    font-size: 1.1rem;
+    font-weight: 300;
+    color: rgba(255,255,255,0.8);
+    margin-bottom: 2.5rem;
+    opacity: 0;
+    transform: translateY(20px);
+    animation: fadeUp 0.8s 0.7s forwards;
+  }
+  .hero-btns {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    opacity: 0;
+    transform: translateY(20px);
+    animation: fadeUp 0.8s 0.9s forwards;
+  }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.85rem 2rem;
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+    font-size: 1rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: 2px solid transparent;
+  }
+  .btn-primary {
+    background: var(--red);
+    color: var(--white);
+  }
+  .btn-primary:hover {
+    background: var(--red-dark);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(230,51,41,0.4);
+  }
+  .hero-indicators {
+    position: absolute;
+    bottom: 2rem;
+    left: 8%;
+    display: flex;
+    gap: 0.5rem;
+    z-index: 10;
+  }
+  .hero-dot {
+    width: 30px;
+    height: 3px;
+    background: rgba(255,255,255,0.3);
+    cursor: pointer;
+    transition: background 0.3s, width 0.3s;
+    border-radius: 2px;
+  }
+  .hero-dot.active {
+    background: var(--red);
+    width: 50px;
+  }
+
+  /* ── TRUST BAR ── */
+  .trust-bar {
+    background: var(--red);
+    padding: 1rem 5%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 3rem;
+    flex-wrap: wrap;
+  }
+  .trust-item {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-family: 'Inter', sans-serif;
+    font-weight: 500;
+    font-size: 0.9rem;
+    letter-spacing: 0.05em;
+    color: rgba(255,255,255,0.9);
+  }
+  .trust-item svg { flex-shrink: 0; }
+
+  /* ── SECTIONS ── */
+  section { padding: 6rem 8%; }
+  .section-label {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.35em;
+    text-transform: uppercase;
+    color: var(--red);
+    margin-bottom: 0.75rem;
+  }
+  .section-title {
+    font-size: clamp(2rem, 4vw, 3rem);
+    margin-bottom: 1rem;
+  }
+  .section-title span { color: var(--red); }
+  .section-divider {
+    width: 50px;
+    height: 3px;
+    background: var(--red);
+    margin-bottom: 2rem;
+  }
+  .section-sub {
+    color: var(--grey);
+    max-width: 600px;
+    font-size: 1.05rem;
+    line-height: 1.7;
+    margin-bottom: 3rem;
+  }
+
+  /* ── SERVICES ── */
+  #services { background: var(--dark); }
+  .services-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.06);
+  }
+  .service-card {
+    background: var(--dark);
+    padding: 2.5rem;
+    transition: background 0.3s;
+    position: relative;
+    overflow: hidden;
+  }
+  .service-card::before {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0;
+    width: 0;
+    height: 2px;
+    background: var(--red);
+    transition: width 0.4s;
+  }
+  .service-card:hover::before { width: 100%; }
+  .service-card:hover { background: var(--dark2); }
+  .service-icon {
+    width: 52px;
+    height: 52px;
+    background: rgba(230,51,41,0.1);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1.5rem;
+    transition: background 0.3s;
+  }
+  .service-card:hover .service-icon { background: rgba(230,51,41,0.2); }
+  .service-card h3 {
+    font-size: 1.3rem;
+    margin-bottom: 0.75rem;
+    letter-spacing: 0.03em;
+  }
+  .service-card p { color: var(--grey); font-size: 0.92rem; line-height: 1.7; }
+  .color-swatch-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 5px;
+    margin-top: 1rem;
+    max-width: 150px;
+  }
+  .color-swatch {
+    width: 100%;
+    aspect-ratio: 1/1;
+    border-radius: 3px;
+    border: 1px solid rgba(255,255,255,0.1);
+  }
+
+  /* ── STATS ── */
+  #stats {
+    background: var(--black);
+    padding: 5rem 8%;
+  }
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0;
+    border: 1px solid rgba(255,255,255,0.07);
+  }
+  .stat-item {
+    padding: 3rem 2rem;
+    text-align: center;
+    border-right: 1px solid rgba(255,255,255,0.07);
+    position: relative;
+    background: var(--dark);
+    transition: background 0.3s;
+  }
+  .stat-item:hover { background: var(--dark2); }
+  .stat-item:last-child { border-right: none; }
+  .stat-num {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 3.5rem;
+    font-weight: 700;
+    color: var(--red);
+    line-height: 1;
+    margin-bottom: 0.5rem;
+  }
+  .stat-label {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--grey);
+  }
+
+  /* ── GALLERY ── */
+  #gallery { background: var(--dark); padding: 6rem 8%; }
+  .gallery-filters {
+    text-align: center;
+    margin-bottom: 3rem;
+  }
+  .filter-btn {
+    background: var(--dark2);
+    color: var(--white);
+    border: 1px solid rgba(255,255,255,0.1);
+    padding: 0.7rem 1.5rem;
+    margin: 0 0.5rem 1rem 0;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: background 0.3s, color 0.3s;
+    font-family: 'Inter', sans-serif;
+    font-weight: 500;
+    font-size: 0.9rem;
+  }
+  .filter-btn.active, .filter-btn:hover {
+    background: var(--red);
+    border-color: var(--red);
+    color: var(--white);
+  }
+  .gallery-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5px;
+    background: rgba(255,255,255,0.06);
+  }
+  .gallery-item {
+    overflow: hidden;
+    position: relative;
+    aspect-ratio: 16/10;
+    cursor: pointer;
+    background: var(--dark);
+    display: flex;
+    flex-direction: column;
+  }
+  .gallery-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.6s ease;
+  }
+  .gallery-item:hover img { transform: scale(1.08); }
+  .gallery-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(13,13,13,0.7);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .gallery-item:hover .gallery-overlay { opacity: 1; }
+  .gallery-caption {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 1.5rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-align: center;
+    margin-bottom: 0.5rem;
+  }
+  .gallery-tag {
+    background: var(--red);
+    font-family: 'Inter', sans-serif;
+    font-size: 0.8rem;
+    padding: 0.3rem 0.8rem;
+    border-radius: 3px;
+    text-transform: uppercase;
+    font-weight: 500;
+  }
+  .before-after-slider {
+    position: relative;
+    width: 100%;
+    height: 400px; /* Adjust as needed */
+    overflow: hidden;
+    margin-bottom: 3rem;
+  }
+  .before-after-slider img {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    pointer-events: none; /* Allows interaction with the slider handle */
+  }
+  .before-image {
+    z-index: 1;
+  }
+  .after-image {
+    width: 50%; /* Initial split */
+    z-index: 2;
+  }
+  .slider-handle {
+    position: absolute;
+    top: 0;
+    left: 50%; /* Initial position */
+    width: 2px;
+    height: 100%;
+    background: var(--red);
+    cursor: ew-resize;
+    z-index: 3;
+    transform: translateX(-50%);
+  }
+  .slider-handle::before, .slider-handle::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 30px;
+    height: 30px;
+    background: var(--red);
+    border-radius: 50%;
+    left: 0;
+  }
+  .slider-handle::after {
+    background: var(--dark);
+    width: 20px;
+    height: 20px;
+  }
+
+  /* ── TESTIMONIALS ── */
+  #testimonials { background: var(--black); }
+  .testimonials-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+  }
+  .testimonial-card {
+    background: var(--dark2);
+    border: 1px solid rgba(255,255,255,0.06);
+    padding: 2rem;
+    border-radius: 4px;
+    position: relative;
+    transition: transform 0.3s, border-color 0.3s;
+  }
+  .testimonial-card:hover {
+    transform: translateY(-4px);
+    border-color: rgba(230,51,41,0.3);
+  }
+  .testimonial-card::before {
+    content: '“';
+    position: absolute;
+    top: 1.2rem;
+    right: 1.5rem;
+    font-family: Georgia, serif;
+    font-size: 5rem;
+    line-height: 1;
+    color: rgba(230,51,41,0.15);
+  }
+  .stars {
+    display: flex;
+    gap: 2px;
+    margin-bottom: 1rem;
+    color: var(--red);
+    font-size: 1rem;
+  }
+  .testimonial-text {
+    color: rgba(255,255,255,0.85);
+    font-size: 0.97rem;
+    line-height: 1.7;
+    margin-bottom: 1.2rem;
+  }
+  .testimonial-author {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    color: var(--red);
+  }
+  .testimonial-source {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.8rem;
+    color: var(--grey);
+  }
+
+  /* ── CLIENTS ── */
+  #clients { background: var(--dark); padding: 4rem 8%; }
+  .client-logo-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 2rem;
+    align-items: center;
+    justify-items: center;
+    margin-top: 3rem;
+  }
+  .client-logo-item {
+    width: 100%;
+    max-width: 180px;
+    height: 80px;
+    background: var(--dark2);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.9rem;
+    color: var(--grey);
+    text-align: center;
+    transition: background 0.3s, border-color 0.3s;
+  }
+  .client-logo-item:hover {
+    background: var(--dark3);
+    border-color: rgba(255,255,255,0.2);
+  }
+
+  /* ── ABOUT ── */
+  #about { background: var(--black); }
+  .about-grid {
+    display: grid;
+    grid-template-columns: 1fr 1.4fr;
+    gap: 5rem;
+    align-items: center;
+  }
+  .about-visual {
+    position: relative;
+  }
+  .about-img-wrap {
+    position: relative;
+    display: inline-block;
+  }
+  .about-img-wrap::before {
+    content: '';
+    position: absolute;
+    top: -15px;
+    left: -15px;
+    right: 15px;
+    bottom: 15px;
+    border: 2px solid var(--red);
+    opacity: 0.4;
+    border-radius: 4px;
+  }
+  .about-img-wrap img {
+    width: 100%;
+    max-width: 500px;
+    display: block;
+    border-radius: 4px;
+    filter: grayscale(20%);
+  }
+  .about-badge {
+    position: absolute;
+    bottom: -1.5rem;
+    right: -1.5rem;
+    background: var(--red);
+    padding: 1.2rem 1.5rem;
+    text-align: center;
+    border-radius: 4px;
+  }
+  .about-badge .num {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 2.5rem;
+    font-weight: 700;
+    line-height: 1;
+    display: block;
+  }
+  .about-badge .txt {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.7rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    opacity: 0.9;
+  }
+  .about-text .section-sub { margin-bottom: 1.5rem; }
+  .about-text p { color: var(--grey); margin-bottom: 1rem; line-height: 1.8; }
+  .about-team {
+    margin-top: 2rem;
+    padding-top: 2rem;
+    border-top: 1px solid rgba(255,255,255,0.08);
+    color: var(--grey);
+  }
+
+  /* ── BLOG ── */
+  #blog { background: var(--dark); padding: 6rem 8%; }
+  .blog-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+  }
+  .blog-card {
+    background: var(--dark2);
+    border-radius: 4px;
+    overflow: hidden;
+    transition: transform 0.3s, box-shadow 0.3s;
+    border: 1px solid rgba(255,255,255,0.06);
+  }
+  .blog-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+  }
+  .blog-card-image {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+  }
+  .blog-card-content {
+    padding: 1.5rem;
+  }
+  .blog-card-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.8rem;
+  }
+  .blog-card-category {
+    background: var(--red);
+    font-family: 'Inter', sans-serif;
+    font-size: 0.75rem;
+    padding: 0.2rem 0.7rem;
+    border-radius: 3px;
+    text-transform: uppercase;
+    font-weight: 500;
+  }
+  .blog-card-date {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.8rem;
+    color: var(--grey);
+  }
+  .blog-card-title {
+    font-size: 1.4rem;
+    margin-bottom: 0.7rem;
+    letter-spacing: 0.03em;
+    line-height: 1.3;
+  }
+  .blog-card-excerpt {
+    color: var(--grey);
+    font-size: 0.9rem;
+    margin-bottom: 1rem;
+  }
+  .blog-card-link {
+    color: var(--red);
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3em;
+    transition: color 0.3s;
+  }
+  .blog-card-link:hover { color: var(--white); }
+
+  /* ── CONTACT ── */
+  #contact { background: var(--black); }
+  .contact-grid {
+    display: grid;
+    grid-template-columns: 1fr 1.4fr;
+    gap: 4rem;
+  }
+  .contact-info { }
+  .contact-detail {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
+  .contact-detail-icon {
+    width: 44px;
+    height: 44px;
+    background: rgba(230,51,41,0.1);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .contact-detail-icon svg { stroke: var(--red); } /* Ensure icons use brand red */
+  .contact-detail-text strong {
+    display: block;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.8rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--red);
+    margin-bottom: 0.3rem;
+  }
+  .contact-detail-text span { color: var(--grey); font-size: 0.97rem; }
+  .contact-detail-text a { color: var(--white); }
+  .contact-detail-text a:hover { color: var(--red); }
+  .contact-form { }
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+  .form-group { margin-bottom: 1rem; }
+  .form-group label {
+    display: block;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--grey);
+    margin-bottom: 0.5rem;
+  }
+  .form-group input,\
+  .form-group select,\
+  .form-group textarea,\
+  .form-group input[type="file"]::file-selector-button {
+    width: 100%;
+    background: var(--dark2);
+    border: 1px solid rgba(255,255,255,0.08);
+    color: var(--white);
+    padding: 0.85rem 1rem;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.9rem;
+    border-radius: 3px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .form-group input:focus,\
+  .form-group select:focus,\
+  .form-group textarea:focus {
+    border-color: var(--red);
+  }
+  .form-group textarea { resize: vertical; min-height: 130px; }
+  .form-group select option { background: var(--dark2); }
+  .form-submit {
+    width: 100%;
+    padding: 1rem;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 1.1rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    background: var(--red);
+    color: var(--white);
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.2s;
+    margin-top: 0.5rem;
+  }
+  .form-submit:hover {
+    background: var(--red-dark);
+    transform: translateY(-2px);
+  }
+  .form-success-message {
+    background: #28a745;
+    color: white;
+    padding: 1rem;
+    border-radius: 3px;
+    margin-top: 1rem;
+    display: none;
+    text-align: center;
+  }
+
+  /* ── FACEBOOK WIDGET ── */
+  .fb-messenger-widget {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 100;
+  }
+  .fb-messenger-button {
+    background: #0084ff; /* Facebook Messenger blue */
+    color: white;
+    border-radius: 50%;
+    width: 60px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    transition: background 0.3s, transform 0.3s;
+  }
+  .fb-messenger-button:hover {
+    background: #006ddb;
+    transform: translateY(-3px);
+  }
+
+  /* ── FOOTER ── */
+  footer {
+    background: #0a0a0a;
+    border-top: 1px solid rgba(255,255,255,0.05);
+    padding: 4rem 8% 2rem;
+  }
+  .footer-grid {
+    display: grid;
+    grid-template-columns: 1.5fr 1fr 1fr 1fr;
+    gap: 3rem;
+    margin-bottom: 3rem;
+    padding-bottom: 3rem;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+  .footer-logo {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 1.8rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+  }
+  .footer-logo span { color: var(--red); }
+  .footer-tagline {
+    color: var(--grey);
+    font-size: 0.9rem;
+    margin-bottom: 1.5rem;
+    line-height: 1.6;
+  }
+  .footer-social-links {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1.5rem;
+  }
+  .footer-social-link {
+    color: var(--grey);
+    font-size: 1.5rem;
+    transition: color 0.3s;
+  }
+  .footer-social-link:hover { color: var(--red); }
+
+  .footer-h {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--red);
+    margin-bottom: 1.2rem;
+  }
+  .footer-links { list-style: none; }
+  .footer-links li { margin-bottom: 0.6rem; }
+  .footer-links a {
+    color: var(--grey);
+    font-size: 0.92rem;
+    transition: color 0.2s;
+  }
+  .footer-links a:hover { color: var(--white); }
+  .footer-contact-item {
+    display: flex;
+    gap: 0.7rem;
+    margin-bottom: 0.8rem;
+    color: var(--grey);
+    font-size: 0.9rem;
+    line-height: 1.5;
+  }
+  .footer-contact-item svg { flex-shrink: 0; margin-top: 2px; }
+  .footer-contact-item a { color: var(--grey); } /* For address link */
+  .footer-contact-item a:hover { color: var(--white); }
+
+  .footer-bottom {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+  .footer-copy { color: rgba(255,255,255,0.3); font-size: 0.82rem; }
+
+  /* ── ANIMATIONS ── */
+  @keyframes fadeUp {
+    to { opacity: 1; transform: translateY(0); }\
+  }
+  .reveal {
+    opacity: 0;
+    transform: translateY(30px);
+    transition: opacity 0.7s ease, transform 0.7s ease;
+  }
+  .reveal.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  .reveal-delay-1 { transition-delay: 0.1s; }\
+  .reveal-delay-2 { transition-delay: 0.2s; }\
+  .reveal-delay-3 { transition-delay: 0.3s; }\
+  .reveal-delay-4 { transition-delay: 0.4s; }\
+  .reveal-delay-5 { transition-delay: 0.5s; }\
+  .reveal-delay-6 { transition-delay: 0.6s; }\
+  .reveal-delay-7 { transition-delay: 0.7s; }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 1024px) {
+    .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    .stat-item:nth-child(2) { border-right: none; }
+    .stat-item:nth-child(3), .stat-item:nth-child(4) {
+      border-top: 1px solid rgba(255,255,255,0.07);
+    }
+    .about-grid { grid-template-columns: 1fr; gap: 3rem; text-align: center; }
+    .about-visual { display: flex; justify-content: center; }
+    .about-img-wrap::before {
+      top: -10px; left: -10px; right: 10px; bottom: 10px;
+    }
+    .about-badge { bottom: -1rem; right: -1rem; }
+    .contact-grid { grid-template-columns: 1fr; gap: 3rem; }
+    .footer-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 768px) {
+    nav { padding: 0 5%; }
+    .nav-links { display: none; flex-direction: column; position: fixed; top: 70px; left: 0; right: 0; background: rgba(13,13,13,0.98); padding: 1.5rem 5%; gap: 0; border-top: 1px solid rgba(255,255,255,0.06); }
+    .nav-links.open { display: flex; }
+    .nav-links li { border-bottom: 1px solid rgba(255,255,255,0.05); }
+    .nav-links a { display: block; padding: 0.85rem 0; color: var(--white); }
+    .nav-toggle { display: flex; }
+    section { padding: 4rem 5%; }
+    .hero-content { padding: 0 5%; }
+    .trust-bar { gap: 1.5rem; }
+    .form-row { grid-template-columns: 1fr; }
+    .footer-grid { grid-template-columns: 1fr; }
+    .client-logo-grid { grid-template-columns: repeat(2, 1fr); }
+    .blog-grid { grid-template-columns: 1fr; }
+    .gallery-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav id="navbar">
+  <div class="nav-logo">RESTORE MY <span>DOOR</span></div>
+  <ul class="nav-links" id="navLinks">
+    <li><a href="#services">Services</a></li>
+    <li><a href="#gallery">Gallery</a></li>
+    <li><a href="#testimonials">Reviews</a></li>
+    <li><a href="#about">About</a></li>
+    <li><a href="#blog">Blog</a></li>
+    <li><a href="#contact" class="nav-cta">Get a Free Quote</a></li>
+  </ul>
+  <div class="nav-toggle" id="navToggle" aria-label="Menu">
+    <span></span><span></span><span></span>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section id="hero">
+  <div class="hero-slides" id="heroSlides">
+    <div class="hero-slide active" style="background-image:url('https://picsum.photos/seed/kitchen/1920/1080?grayscale&blur=2')"></div>
+    <div class="hero-slide" style="background-image:url('https://picsum.photos/seed/home/1920/1080?grayscale&blur=2')"></div>
+    <div class="hero-slide" style="background-image:url('https://picsum.photos/seed/office/1920/1080?grayscale&blur=2')"></div>
+    <div class="hero-slide" style="background-image:url('https://picsum.photos/seed/hotel/1920/1080?grayscale&blur=2')"></div>
+    <div class="hero-slide" style="background-image:url('https://picsum.photos/seed/interior/1920/1080?grayscale&blur=2')"></div>
+    <div class="hero-slide" style="background-image:url('https://picsum.photos/seed/caravan/1920/1080?grayscale&blur=2')"></div>
+    <div class="hero-slide" style="background-image:url('https://picsum.photos/seed/wardrobe/1920/1080?grayscale&blur=2')"></div>
+    <div class="hero-slide" style="background-image:url('https://picsum.photos/seed/windows/1920/1080?grayscale&blur=2')"></div>
+  </div>
+  <div class="hero-content">
+    <h1 class="hero-title">Transform Your Space for a <em>Fraction</em> of the Cost</h1>
+    <p class="hero-sub">Vinyl wrapping, spray painting, UPVC painting & new fitted kitchens — serving Manchester and the North West.</p>
+    <div class="hero-btns">
+      <a href="#contact" class="btn btn-primary">
+        Get Your Free Quote
+      </a>
+    </div>
+  </div>
+  <div class="hero-indicators" id="heroIndicators"></div>
+</section>
+
+<!-- TRUST BAR -->
+<div class="trust-bar">
+  <div class="trust-item">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+    30+ Years Combined Experience
+  </div>
+  <div class="trust-item">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+    Established 2014
+  </div>
+  <div class="trust-item">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+    5000+ Transformations Completed
+  </div>
+  <div class="trust-item">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+    5-Star Rated on Google & Facebook
+  </div>
+</div>
+
+<!-- SERVICES -->
+<section id="services">
+  <div class="section-label reveal">Our Services</div>
+  <h2 class="section-title reveal">Transform Your Home With <span>Restore My Door</span></h2>
+  <div class="section-divider reveal"></div>
+  <p class="section-sub reveal">Specialising in high-quality vinyl wrapping, spray painting for kitchens and UPVC, and custom new doors. We bring your vision to life for less.</p>
+  <div class="services-grid">
+    <div class="service-card reveal">
+      <div class="service-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A10 10 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+      </div>
+      <h3>Vinyl Wrapping</h3>
+      <p>Transform your kitchen, wardrobe, furniture with premium vinyl wraps. Wood grain, matte, gloss, marble finishes.</p>
+      <div class="color-swatch-grid">
+        <div class="color-swatch" style="background-color:#5c4033;" title="Wood Grain"></div>
+        <div class="color-swatch" style="background-color:#343a40;" title="Matte Black"></div>
+        <div class="color-swatch" style="background-color:#f8f9fa;" title="Gloss White"></div>
+        <div class="color-swatch" style="background-color:#ced4da;" title="Concrete Grey"></div>
+        <div class="color-swatch" style="background-color:#adb5bd;" title="Marble Effect"></div>
+        <div class="color-swatch" style="background-color:#6c757d;" title="Metallic Silver"></div>
+      </div>
+    </div>
+    <div class="service-card reveal reveal-delay-1">
+      <div class="service-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H7l5 5 5-5zM17 19H7l5-5 5 5z"/></svg>
+      </div>
+      <h3>Spray Painting</h3>
+      <p>Factory-smooth finish on doors with expert spray painting. Extensive Farrow & Ball, RAL colour palette.</p>
+      <div class="color-swatch-grid">
+        <div class="color-swatch" style="background-color:#2a3644;" title="Hague Blue"></div>
+        <div class="color-swatch" style="background-color:#d7d0c0;" title="Elephants Breath"></div>
+        <div class="color-swatch" style="background-color:#485e4e;" title="Calke Green"></div>
+        <div class="color-swatch" style="background-color:#e6ded7;" title="Wimborne White"></div>
+        <div class="color-swatch" style="background-color:#a5885e;" title="Indian Yellow"></div>
+        <div class="color-swatch" style="background-color:#b0c7cf;" title="Light Blue"></div>
+      </div>
+    </div>
+    <div class="service-card reveal reveal-delay-2">
+      <div class="service-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 21v-7.91M14 21v-7.91M12 21v-2.09M2 21h20M5 14h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v7a2 2 0 002 2z"/></svg>
+      </div>
+      <h3>UPVC Spraying</h3>
+      <p>Window frames, doors, garages, gutters & soffits resprayed onsite. 2K polyurethane paint — half the cost of replacements.</p>
+      <div class="color-swatch-grid">
+        <div class="color-swatch" style="background-color:#212529;" title="Anthracite Grey"></div>
+        <div class="color-swatch" style="background-color:#343a40;" title="Black"></div>
+        <div class="color-swatch" style="background-color:#f8f9fa;" title="White"></div>
+        <div class="color-swatch" style="background-color:#6c757d;" title="Slate Grey"></div>
+        <div class="color-swatch" style="background-color:#495057;" title="Window Grey"></div>
+        <div class="color-swatch" style="background-color:#a2b9a7;" title="Chartwell Green"></div>
+      </div>
+    </div>
+    <div class="service-card reveal reveal-delay-3">
+      <div class="service-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+      </div>
+      <h3>New Doors</h3>
+      <p>Custom-designed and fitted new doors for kitchens and wardrobes. Complete aesthetic overhaul with premium hardware.</p>
+    </div>
+    <div class="service-card reveal reveal-delay-4">
+      <div class="service-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/><line x1="12" y1="2" x2="12" y2="22"/></svg>
+      </div>
+      <h3>Redesign My Space</h3>
+      <p>Full fitted kitchens and wardrobes from scratch. Joiners, builders, CAD design, full project management.</p>
+    </div>
+    <div class="service-card reveal reveal-delay-5">
+      <div class="service-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+      </div>
+      <h3>Commercial Wrapping</h3>
+      <p>Hotels, restaurants, offices, retail. Lift doors, reception desks, architectural column wraps. Premium results.</p>
+    </div>
+    <div class="service-card reveal reveal-delay-6">
+      <div class="service-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="12" y1="3" x2="12" y2="21"/></svg>
+      </div>
+      <h3>Worktops & Tiles</h3>
+      <p>Complete your transformation with bespoke worktop installations and stylish tiling to complement your new doors.</p>
+    </div>
+  </div>
+</section>
+
+<!-- STATS -->
+<section id="stats">
+  <div class="stats-grid">
+    <div class="stat-item reveal">
+      <div class="stat-num">30+</div>
+      <div class="stat-label">Years Combined Industry Experience</div>
+    </div>
+    <div class="stat-item reveal reveal-delay-1">
+      <div class="stat-num">2014</div>
+      <div class="stat-label">Established</div>
+    </div>
+    <div class="stat-item reveal reveal-delay-2">
+      <div class="stat-num">5,000+</div>
+      <div class="stat-label">Happy Customers</div>
+    </div>
+    <div class="stat-item reveal reveal-delay-3">
+      <div class="stat-num">5★</div>
+      <div class="stat-label">Google & Facebook Rated</div>
+    </div>
+  </div>
+</section>
+
+<!-- GALLERY -->
+<section id="gallery">
+  <div class="section-label reveal" style="text-align:center">Our Work</div>
+  <h2 class="section-title reveal" style="text-align:center;margin-bottom:1.5rem;">Inspiring <span>Transformations</span></h2>
+  <div class="section-divider reveal" style="margin-left:auto;margin-right:auto;"></div>
+
+  <div class="before-after-slider reveal">
+    <img class="before-image" src="https://picsum.photos/seed/kitchen_before/1200/800?grayscale" alt="Kitchen before renovation">
+    <img class="after-image" src="https://picsum.photos/seed/kitchen_after/1200/800" alt="Kitchen after renovation">
+    <div class="slider-handle"></div>
+  </div>
+
+  <div class="gallery-filters reveal">
+    <button class="filter-btn active" data-filter="all">All</button>
+    <button class="filter-btn" data-filter="commercial">Commercial</button>
+    <button class="filter-btn" data-filter="doors">Doors</button>
+    <button class="filter-btn" data-filter="spray">Spray</button>
+    <button class="filter-btn" data-filter="vinyl">Vinyl Wraps</button>
+  </div>
+  <div class="gallery-grid">
+    <div class="gallery-item reveal" data-category="vinyl">
+      <img src="https://picsum.photos/seed/r door vinyl 1/400/250" alt="Kitchen vinyl wrap">
+      <div class="gallery-overlay">
+        <div class="gallery-caption">Modern Kitchen Refresh</div>
+        <div class="gallery-tag">Vinyl</div>
+      </div>
+    </div>
+    <div class="gallery-item reveal reveal-delay-1" data-category="spray">
+      <img src="https://picsum.photos/seed/r door spray 1/400/250" alt="Kitchen spray paint">
+      <div class="gallery-overlay">
+        <div class="gallery-caption">Smooth Grey Cabinets</div>
+        <div class="gallery-tag">Spray</div>
+      </div>
+    </div>
+    <div class="gallery-item reveal reveal-delay-2" data-category="commercial">
+      <img src="https://picsum.photos/seed/r door comm 1/400/250" alt="Office door wrapping">
+      <div class="gallery-overlay">
+        <div class="gallery-caption">Office Door Refurbishment</div>
+        <div class="gallery-tag">Commercial</div>
+      </div>
+    </div>
+    <div class="gallery-item reveal reveal-delay-3" data-category="doors">
+      <img src="https://picsum.photos/seed/r door new 1/400/250" alt="New kitchen doors">
+      <div class="gallery-overlay">
+        <div class="gallery-caption">Seamless Integrated Doors</div>
+        <div class="gallery-tag">Doors</div>
+      </div>
+    </div>
+    <div class="gallery-item reveal reveal-delay-4" data-category="vinyl">
+      <img src="https://picsum.photos/seed/r door vinyl 2/400/250" alt="Wardrobe vinyl wrap">
+      <div class="gallery-overlay">
+        <div class="gallery-caption">Wardrobe Makeover</div>
+        <div class="gallery-tag">Vinyl</div>
+      </div>
+    </div>
+    <div class="gallery-item reveal reveal-delay-5" data-category="spray">
+      <img src="https://picsum.photos/seed/r door spray 2/400/250" alt="UPVC window spray">
+      <div class="gallery-overlay">
+        <div class="gallery-caption">New Look UPVC Windows</div>
+        <div class="gallery-tag">Spray</div>
+      </div>
+    </div>
+    <div class="gallery-item reveal reveal-delay-6" data-category="commercial">
+      <img src="https://picsum.photos/seed/r door comm 2/400/250" alt="Hotel reception desk wrapping">
+      <div class="gallery-overlay">
+        <div class="gallery-caption">Hotel Reception Desk</div>
+        <div class="gallery-tag">Commercial</div>
+      </div>
+    </div>
+    <div class="gallery-item reveal reveal-delay-7" data-category="doors">
+      <img src="https://picsum.photos/seed/r door new 2/400/250" alt="Bedroom doors">
+      <div class="gallery-overlay">
+        <div class="gallery-caption">Elegant Bedroom Doors</div>
+        <div class="gallery-tag">Doors</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TESTIMONIALS -->
+<section id="testimonials">
+  <div class="section-label reveal">Customer Reviews</div>
+  <h2 class="section-title reveal">What Our <span>Customers Say</span></h2>
+  <div class="section-divider reveal"></div>
+  <div class="testimonials-grid">
+    <div class="testimonial-card reveal">
+      <div class="stars">★★★★★</div>
+      <p class="testimonial-text">"Restore My Door did an incredible job on our kitchen. It looks brand new for a fraction of what a full replacement would have cost. Highly recommend!"</p>
+      <div class="testimonial-author">Marie Elizabeth Wilson</div>
+      <div class="testimonial-source">(Source: Facebook)</div>
+    </div>
+    <div class="testimonial-card reveal reveal-delay-1">
+      <div class="stars">★★★★★</div>
+      <p class="testimonial-text">"Fantastic service from start to finish. Our UPVC windows and doors were looking tired, now they look modern and fresh. Couldn't be happier!"</p>
+      <div class="testimonial-author">Sue Dando</div>
+      <div class="testimonial-source">(Source: Google)</div>
+    </div>
+    <div class="testimonial-card reveal reveal-delay-2">
+      <div class="stars">★★★★★</div>
+      <p class="testimonial-text">"The team sprayed our kitchen cabinets, and the finish is absolutely flawless. It's like a brand new kitchen. Professional and efficient."</p>
+      <div class="testimonial-author">Gemma Lou</div>
+      <div class="testimonial-source">(Source: Facebook)</div>
+    </div>
+    <div class="testimonial-card reveal reveal-delay-3">
+      <div class="stars">★★★★★</div>
+      <p class="testimonial-text">"Excellent quality and attention to detail when wrapping our office reception desk. Transformed the space. Will use again for future commercial projects."</p>
+      <div class="testimonial-author">David W., Bolton</div>
+      <div class="testimonial-source">(Source: Google)</div>
+    </div>
+    <div class="testimonial-card reveal reveal-delay-4">
+      <div class="stars">★★★★★</div>
+      <p class="testimonial-text">"My tired old wardrobe now looks super modern with a beautiful vinyl wrap. The process was quick and tidy, and the results are stunning!"</p>
+      <div class="testimonial-author">Emily R., Salford</div>
+      <div class="testimonial-source">(Source: Facebook)</div>
+    </div>
+    <div class="testimonial-card reveal reveal-delay-5">
+      <div class="stars">★★★★★</div>
+      <p class="testimonial-text">"Great communication and a truly perfect finish on our kitchen respray. Made the whole tired kitchen look amazing. Thank you!"</p>
+      <div class="testimonial-author">Rachel P., Manchester</div>
+      <div class="testimonial-source">(Source: Google)</div>
+    </div>
+  </div>
+</section>
+
+<!-- CLIENTS -->
+<section id="clients">
+  <div class="section-label reveal" style="text-align:center;">Our Partners</div>
+  <h2 class="section-title reveal" style="text-align:center;margin-bottom:1rem;">Trusted by Leading Businesses <span>Across the North West</span></h2>
+  <div class="section-divider reveal" style="margin-left:auto;margin-right:auto;"></div>
+  <div class="client-logo-grid">
+    <div class="client-logo-item reveal">Manchester Hotel Group</div>
+    <div class="client-logo-item reveal reveal-delay-1">Trafford Pub Co</div>
+    <div class="client-logo-item reveal reveal-delay-2">Northern Property Holdings</div>
+    <div class="client-logo-item reveal reveal-delay-3">Ashton Care Homes</div>
+    <div class="client-logo-item reveal reveal-delay-4">Bolton Business Centre</div>
+    <div class="client-logo-item reveal reveal-delay-5">Peak District Spa</div>
+  </div>
+</section>
+
+<!-- ABOUT -->
+<section id="about">
+  <div class="about-grid">
+    <div class="about-visual reveal">
+      <div class="about-img-wrap">
+        <img src="https://picsum.photos/seed/workshop/600/400" alt="Restore My Door Workshop / Showroom">
+        <div class="about-badge">
+          <span class="num">EST.</span>
+          <span class="txt">2014</span>
+        </div>
+      </div>
+    </div>
+    <div class="about-text">
+      <div class="section-label reveal">About Us</div>
+      <h2 class="section-title reveal">Quality & Craftsmanship You Can <span>Trust</span></h2>
+      <div class="section-divider reveal"></div>
+      <p class="reveal">Restore My Door was established in 2014 with a passion for transforming spaces without the hefty price tag of full replacements. Based in Manchester, we serve customers across the North West, bringing our expertise to homes and businesses alike.</p>
+      <p class="reveal">We pride ourselves on our attention to detail and offer a comprehensive service from our in-house workshop, equipped with state-of-the-art spray booths for a perfect finish every time. Our dedicated team of professionals are committed to delivering outstanding results and exceptional customer service.</p>
+      <p class="reveal">Whether it's breathing new life into old kitchen cabinets with a fresh vinyl wrap, modernising UPVC windows with durable spray paint, or designing and fitting bespoke new doors, Restore My Door is your trusted partner for premium renovations. We believe in quality that lasts and a service that exceeds expectations.</p>
+      <div class="about-team reveal">
+        Our experienced team, founded by industry veterans, combines decades of knowledge in carpentry, design, and finishing techniques to ensure every project meets our rigorous standards.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- BLOG -->
+<section id="blog">
+  <div class="section-label reveal" style="text-align:center;">Our Latest Insights</div>
+  <h2 class="section-title reveal" style="text-align:center;margin-bottom:1rem;">Latest From <span>Restore My Door</span></h2>
+  <div class="section-divider reveal" style="margin-left:auto;margin-right:auto;"></div>
+  <div class="blog-grid">
+    <div class="blog-card reveal">
+      <img src="https://picsum.photos/seed/blog1/600/350" alt="Stainless steel surfaces spray paint" class="blog-card-image">
+      <div class="blog-card-content">
+        <div class="blog-card-meta">
+          <span class="blog-card-category">Commercial</span>
+          <span class="blog-card-date">April 25, 2026</span>
+        </div>
+        <h3 class="blog-card-title">Stainless Steel Surfaces Spray Paint</h3>
+        <p class="blog-card-excerpt">Discover how spray painting can revitalize stainless steel, offering a fresh new look for commercial kitchens and appliances.</p>
+        <a href="#" class="blog-card-link">Read More →</a>
+      </div>
+    </div>
+    <div class="blog-card reveal reveal-delay-1">
+      <img src="https://picsum.photos/seed/blog2/600/350" alt="Blue kitchens" class="blog-card-image">
+      <div class="blog-card-content">
+        <div class="blog-card-meta">
+          <span class="blog-card-category">Advice</span>
+          <span class="blog-card-date">April 18, 2026</span>
+        </div>
+        <h3 class="blog-card-title">Blue Kitchens Are Insanely Gorgeous</h3>
+        <p class="blog-card-excerpt">Explore the timeless appeal of blue kitchens and how various shades can transform your culinary space.</p>
+        <a href="#" class="blog-card-link">Read More →</a>
+      </div>
+    </div>
+    <div class="blog-card reveal reveal-delay-2">
+      <img src="https://picsum.photos/seed/blog3/600/350" alt="Office door wraps" class="blog-card-image">
+      <div class="blog-card-content">
+        <div class="blog-card-meta">
+          <span class="blog-card-category">Commercial</span>
+          <span class="blog-card-date">April 10, 2026</span>
+        </div>
+        <h3 class="blog-card-title">Office Door Wraps — Commercial Transformation</h3>
+        <p class="blog-card-excerpt">Learn about the benefits of vinyl wrapping for office doors, offering durability and a modern aesthetic for businesses.</p>
+        <a href="#" class="blog-card-link">Read More →</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CONTACT -->
+<section id="contact">
+  <div class="section-label reveal">Get a Quote</div>
+  <h2 class="section-title reveal">Tell Us About Your <span>Project</span></h2>
+  <div class="section-divider reveal"></div>
+  <p class="section-sub reveal">Ready to transform your space? Fill out the form below for a free, no-obligation quote. We'll get back to you within 24 hours.</p>
+  <div class="contact-grid">
+    <div class="contact-form reveal">
+      <form id="quoteForm">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="firstName">First Name</label>
+            <input type="text" id="firstName" name="firstName" placeholder="John" required>
+          </div>
+          <div class="form-group">
+            <label for="lastName">Last Name</label>
+            <input type="text" id="lastName" name="lastName" placeholder="Smith" required>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="email">Email Address</label>
+          <input type="email" id="email" name="email" placeholder="john@example.com" required>
+        </div>
+        <div class="form-group">
+          <label for="phone">Phone Number</label>
+          <input type="tel" id="phone" name="phone" placeholder="07700 000000">
+        </div>
+        <div class="form-group">
+          <label for="enquiryType">Enquiry Type</label>
+          <select id="enquiryType" name="enquiryType" required>
+            <option value="" disabled selected>Select an enquiry type...</option>
+            <option value="kitchen">Kitchen</option>
+            <option value="bedroom">Bedroom</option>
+            <option value="upvc_windows">uPVC Windows</option>
+            <option value="commercial">Commercial</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="photoUpload">Upload Photo (optional)</label>
+          <input type="file" id="photoUpload" name="photoUpload" accept="image/*">
+        </div>
+        <div class="form-group">
+          <label for="message">Message / Project Details</label>
+          <textarea id="message" name="message" placeholder="Tell us about your project, materials, and any specific requirements..."></textarea>
+        </div>
+        <button type="submit" class="form-submit">Get My Free Quote →</button>
+      </form>
+      <div id="formSuccessMessage" class="form-success-message">
+        Quote Request Sent ✓ We'll be in touch within 24 hours.
+      </div>
+    </div>
+    <div class="contact-info reveal reveal-delay-1">
+      <div class="contact-detail">
+        <div class="contact-detail-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+        </div>
+        <div class="contact-detail-text">
+          <strong>Our Showroom</strong>
+          <span>6 Stockport Road, Manchester, M12 6HH</span>
+        </div>
+      </div>
+      <div class="contact-detail">
+        <div class="contact-detail-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 10.8 19.79 19.79 0 01.01 2.18 2 2 0 012 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 14.92z"/></svg>
+        </div>
+        <div class="contact-detail-text">
+          <strong>Phone Us</strong>
+          <a href="tel:+441611234567"><span>0161 123 4567</span></a>
+        </div>
+      </div>
+      <div class="contact-detail">
+        <div class="contact-detail-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+        </div>
+        <div class="contact-detail-text">
+          <strong>Email Us</strong>
+          <a href="mailto:info@restoremydoor.co.uk"><span>info@restoremydoor.co.uk</span></a>
+        </div>
+      </div>
+      <div class="contact-detail">
+        <div class="contact-detail-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+        </div>
+        <div class="contact-detail-text">
+          <strong>Opening Hours</strong>
+          <span>Mon–Fri: 9AM – 5PM<br>Saturday: 10AM – 2PM<br>Sunday: Closed</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FACEBOOK MESSENGER WIDGET -->
+<div class="fb-messenger-widget">
+  <a href="https://m.me/restoremydoor" target="_blank" class="fb-messenger-button" aria-label="Chat on Messenger">
+    💬
+  </a>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-grid">
+    <div>
+      <div class="footer-logo">RESTORE MY <span>DOOR</span></div>
+      <p class="footer-tagline">Transforming homes and businesses across Manchester and the North West with expert vinyl wrapping, spray painting, and custom kitchens.</p>
+      <div class="footer-social-links">
+        <a href="https://www.facebook.com/restoremydoor" target="_blank" class="footer-social-link" aria-label="Facebook">📘</a>
+        <a href="https://www.instagram.com/restoremydoor" target="_blank" class="footer-social-link" aria-label="Instagram">📸</a>
+        <a href="https://www.pinterest.com/restoremydoor" target="_blank" class="footer-social-link" aria-label="Pinterest">📍</a>
+        <a href="https://www.houzz.co.uk/pro/restoremydoor" target="_blank" class="footer-social-link" aria-label="Houzz">🏠</a>
+      </div>
+    </div>
+    <div>
+      <div class="footer-h">Quick Links</div>
+      <ul class="footer-links">
+        <li><a href="#services">Services</a></li>
+        <li><a href="#gallery">Gallery</a></li>
+        <li><a href="#testimonials">Customer Reviews</a></li>
+        <li><a href="#about">About Us</a></li>
+        <li><a href="#blog">Blog</a></li>
+        <li><a href="#contact">Get a Quote</a></li>
+      </ul>
+    </div>
+    <div>
+      <div class="footer-h">Contact Info</div>
+      <div class="footer-contact-item">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 10.8 19.79 19.79 0 01.01 2.18 2 2 0 012 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 14.92z"/></svg>
+        <a href="tel:+441611234567">0161 123 4567</a>
+      </div>
+      <div class="footer-contact-item">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+        <a href="mailto:info@restoremydoor.co.uk">info@restoremydoor.co.uk</a>
+      </div>
+      <div class="footer-contact-item">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+        <a href="https://www.google.com/maps/search/6+Stockport+Road,+Manchester" target="_blank">6 Stockport Road, Manchester</a>
+      </div>
+    </div>
+    <div>
+      <div class="footer-h">Opening Hours</div>
+      <ul class="footer-links">
+        <li>Mon–Fri: 9AM – 5PM</li>
+        <li>Saturday: 10AM – 2PM</li>
+        <li>Sunday: Closed</li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <span class="footer-copy">&copy; 2026 Restore My Door. All rights reserved.</span>
+    <span class="footer-copy">Restore My Door Ltd — Company Registration No. 10623382</span>
+  </div>
+</footer>
+
+<script>
+// NAV scroll effect
+const navbar = document.getElementById('navbar');
+window.addEventListener('scroll', () => {
+  navbar.classList.toggle('scrolled', window.scrollY > 50);
+});
+
+// Mobile nav toggle
+const navToggle = document.getElementById('navToggle');
+const navLinks = document.getElementById('navLinks');
+navToggle.addEventListener('click', () => {
+  navLinks.classList.toggle('open');
+});
+navLinks.querySelectorAll('a').forEach(a => {
+  a.addEventListener('click', () => navLinks.classList.remove('open'));
+});
+
+// Hero slideshow
+const slides = document.querySelectorAll('.hero-slide');
+const indicatorsContainer = document.getElementById('heroIndicators');
+let currentSlide = 0;
+
+// Create indicators
+slides.forEach((_, i) => {
+  const dot = document.createElement('div');
+  dot.classList.add('hero-dot');
+  if (i === 0) dot.classList.add('active');
+  dot.dataset.slide = i;
+  indicatorsContainer.appendChild(dot);
+});
+const dots = document.querySelectorAll('.hero-dot');
+
+function goToSlide(n) {
+  slides[currentSlide].classList.remove('active');
+  dots[currentSlide].classList.remove('active');
+  currentSlide = (n + slides.length) % slides.length;
+  slides[currentSlide].classList.add('active');
+  dots[currentSlide].classList.add('active');
+}
+
+dots.forEach(dot => {
+  dot.addEventListener('click', () => goToSlide(parseInt(dot.dataset.slide)));
+});
+
+setInterval(() => goToSlide(currentSlide + 1), 6000); // Change slide every 6 seconds
+
+// Scroll reveal
+const reveals = document.querySelectorAll('.reveal');
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.classList.add('visible');
+      // If it's a blog card, also reveal the link
+      if (entry.target.classList.contains('blog-card')) {
+        entry.target.querySelector('.blog-card-link').classList.add('visible');
+      }
+      observer.unobserve(entry.target);
+    }
+  });
+}, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+reveals.forEach(el => observer.observe(el));
+
+// Form submit intercept
+document.getElementById('quoteForm').addEventListener('submit', e => {
+  e.preventDefault();
+  const form = e.target;
+  const submitButton = form.querySelector('.form-submit');
+  const successMessage = document.getElementById('formSuccessMessage');
+
+  // Simulate form submission
+  submitButton.textContent = 'Sending...';
+  submitButton.disabled = true;
+
+  setTimeout(() => {
+    submitButton.textContent = 'Quote Request Sent ✓';
+    submitButton.style.background = '#28a745'; /* Green for success */
+    successMessage.style.display = 'block';
+
+    setTimeout(() => {
+      submitButton.textContent = 'Get My Free Quote →';
+      submitButton.style.background = ''; // Revert to original background (CSS takes over)
+      submitButton.disabled = false;
+      successMessage.style.display = 'none';
+      form.reset(); // Clear form fields
+    }, 4000); // Message visible for 4 seconds
+  }, 2000); // Simulate network delay
+});
+
+// Before & After Slider
+const beforeAfterSlider = document.querySelector('.before-after-slider');
+if (beforeAfterSlider) {
+  const afterImage = beforeAfterSlider.querySelector('.after-image');
+  const sliderHandle = beforeAfterSlider.querySelector('.slider-handle');
+  let isDragging = false;
+
+  sliderHandle.addEventListener('mousedown', () => {
+    isDragging = true;
+    beforeAfterSlider.style.cursor = 'ew-resize';
+  });
+
+  document.addEventListener('mouseup', () => {
+    isDragging = false;
+    beforeAfterSlider.style.cursor = 'default';
+  });
+
+  document.addEventListener('mousemove', (e) => {
+    if (!isDragging) return;
+
+    let x = e.clientX - beforeAfterSlider.getBoundingClientRect().left;
+    let width = beforeAfterSlider.offsetWidth;
+
+    if (x < 0) x = 0;
+    if (x > width) x = width;
+
+    afterImage.style.width = x + 'px';
+    sliderHandle.style.left = x + 'px';
+  });
+}
+
+// Gallery Filtering
+const filterButtons = document.querySelectorAll('.filter-btn');
+const galleryItems = document.querySelectorAll('.gallery-item');
+
+filterButtons.forEach(button => {
+  button.addEventListener('click', () => {
+    // Remove active class from all buttons
+    filterButtons.forEach(btn => btn.classList.remove('active'));
+    // Add active class to the clicked button
+    button.classList.add('active');
+
+    const filter = button.dataset.filter;
+
+    galleryItems.forEach(item => {
+      const category = item.dataset.category;
+      if (filter === 'all' || category === filter) {
+        item.style.display = 'block';
+      } else {
+        item.style.display = 'none';
+      }
+    });
+  });
+});
+
+</script>
+</body>
+</html>

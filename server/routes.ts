@@ -3,6 +3,8 @@ import { createServer, type Server } from "http";
 import path from "path";
 import { execFile } from "child_process";
 import { promisify } from "util";
+import * as fs from "fs";
+import type { ChatMessage } from "../shared/schema";
 
 const execFileAsync = promisify(execFile);
 
@@ -221,6 +223,45 @@ export async function registerRoutes(
   // ── Campaigns ─────────────────────────────────────────────────────────────
   app.get("/api/campaigns",      (_req, res) => proxy(res, "GET", "/campaigns"));
   app.get("/api/campaigns/:id",  (req, res)  => proxy(res, "GET", `/campaigns/${req.params.id}`));
+
+  // ── Board Room Chat ─────────────────────────────────────────────────────
+  const CHAT_FILE = path.resolve(process.cwd(), "server", "public", "chat-messages", "boardroom.json");
+
+  function readChat(): { messages: ChatMessage[] } {
+    try {
+      const raw = fs.readFileSync(CHAT_FILE, "utf-8");
+      return JSON.parse(raw) as { messages: ChatMessage[] };
+    } catch {
+      return { messages: [] };
+    }
+  }
+
+  function writeChat(data: { messages: ChatMessage[] }): void {
+    fs.writeFileSync(CHAT_FILE, JSON.stringify(data, null, 2));
+  }
+
+  app.get("/api/boardroom/messages", (_req, res) => {
+    const data = readChat();
+    return res.json(data);
+  });
+
+  app.post("/api/boardroom/messages", (req, res) => {
+    const { messages } = readChat();
+    const { author, content, agentId } = req.body as { author: string; content: string; agentId?: string };
+    if (!author || !content) return res.status(400).json({ error: "author and content required" });
+
+    const newMsg: ChatMessage = {
+      id: `msg_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+      author,
+      agentId: agentId || null,
+      content,
+      timestamp: Date.now(),
+    };
+
+    messages.push(newMsg);
+    writeChat({ messages });
+    return res.json(newMsg);
+  });
 
   // ── Architecture (served via proxy, auth enforced above) ──────────────────
   app.get("/api/architecture", (_req, res) => {

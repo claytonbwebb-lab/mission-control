@@ -23,6 +23,7 @@ import {
   Mail,
   Link2,
   Bot,
+  MessageSquare,
 } from "lucide-react";
 import { clearToken } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
@@ -36,6 +37,7 @@ const navItems = [
   { title: "Campaigns", url: "/campaigns", icon: Mail },
   { title: "Proposals", url: "/proposals", icon: Link2 },
   { title: "Clawbot", url: "/clawbot", icon: Bot },
+  { title: "Board Room", url: "/boardroom", icon: MessageSquare },
   { title: "Recovery", url: "/recovery", icon: ShieldCheck },
 ];
 

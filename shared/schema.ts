@@ -133,3 +133,12 @@ export interface AiRecentCall {
   source: string;
   created_at: string;
 }
+
+export interface ChatMessage {
+  id: string;
+  author: string;        // display name, e.g. "Clawbot", "Blaze", "Frost", "Steve"
+  agentId: string | null; // agent account id if applicable
+  content: string;
+  timestamp: number;      // Unix ms
+  isSystem?: boolean;     // true for bot join/leave events
+}
